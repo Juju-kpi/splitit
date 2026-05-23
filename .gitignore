@@ -1,0 +1,18 @@
+
+# Expo (generated)
+expo-env.d.ts
+.expo/
+
+# Dependencies
+node_modules/
+
+# Environment variables — NE JAMAIS commiter
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+
+# OS
+.DS_Store

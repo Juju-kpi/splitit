@@ -1,0 +1,25 @@
+{
+  "cli": {
+    "version": ">= 1.0.0"
+  },
+  "build": {
+    "preview": {
+      "channel": "main",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://splitit-9x32.onrender.com"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://splitit-9x32.onrender.com"
+      }
+    }
+  }
+}

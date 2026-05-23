@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Splitit",
+    "slug": "splitit",
+    "version": "1.0.0",
+    "scheme": "splitit",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "platforms": ["ios", "android"],
+    "splash": {
+      "backgroundColor": "#0C0C0F"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.julien.splitit",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Pour scanner les tickets de caisse",
+        "NSPhotoLibraryUsageDescription": "Pour importer une photo de ticket"
+      }
+    },
+    "android": {
+      "package": "com.julien.splitit",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Pour scanner les tickets de caisse"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pour importer une photo de ticket"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1278a9ec-153f-47ec-ba0c-f36fad5d5fcc"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1278a9ec-153f-47ec-ba0c-f36fad5d5fcc"
+    }
+  }
+}
