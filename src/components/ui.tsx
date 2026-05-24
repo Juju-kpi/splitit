@@ -254,7 +254,6 @@ interface ScreenHeaderProps {
 }
 export function ScreenHeader({ title, subtitle, rightContent, accentWord }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
-  // Split title around accentWord
   let before = title;
   let after = '';
   if (accentWord && title.includes(accentWord)) {
@@ -299,7 +298,7 @@ export function ActionPill({ label, onPress, primary = false, icon }: ActionPill
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         activeOpacity={1}
-        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+        hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
       >
         {icon && <Text style={pillStyles.icon}>{icon}</Text>}
         <Text style={[pillStyles.label, primary && pillStyles.labelPrimary]}>{label}</Text>
@@ -432,9 +431,9 @@ const headerStyles = StyleSheet.create({
     borderRadius: 110,
     backgroundColor: 'rgba(124,110,250,0.07)',
   },
-  inner: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 6 },
+  inner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   left: { flex: 1, marginRight: 10 },
-  right: { flexDirection: 'row', gap: 8, alignItems: 'center', paddingBottom: 2 },
+  right: { flexDirection: 'row', gap: 8, alignItems: 'center', paddingBottom: 0 },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -1.2, color: colors.text },
   titleAccent: { color: colors.accent },
   subtitle: { fontSize: 12, color: colors.text3, marginTop: 4, fontWeight: '500', letterSpacing: 0.2 },
@@ -447,8 +446,8 @@ const pillStyles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: colors.surface2,
     borderWidth: 1, borderColor: colors.glassBorder,
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: radius.full, minHeight: 36,
+    paddingHorizontal: 16, paddingVertical: 11,
+    borderRadius: radius.full, minHeight: 44,
   },
   pillPrimary: {
     backgroundColor: colors.accentBg,

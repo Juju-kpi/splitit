@@ -11,16 +11,16 @@ import { useAuthStore } from '../../store/authStore';
 import { Avatar, Card, SectionLabel, Divider, Button } from '../../components/ui';
 import { colors, spacing, shadows, radius } from '../../theme';
 import { Expense, Balance } from '../../../../shared/types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
   const user = useAuthStore(s => s.user);
+  const insets = useSafeAreaInsets();
 
-  // Which balance row is expanded (for settle action)
   const [expandedBalance, setExpandedBalance] = useState<string | null>(null);
-  // Log modal
   const [showLog, setShowLog] = useState(false);
 
   const { data: group, isLoading, refetch } = useQuery({
@@ -62,8 +62,6 @@ export default function GroupDetailScreen() {
     }
   }
 
-  // ── Build a detailed reimbursement log ────────────────────────────────
-  // For each expense, show per-split detail: who owes what to whom
   type LogLine = {
     expenseId: string;
     expenseDesc: string;
@@ -77,18 +75,16 @@ export default function GroupDetailScreen() {
 
   const reimbursementLog: LogLine[] = [];
   (group.expenses || []).forEach((exp: any) => {
-    // For each split, figure out who the creditor is (the one who paid the most or paid for that member)
     const payments: { memberId: string; amount: number; member: any }[] = exp.payments || [];
     if (payments.length === 0) return;
 
-    // Primary creditor = biggest payer
     const primaryPayment = payments.reduce(
       (best: any, p: any) => (p.amount > best.amount ? p : best),
       payments[0]
     );
 
     exp.splits?.forEach((split: any) => {
-      if (split.memberId === primaryPayment.memberId) return; // payer doesn't owe themselves
+      if (split.memberId === primaryPayment.memberId) return;
       reimbursementLog.push({
         expenseId: exp.id,
         expenseDesc: exp.description,
@@ -102,7 +98,6 @@ export default function GroupDetailScreen() {
     });
   });
 
-  // Group log by (debtor, creditor) pair and net amounts
   const netLog: Record<string, { from: string; fromId: string; to: string; toId: string; total: number; settled: number; lines: LogLine[] }> = {};
   reimbursementLog.forEach(line => {
     const key = `${line.debtorId}→${line.creditorId}`;
@@ -116,17 +111,31 @@ export default function GroupDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+      {/* Header — safe area gérée ici */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Text style={styles.backText}>← Retour</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{group.emoji} {group.name}</Text>
+        <Text style={styles.title} numberOfLines={1}>{group.emoji} {group.name}</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity style={styles.membersBtn} onPress={() => router.push(`/group/members?groupId=${id}`)} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.membersBtn}
+            onPress={() => router.push(`/group/members?groupId=${id}`)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          >
             <Text style={styles.membersBtnText}>👥 Membres</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.shareBtn}
+            onPress={handleShare}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          >
             <Text style={styles.shareBtnText}>Inviter</Text>
           </TouchableOpacity>
         </View>
@@ -177,7 +186,7 @@ export default function GroupDetailScreen() {
           </>
         )}
 
-        {/* ── Remboursements ── */}
+        {/* Remboursements */}
         {group.balances?.length > 0 && (
           <>
             <View style={styles.balancesHeader}>
@@ -227,7 +236,6 @@ export default function GroupDetailScreen() {
                       </Text>
                     </TouchableOpacity>
 
-                    {/* Expanded: detail per expense + settle button */}
                     {isExpanded && (
                       <View style={styles.balanceDetail}>
                         {(netLog[key]?.lines || []).map((line, li) => (
@@ -252,7 +260,6 @@ export default function GroupDetailScreen() {
                                   {
                                     text: 'Confirmer',
                                     onPress: () => {
-                                      // Mark all unsettled splits from me to this creditor
                                       (netLog[key]?.lines || [])
                                         .filter(l => !l.settled)
                                         .forEach(l => {
@@ -320,16 +327,16 @@ export default function GroupDetailScreen() {
         )}
       </ScrollView>
 
-      {/* FAB */}
+      {/* FAB — safe area en bas */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: Math.max(insets.bottom, 16) + 16 }]}
         onPress={() => router.push(`/expense/add?groupId=${id}`)}
         activeOpacity={0.85}
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
-      {/* ── Log Modal ── */}
+      {/* Log Modal */}
       <Modal visible={showLog} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowLog(false)}>
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
@@ -386,22 +393,27 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl, paddingTop: 16, paddingBottom: 8,
+    paddingHorizontal: spacing.xl, paddingBottom: 12,
+    backgroundColor: colors.bg,
+    borderBottomWidth: 0.5, borderBottomColor: colors.border,
   },
   backBtn: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36,
+    justifyContent: 'center',
   },
   backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
   title: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   membersBtn: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border2,
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36,
+    justifyContent: 'center',
   },
   membersBtnText: { color: colors.text2, fontSize: 11, fontWeight: '600' },
   shareBtn: {
     backgroundColor: colors.accentBg, borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.3)',
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, minHeight: 36,
+    justifyContent: 'center',
   },
   shareBtnText: { color: colors.accent2, fontSize: 12, fontWeight: '600' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 120 },
@@ -419,7 +431,6 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 11, color: colors.text3, marginTop: 4, fontWeight: '500' },
   summaryDivider: { width: 0.5, height: 40, backgroundColor: colors.border },
 
-  // Balances
   balancesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   logBtn: {
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full,
@@ -437,7 +448,6 @@ const styles = StyleSheet.create({
   balanceAmt: { fontSize: 14, fontFamily: 'monospace', color: colors.amber, fontWeight: '600' },
   balanceAmtMe: { color: colors.accent2 },
 
-  // Balance detail
   balanceDetail: {
     backgroundColor: colors.surface2, borderRadius: radius.sm,
     padding: 12, marginBottom: 8, gap: 6,
@@ -451,7 +461,6 @@ const styles = StyleSheet.create({
   },
   settleBtnText: { fontSize: 13, color: colors.white, fontWeight: '600' },
 
-  // Expenses
   expenseItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border,
@@ -470,14 +479,13 @@ const styles = StyleSheet.create({
   emptySubText: { fontSize: 13, color: colors.text3 },
 
   fab: {
-    position: 'absolute', bottom: 32, right: 20,
+    position: 'absolute', right: 20,
     width: 56, height: 56, borderRadius: 28,
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
     ...shadows.accent,
   },
   fabText: { color: colors.white, fontSize: 28, lineHeight: 32 },
 
-  // Modal
   modalScreen: { flex: 1, backgroundColor: colors.bg },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
