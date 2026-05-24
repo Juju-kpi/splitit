@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Splitit",
+    "owner": "areskpi",
     "slug": "splitit",
     "version": "1.0.0",
     "scheme": "splitit",
