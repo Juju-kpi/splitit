@@ -1,0 +1,184 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  avatarColor  String   @default("#4F46E5")
+  // Password reset
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+  refreshTokens RefreshToken[]
+  groupMembers GroupMember[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model Group {
+  id        String        @id @default(cuid())
+  name      String
+  emoji     String        @default("💰")
+  inviteCode String       @unique @default(cuid())
+  members   GroupMember[]
+  expenses  Expense[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id             String   @id @default(cuid())
+  groupId        String
+  group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId         String?  // null = guest member (added by someone else, no account)
+  user           User?    @relation(fields: [userId], references: [id])
+  displayName    String
+  avatarColor    String   @default("#4F46E5")
+  avatarInitials String
+  // Multi-payer: a member can pay multiple expenses
+  payments       ExpensePayment[]
+  splits         ExpenseSplit[]
+  itemAssignments ExpenseItemAssignment[]
+  joinedAt       DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model Expense {
+  id              String        @id @default(cuid())
+  groupId         String
+  group           Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  description     String
+  totalAmount     Float
+  currency        String        @default("CHF")
+  // Legacy compat field — set to primary payer (who paid the most). Use payments[] for full data.
+  paidByMemberId  String
+  splitType       SplitType     @default(EQUAL)
+  receiptImageUrl String?
+  receiptImageKey String?
+  ocrConfidence   Float?
+  items           ExpenseItem[]
+  splits          ExpenseSplit[]
+  // NEW: one row per payer — supports multiple people paying one expense
+  payments        ExpensePayment[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("expenses")
+}
+
+// One row per (expense × payer): who paid and how much
+model ExpensePayment {
+  id         String      @id @default(cuid())
+  expenseId  String
+  expense    Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     GroupMember @relation(fields: [memberId], references: [id])
+  amount     Float
+
+  @@unique([expenseId, memberId])
+  @@map("expense_payments")
+}
+
+enum SplitType {
+  EQUAL
+  ITEMIZED
+  CUSTOM
+}
+
+model ExpenseItem {
+  id            String   @id @default(cuid())
+  expenseId     String
+  expense       Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  name          String
+  price         Float
+  ocrRaw        String?
+  ocrConfidence Float?
+  corrected     Boolean  @default(false)
+  assignedTo    ExpenseItemAssignment[]
+  createdAt     DateTime @default(now())
+
+  @@map("expense_items")
+}
+
+model ExpenseItemAssignment {
+  id            String      @id @default(cuid())
+  itemId        String
+  item          ExpenseItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  memberId      String
+  member        GroupMember @relation(fields: [memberId], references: [id])
+
+  @@unique([itemId, memberId])
+  @@map("expense_item_assignments")
+}
+
+model ExpenseSplit {
+  id         String      @id @default(cuid())
+  expenseId  String
+  expense    Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     GroupMember @relation(fields: [memberId], references: [id])
+  amount     Float
+  settled    Boolean     @default(false)
+  settledAt  DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@unique([expenseId, memberId])
+  @@map("expense_splits")
+}
+
+// OCR training data
+model OcrCorrection {
+  id              String   @id @default(cuid())
+  receiptId       String?
+  ocrRaw          String
+  ocrPriceRaw     String
+  correctedName   String
+  correctedPrice  Float
+  confidence      Float
+  vendorHint      String?
+  deviceId        String?
+  appVersion      String?
+  trained         Boolean  @default(false)
+  trainingRunId   String?
+  createdAt       DateTime @default(now())
+
+  @@map("ocr_corrections")
+}
+
+model OcrTrainingRun {
+  id              String   @id @default(cuid())
+  correctionCount Int
+  exportedAt      DateTime @default(now())
+  status          String   @default("pending")
+  datasetUrl      String?
+  notes           String?
+
+  @@map("ocr_training_runs")
+}
