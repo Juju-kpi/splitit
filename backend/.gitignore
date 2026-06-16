@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment variables — NE JAMAIS commiter
+.env
+.env.local
+.env.production*
+.env.example
+
+# Build output (TypeScript compilé)
+dist/
+
+# Prisma
+prisma/migrations/dev.db
+prisma/dev.db
+prisma/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
