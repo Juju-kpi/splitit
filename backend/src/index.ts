@@ -14,6 +14,7 @@ import { authenticate } from './middleware/auth';
 import { runTrainingPipeline } from './services/trainingPipeline';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Security
 app.use(helmet());
