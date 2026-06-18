@@ -1,25 +1,21 @@
 // app/src/services/api.ts
+// Ajout vs original : authApi.deleteAccount
+
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { CreateExpenseInput } from '../../../../shared/types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
-
-const KEYS = {
-  accessToken: 'splitit_access_token',
-  refreshToken: 'splitit_refresh_token',
-};
+const KEYS = { accessToken: 'splitit_access_token', refreshToken: 'splitit_refresh_token' };
 
 export async function saveTokens(access: string, refresh: string) {
   await SecureStore.setItemAsync(KEYS.accessToken, access);
   await SecureStore.setItemAsync(KEYS.refreshToken, refresh);
 }
-
 export async function clearTokens() {
   await SecureStore.deleteItemAsync(KEYS.accessToken);
   await SecureStore.deleteItemAsync(KEYS.refreshToken);
 }
-
 export async function getAccessToken() {
   return SecureStore.getItemAsync(KEYS.accessToken);
 }
@@ -45,7 +41,6 @@ api.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
-
       if (isRefreshing) {
         return new Promise(resolve => {
           refreshQueue.push((token: string) => {
@@ -54,19 +49,15 @@ api.interceptors.response.use(
           });
         });
       }
-
       isRefreshing = true;
       try {
         const refreshToken = await SecureStore.getItemAsync(KEYS.refreshToken);
         if (!refreshToken) throw new Error('No refresh token');
-
         const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
         const { accessToken: newAccess, refreshToken: newRefresh } = data.data;
-
         await saveTokens(newAccess, newRefresh);
         refreshQueue.forEach(cb => cb(newAccess));
         refreshQueue = [];
-
         original.headers.Authorization = `Bearer ${newAccess}`;
         return api(original);
       } catch {
@@ -90,21 +81,18 @@ export default api;
 export const authApi = {
   register: (email: string, username: string, password: string) =>
     api.post('/auth/register', { email, username, password }).then(r => r.data.data),
-
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }).then(r => r.data.data),
-
   me: () => api.get('/auth/me').then(r => r.data.data),
-
   logout: (refreshToken: string) =>
     api.post('/auth/logout', { refreshToken }),
-
   forgotPassword: (email: string) =>
     api.post('/auth/forgot-password', { email }).then(r => r.data.data),
-
-  /** Called from the deep-link landing ?token=xxx */
   resetPassword: (token: string, password: string) =>
     api.post('/auth/reset-password', { token, password }).then(r => r.data.data),
+  // NOUVEAU
+  deleteAccount: (password: string) =>
+    api.delete('/auth/account', { data: { password } }).then(r => r.data.data),
 };
 
 export const groupsApi = {
@@ -127,15 +115,22 @@ export const expensesApi = {
     api.patch(`/expenses/${id}/settle`, { memberId }).then(r => r.data.data),
   update: (id: string, payload: any) =>
     api.put(`/expenses/${id}`, payload).then(r => r.data.data),
+  // NOUVEAU
+  updateItems: (id: string, payload: {
+    items: Array<{
+      name: string; price: number; ocrRaw?: string;
+      ocrConfidence?: number; corrected: boolean; assignedToMemberIds: string[];
+    }>;
+    payments?: Array<{ memberId: string; amount: number }>;
+    description?: string;
+  }) => api.put(`/expenses/${id}/items`, payload).then(r => r.data.data),
 };
 
 export const ocrApi = {
   scan: (imageUri: string) => {
     const form = new FormData();
     form.append('receipt', { uri: imageUri, name: 'receipt.jpg', type: 'image/jpeg' } as any);
-    return api.post('/ocr/scan', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }).then(r => r.data.data);
+    return api.post('/ocr/scan', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data.data);
   },
   saveCorrection: (correction: any) =>
     api.post('/ocr/correction', correction).then(r => r.data.data),

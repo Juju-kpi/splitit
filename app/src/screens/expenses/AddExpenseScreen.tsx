@@ -1,12 +1,14 @@
 // app/src/screens/expenses/AddExpenseScreen.tsx
-// Flow:
-//   1. select  — OCR ou manuel
-//   2. ocr     — scan ticket + assignation articles
-//   3. manual  — description + montant + répartition (égale OU custom)
-//   4. who_paid — qui a sorti la carte/cash en caisse
-//   5. summary  — récap + confirmation
+// Changements vs original :
+//   1. FIX: validation "description manquante" déplacée — en mode OCR, la description
+//      n'est demandée qu'au step summary (après les payeurs), pas avant.
+//   2. EDIT MODE: si les params `expenseId` + `isEdit=true` sont présents,
+//      l'écran se pré-remplit avec les données existantes et appelle PUT /expenses/:id/items
+//      au lieu de POST /expenses. Accessible à tous les membres.
+//   3. Le bouton "Assigner les items restants" apparaît si l'utilisateur est le créateur
+//      et qu'il reste des items sans assignation.
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   Alert, Image, TextInput, KeyboardAvoidingView, Platform,
@@ -19,6 +21,7 @@ import { Button, Input, AmountInput, Chip, Notice, Card, Avatar, SectionLabel } 
 import OcrScanScreen from './OcrScanScreen';
 import { colors, spacing, radius } from '../../theme';
 import { GroupMember } from '../../../../shared/types';
+import { useAuthStore } from '../../store/authStore';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -47,21 +50,26 @@ interface OcrItemLocal {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function AddExpenseScreen() {
-  const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const { groupId, expenseId, isEdit } = useLocalSearchParams<{
+    groupId: string;
+    expenseId?: string;
+    isEdit?: string;
+  }>();
+  const editMode = isEdit === 'true' && !!expenseId;
+
   const router = useRouter();
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
+  const user = useAuthStore(s => s.user);
 
-  const [step, setStep] = useState<Step>('select');
+  const [step, setStep] = useState<Step>(editMode ? 'ocr' : 'select');
+  const [initialized, setInitialized] = useState(false);
 
   // ── Manuel ────────────────────────────────────────────────────────────
   const [description, setDescription] = useState('');
-  // IMPORTANT: amount est la source de vérité pour le mode manuel.
-  // totalAmount est calculé depuis amount (manuel) ou ocrItems (OCR).
   const [amount, setAmount] = useState('');
   const [splitMode, setSplitMode] = useState<SplitMode>('equal');
-  const [splitMemberIds, setSplitMemberIds] = useState<string[]>([]); // vide = tout le monde
-  // Montants custom par membre (mode custom)
+  const [splitMemberIds, setSplitMemberIds] = useState<string[]>([]);
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
 
   // ── OCR ───────────────────────────────────────────────────────────────
@@ -78,8 +86,63 @@ export default function AddExpenseScreen() {
     enabled: !!groupId,
   });
 
+  // En mode edit, charger la dépense existante
+  const { data: existingExpense } = useQuery({
+    queryKey: ['expense', expenseId],
+    queryFn: () => expensesApi.get(expenseId!),
+    enabled: editMode && !!expenseId,
+  });
+
   const members: GroupMember[] = group?.members || [];
 
+  // Détermine si l'utilisateur est le créateur de la dépense
+  const myMember = members.find((m: any) => m.userId === user?.id);
+  const isCreator = editMode && existingExpense
+    ? (existingExpense as any).createdByMemberId === myMember?.id || !!(existingExpense as any).createdByMemberId === false
+    : false;
+
+  // Pré-remplir depuis la dépense existante (une seule fois)
+  useEffect(() => {
+    if (!editMode || !existingExpense || !members.length || initialized) return;
+
+    const exp = existingExpense as any;
+    setDescription(exp.description || '');
+    setOcrImageUrl(exp.receiptImageUrl);
+
+    // Reconstituer les items OCR
+    if (exp.items && exp.items.length > 0) {
+      const localItems: OcrItemLocal[] = exp.items.map((item: any, i: number) => ({
+        id: `existing_${i}`,
+        name: item.name,
+        price: item.price,
+        ocrRaw: item.ocrRaw,
+        confidence: item.ocrConfidence,
+        corrected: item.corrected,
+        assignedTo: (item.assignedTo || []).map((a: any) => a.memberId),
+        editName: item.name,
+        editPrice: item.price.toFixed(2),
+        editing: false,
+      }));
+      setOcrItems(localItems);
+      setStep('ocr');
+    } else {
+      // Mode manuel
+      setAmount(exp.totalAmount?.toFixed(2) || '');
+      setStep('manual');
+    }
+
+    // Pré-remplir les payeurs
+    if (exp.payments && exp.payments.length > 0) {
+      setPayers(exp.payments.map((p: any) => ({
+        memberId: p.memberId,
+        amount: p.amount.toFixed(2),
+      })));
+    }
+
+    setInitialized(true);
+  }, [existingExpense, members, editMode, initialized]);
+
+  // ── Mutations ─────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: expensesApi.create,
     onSuccess: () => {
@@ -90,8 +153,19 @@ export default function AddExpenseScreen() {
       Alert.alert('Erreur', e?.response?.data?.error || "Impossible d'ajouter la dépense"),
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ items, payments, desc }: { items: any[]; payments: any[]; desc: string }) =>
+      expensesApi.updateItems(expenseId!, { items, payments, description: desc }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['group', groupId] });
+      qc.invalidateQueries({ queryKey: ['expense', expenseId] });
+      Alert.alert('✓ Dépense mise à jour', '', [{ text: 'OK', onPress: () => router.back() }]);
+    },
+    onError: (e: any) =>
+      Alert.alert('Erreur', e?.response?.data?.error || "Impossible de mettre à jour"),
+  });
+
   // ── Montant total ─────────────────────────────────────────────────────
-  // BUG FIX: ne dépend PAS de `step` — toujours calculé depuis la bonne source
   const totalAmount = useMemo(() => {
     if (ocrItems.length > 0) {
       return ocrItems.reduce((s, i) => s + i.price, 0);
@@ -107,7 +181,6 @@ export default function AddExpenseScreen() {
       const share = activeMemberIds.length > 0 ? totalAmount / activeMemberIds.length : 0;
       return activeMemberIds.map(id => ({ memberId: id, amount: share }));
     }
-    // custom
     return activeMemberIds.map(id => ({
       memberId: id,
       amount: parseFloat((customAmounts[id] || '0').replace(',', '.')) || 0,
@@ -115,9 +188,7 @@ export default function AddExpenseScreen() {
   }, [splitMode, activeMemberIds, totalAmount, customAmounts]);
 
   const customTotal = useMemo(() =>
-    manualSplits.reduce((s, r) => s + r.amount, 0),
-    [manualSplits]
-  );
+    manualSplits.reduce((s, r) => s + r.amount, 0), [manualSplits]);
 
   const isCustomBalanced = splitMode === 'equal' || Math.abs(customTotal - totalAmount) < 0.02;
 
@@ -143,11 +214,12 @@ export default function AddExpenseScreen() {
   );
 
   const payerTotal = useMemo(() =>
-    resolvedPayments.reduce((s, p) => s + p.amount, 0),
-    [resolvedPayments]
-  );
+    resolvedPayments.reduce((s, p) => s + p.amount, 0), [resolvedPayments]);
 
   const isPayerBalanced = totalAmount > 0 && Math.abs(payerTotal - totalAmount) < 0.02;
+
+  // ── Items non assignés ────────────────────────────────────────────────
+  const unassignedItems = ocrItems.filter(i => i.assignedTo.length === 0);
 
   // ── Helpers ───────────────────────────────────────────────────────────
   function memberById(id: string) { return members.find(m => m.id === id); }
@@ -166,7 +238,6 @@ export default function AddExpenseScreen() {
   function setPayerMember(idx: number, memberId: string) {
     setPayers(prev => {
       const next = prev.map((p, i) => i === idx ? { ...p, memberId } : p);
-      // Auto-remplir montant si payeur unique
       if (next.length === 1 && totalAmount > 0) {
         next[0].amount = totalAmount.toFixed(2);
       }
@@ -188,11 +259,24 @@ export default function AddExpenseScreen() {
     setPayers(prev => prev.filter((_, i) => i !== idx));
   }
 
+  // ── "Assigner les items restants" — créateur uniquement ───────────────
+  function assignRemainingToMe() {
+    if (!myMember) return;
+    setOcrItems(prev =>
+      prev.map(item =>
+        item.assignedTo.length === 0
+          ? { ...item, assignedTo: [myMember.id] }
+          : item
+      )
+    );
+  }
+
   // ── Transition vers who_paid ──────────────────────────────────────────
+  // FIX: en mode OCR, on ne valide PAS la description ici — elle arrive au step summary
   function goToWhoPaid() {
     if (ocrItems.length > 0) {
       const assigned = ocrItems.some(i => i.assignedTo.length > 0);
-      if (!assigned) {
+      if (!assigned && !editMode) {
         Alert.alert('Articles non assignés', 'Assigne au moins un article à un membre avant de continuer.');
         return;
       }
@@ -207,7 +291,6 @@ export default function AddExpenseScreen() {
         return;
       }
     }
-    // Auto-remplir le montant si payeur unique pas encore rempli
     setPayers(prev => {
       if (prev.length === 1 && (!prev[0].amount || prev[0].amount === '0') && totalAmount > 0) {
         return [{ ...prev[0], amount: totalAmount.toFixed(2) }];
@@ -231,6 +314,24 @@ export default function AddExpenseScreen() {
       return;
     }
 
+    // MODE EDIT
+    if (editMode) {
+      updateMutation.mutate({
+        items: ocrItems.map(item => ({
+          name: item.name,
+          price: item.price,
+          ocrRaw: item.ocrRaw,
+          ocrConfidence: item.confidence,
+          corrected: item.corrected,
+          assignedToMemberIds: item.assignedTo,
+        })),
+        payments: resolvedPayments,
+        desc: description.trim() || (existingExpense as any)?.description || 'Ticket scanné',
+      });
+      return;
+    }
+
+    // MODE CRÉATION
     if (ocrItems.length > 0) {
       createMutation.mutate({
         groupId,
@@ -274,7 +375,7 @@ export default function AddExpenseScreen() {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // STEP: select
+  // STEP: select (création seulement)
   // ═══════════════════════════════════════════════════════════════════════
   if (step === 'select') {
     return (
@@ -300,9 +401,104 @@ export default function AddExpenseScreen() {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // STEP: ocr
+  // STEP: ocr — assignation des articles
   // ═══════════════════════════════════════════════════════════════════════
   if (step === 'ocr') {
+    // En mode edit avec des items déjà chargés, on affiche directement l'interface d'assignation
+    if (editMode && ocrItems.length > 0) {
+      return (
+        <View style={styles.screen}>
+          <Header
+            title={editMode ? 'Compléter la dépense' : 'Scanner un ticket'}
+            onBack={() => editMode ? router.back() : setStep('select')}
+            insets={insets}
+          />
+          <ScrollView contentContainerStyle={styles.scroll}>
+
+            {/* Image du ticket si disponible */}
+            {ocrImageUrl && (
+              <View style={styles.receiptImageBlock}>
+                <TouchableOpacity style={styles.receiptImageBtn} onPress={() => setShowReceiptImage(v => !v)}>
+                  <Text style={styles.receiptImageBtnText}>
+                    {showReceiptImage ? '🙈 Masquer le ticket' : '🧾 Voir le ticket scanné'}
+                  </Text>
+                </TouchableOpacity>
+                {showReceiptImage && (
+                  <Image source={{ uri: ocrImageUrl }} style={styles.receiptImage} resizeMode="contain" />
+                )}
+              </View>
+            )}
+
+            {/* Badge items non assignés */}
+            {unassignedItems.length > 0 && (
+              <Notice
+                variant="amber"
+                text={`${unassignedItems.length} article${unassignedItems.length > 1 ? 's' : ''} sans assignation — assigne-les ou utilise le bouton ci-dessous.`}
+              />
+            )}
+
+            {/* Bouton "Assigner à moi" pour le créateur ou si items non assignés */}
+            {unassignedItems.length > 0 && myMember && (
+              <TouchableOpacity style={styles.assignBtn} onPress={assignRemainingToMe} activeOpacity={0.8}>
+                <Text style={styles.assignBtnText}>
+                  📌 Assigner les {unassignedItems.length} articles non assignés à moi
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Liste des items */}
+            <SectionLabel label="ARTICLES" />
+            {ocrItems.map((item, idx) => (
+              <View key={item.id} style={styles.itemCard}>
+                <View style={styles.itemHeader}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemPrice}>{item.price.toFixed(2)} CHF</Text>
+                </View>
+                <Text style={styles.itemLabel}>Qui a pris cet article ?</Text>
+                <View style={styles.chipWrap}>
+                  {members.map(m => (
+                    <Chip
+                      key={m.id}
+                      label={m.displayName}
+                      selected={item.assignedTo.includes(m.id)}
+                      onPress={() => {
+                        setOcrItems(prev => prev.map((it, i) => {
+                          if (i !== idx) return it;
+                          const already = it.assignedTo.includes(m.id);
+                          return {
+                            ...it,
+                            assignedTo: already
+                              ? it.assignedTo.filter(id => id !== m.id)
+                              : [...it.assignedTo, m.id],
+                          };
+                        }));
+                      }}
+                      avatar={{ initials: m.avatarInitials, color: m.avatarColor }}
+                    />
+                  ))}
+                </View>
+                {item.assignedTo.length === 0 && (
+                  <Text style={styles.itemUnassigned}>⚠ Non assigné</Text>
+                )}
+                {item.assignedTo.length > 0 && (
+                  <Text style={styles.itemAssigned}>
+                    ✓ {item.assignedTo.map(id => memberById(id)?.displayName).filter(Boolean).join(', ')}
+                  </Text>
+                )}
+              </View>
+            ))}
+
+            <Button
+              label="Continuer → Qui a payé ?"
+              onPress={goToWhoPaid}
+              style={{ marginTop: 8, marginBottom: Math.max(insets.bottom, 16) }}
+            />
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // Mode création : scanner un nouveau ticket
     return (
       <View style={styles.screen}>
         <Header title="Scanner un ticket" onBack={() => setStep('select')} insets={insets} />
@@ -328,7 +524,7 @@ export default function AddExpenseScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={insets.top + 44}
       >
-        <Header title="Saisie manuelle" onBack={() => setStep('select')} insets={insets} />
+        <Header title="Saisie manuelle" onBack={() => editMode ? router.back() : setStep('select')} insets={insets} />
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
           <Input
@@ -377,7 +573,6 @@ export default function AddExpenseScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Preview répartition équitable */}
           {splitMode === 'equal' && totalAmount > 0 && (
             <Card style={{ marginBottom: 12 }}>
               <Text style={styles.previewTitle}>Chaque personne paie</Text>
@@ -395,7 +590,6 @@ export default function AddExpenseScreen() {
             </Card>
           )}
 
-          {/* Saisie montants personnalisés */}
           {splitMode === 'custom' && (
             <Card style={{ marginBottom: 12 }}>
               <Text style={styles.previewTitle}>Entre le montant pour chacun</Text>
@@ -418,7 +612,6 @@ export default function AddExpenseScreen() {
                   </View>
                 );
               })}
-              {/* Indicateur total custom */}
               <View style={styles.customTotalRow}>
                 <Text style={styles.customTotalLabel}>Total saisi</Text>
                 <Text style={[
@@ -457,7 +650,6 @@ export default function AddExpenseScreen() {
         <Header title="Qui a payé en caisse ?" onBack={() => setStep(sourceStep)} insets={insets} />
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-          {/* Rappel contexte */}
           <Card style={{ marginBottom: 12 }}>
             <Text style={styles.contextTitle}>
               {ocrItems.length > 0 ? 'Ticket scanné' : description}
@@ -478,7 +670,6 @@ export default function AddExpenseScreen() {
 
           <Notice text="Indique qui a physiquement payé l'addition et combien. Plusieurs personnes peuvent avoir payé des parts différentes." />
 
-          {/* Payeurs */}
           <View style={styles.payerLabelRow}>
             <Text style={styles.fieldLabel}>PAYEURS</Text>
             {payers.length < members.length && (
@@ -490,7 +681,6 @@ export default function AddExpenseScreen() {
 
           {payers.map((payer, idx) => {
             const selected = memberById(payer.memberId);
-            // Calcul du "payer le reste" pour ce payeur
             const otherPayersTotal = resolvedPayments
               .filter(p => p.memberId !== payer.memberId)
               .reduce((s, p) => s + p.amount, 0);
@@ -538,7 +728,6 @@ export default function AddExpenseScreen() {
                   )}
                 </View>
 
-                {/* Raccourci : payer le reste */}
                 {payers.length > 1 && reste > 0.01 && (
                   <TouchableOpacity
                     style={styles.shortcutBtn}
@@ -553,7 +742,6 @@ export default function AddExpenseScreen() {
             );
           })}
 
-          {/* Barre d'équilibre */}
           <View style={[styles.balanceBar, isPayerBalanced ? styles.balanceBarOk : styles.balanceBarWarn]}>
             <Text style={[styles.balanceBarText, { color: isPayerBalanced ? colors.green : colors.amber }]}>
               {isPayerBalanced
@@ -595,14 +783,13 @@ export default function AddExpenseScreen() {
       <Header title="Résumé" onBack={() => setStep('who_paid')} insets={insets} />
       <ScrollView contentContainerStyle={styles.scroll}>
 
-        {ocrItems.length > 0 && (
-          <Input
-            label="Description (optionnel)"
-            placeholder="Ticket La Stanza"
-            value={description}
-            onChangeText={setDescription}
-          />
-        )}
+        {/* Description — toujours visible au summary, OCR ou manuel */}
+        <Input
+          label={ocrItems.length > 0 ? 'Description (optionnel)' : 'Description'}
+          placeholder="Ticket La Stanza, dîner, courses…"
+          value={description}
+          onChangeText={setDescription}
+        />
 
         {/* Payé en caisse */}
         <Card style={{ marginBottom: 12 }}>
@@ -635,6 +822,13 @@ export default function AddExpenseScreen() {
                 </View>
               );
             })}
+            {unassignedItems.length > 0 && (
+              <View style={styles.unassignedBanner}>
+                <Text style={styles.unassignedBannerText}>
+                  ⏳ {unassignedItems.length} article{unassignedItems.length > 1 ? 's' : ''} non assigné{unassignedItems.length > 1 ? 's' : ''} — la dépense sera marquée "à compléter"
+                </Text>
+              </View>
+            )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total scanné</Text>
               <Text style={styles.totalAmt}>{totalAmount.toFixed(2)} CHF</Text>
@@ -683,14 +877,11 @@ export default function AddExpenseScreen() {
         {correctionCount > 0 && (
           <Notice variant="amber" text={`${correctionCount} correction(s) OCR enregistrée(s). Merci !`} />
         )}
-        {ocrItems.length > 0 && Object.keys(ocrSplitByMember).length === 0 && (
-          <Notice variant="amber" text="Aucun article assigné — tout le monde partage à égalité." />
-        )}
 
         <Button
-          label="Confirmer la dépense →"
+          label={editMode ? '✓ Mettre à jour la dépense' : 'Confirmer la dépense →'}
           onPress={handleSubmit}
-          loading={createMutation.isPending}
+          loading={createMutation.isPending || updateMutation.isPending}
           style={{ marginTop: 4, marginBottom: Math.max(insets.bottom, 16) }}
         />
         <Button label="← Modifier les payeurs" onPress={() => setStep('who_paid')} variant="ghost" />
@@ -699,11 +890,9 @@ export default function AddExpenseScreen() {
   );
 }
 
-// ── Header avec safe area ──────────────────────────────────────────────────
+// ── Header ─────────────────────────────────────────────────────────────────
 
-function Header({
-  title, onBack, insets,
-}: {
+function Header({ title, onBack, insets }: {
   title: string;
   onBack: () => void;
   insets: { top: number; bottom: number };
@@ -723,7 +912,7 @@ function Header({
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────────────
+// ── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
@@ -734,142 +923,93 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full,
-    minWidth: 70,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full, minWidth: 70,
   },
   backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
-  title: {
-    fontSize: 15, fontWeight: '600', color: colors.text,
-    flex: 1, textAlign: 'center', marginHorizontal: 8,
-  },
+  title: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 80, paddingTop: 16 },
 
-  fieldLabel: {
-    fontSize: 11, fontWeight: '500', color: colors.text3,
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4,
-  },
+  fieldLabel: { fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
   hint: { fontSize: 11, color: colors.text3, marginBottom: 8, marginTop: -4 },
 
-  // Select
   modeGrid: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  modeCard: {
-    flex: 1, backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border,
-    borderRadius: radius.md, padding: 20, alignItems: 'center',
-  },
+  modeCard: { flex: 1, backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 20, alignItems: 'center' },
   modeCardFeat: { backgroundColor: colors.accent, borderColor: colors.accent },
   modeIcon: { fontSize: 28, marginBottom: 8 },
   modeLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
   modeSub: { fontSize: 11, color: colors.text3, marginTop: 2 },
 
-  // Split mode toggle
-  splitModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  splitModeBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: radius.sm,
-    borderWidth: 1, borderColor: colors.border, alignItems: 'center',
-    backgroundColor: colors.surface,
+  // Items OCR
+  itemCard: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
+  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  itemName: { fontSize: 14, fontWeight: '600', color: colors.text, flex: 1 },
+  itemPrice: { fontSize: 14, fontFamily: 'monospace', color: colors.accent2, fontWeight: '600' },
+  itemLabel: { fontSize: 11, color: colors.text3, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  itemUnassigned: { fontSize: 11, color: colors.amber, marginTop: 6 },
+  itemAssigned: { fontSize: 11, color: colors.green, marginTop: 6 },
+
+  // Assign button
+  assignBtn: {
+    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
+    borderRadius: radius.sm, padding: 12, marginBottom: 12, alignItems: 'center',
   },
+  assignBtnText: { fontSize: 13, color: colors.accent2, fontWeight: '600' },
+
+  // Unassigned banner in summary
+  unassignedBanner: { backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: radius.sm, padding: 10, marginTop: 8 },
+  unassignedBannerText: { fontSize: 11, color: colors.amber, fontWeight: '500' },
+
+  splitModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  splitModeBtn: { flex: 1, paddingVertical: 10, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.surface },
   splitModeBtnOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },
   splitModeBtnText: { fontSize: 13, fontWeight: '500', color: colors.text2 },
 
-  // Chips
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
 
-  // Split rows
   previewTitle: { fontSize: 12, color: colors.text3, marginBottom: 10, fontWeight: '500' },
-  splitRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: colors.border,
-  },
+  splitRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   splitName: { flex: 1, fontSize: 13, color: colors.text },
   splitAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '500', color: colors.amber },
 
-  // Custom amounts
   customRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-  customInput: {
-    borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm,
-    paddingHorizontal: 10, paddingVertical: 6, color: colors.text,
-    fontFamily: 'monospace', fontSize: 14, width: 80, textAlign: 'right',
-  },
+  customInput: { borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 10, paddingVertical: 6, color: colors.text, fontFamily: 'monospace', fontSize: 14, width: 80, textAlign: 'right' },
   customCurrency: { fontSize: 12, color: colors.text3, width: 28 },
-  customTotalRow: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    borderTopWidth: 0.5, borderTopColor: colors.border2, marginTop: 8, paddingTop: 10,
-  },
+  customTotalRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 0.5, borderTopColor: colors.border2, marginTop: 8, paddingTop: 10 },
   customTotalLabel: { fontSize: 12, color: colors.text3 },
   customTotalAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '600' },
 
-  // Totals
-  totalRow: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    borderTopWidth: 0.5, borderTopColor: colors.border2, marginTop: 6, paddingTop: 8,
-  },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 0.5, borderTopColor: colors.border2, marginTop: 6, paddingTop: 8 },
   totalLabel: { fontSize: 12, color: colors.text3 },
   totalAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '500', color: colors.text },
 
-  // Context card
   contextTitle: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 4 },
   contextTotal: { fontSize: 20, fontFamily: 'monospace', fontWeight: '300', color: colors.accent2 },
   contextSub: { fontSize: 11, color: colors.text3, marginTop: 4 },
 
-  // Payer cards
-  payerLabelRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: 10, marginTop: 4,
-  },
-  addPayerBtn: {
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.accent,
-  },
+  payerLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 4 },
+  addPayerBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: colors.accent },
   addPayerText: { fontSize: 11, color: colors.accent2, fontWeight: '600' },
-  payerCard: {
-    backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border,
-    borderRadius: radius.md, padding: 14, marginBottom: 10,
-  },
-  payerCardLabel: {
-    fontSize: 10, color: colors.text3, fontWeight: '500',
-    textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6,
-  },
+  payerCard: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
+  payerCardLabel: { fontSize: 10, color: colors.text3, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
   payerChipList: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
-  payerChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 6,
-    borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.border,
-  },
+  payerChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.border },
   payerChipOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },
   payerChipText: { fontSize: 12, fontWeight: '500', color: colors.text2 },
   payerAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  payerAmountInput: {
-    borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm,
-    paddingHorizontal: 12, paddingVertical: 8, color: colors.text,
-    fontFamily: 'monospace', fontSize: 18, width: 110, textAlign: 'right',
-  },
+  payerAmountInput: { borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 8, color: colors.text, fontFamily: 'monospace', fontSize: 18, width: 110, textAlign: 'right' },
   payerAmountCurrency: { fontSize: 13, color: colors.text3 },
-  removePayerBtn: {
-    marginLeft: 'auto', paddingHorizontal: 10, paddingVertical: 6,
-    borderRadius: radius.sm, borderWidth: 0.5, borderColor: colors.border2,
-  },
+  removePayerBtn: { marginLeft: 'auto', paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm, borderWidth: 0.5, borderColor: colors.border2 },
   removePayerText: { fontSize: 11, color: colors.text3 },
-  shortcutBtn: {
-    marginTop: 8, paddingVertical: 6, paddingHorizontal: 10,
-    borderRadius: radius.sm, backgroundColor: colors.accentBg, alignSelf: 'flex-start',
-  },
+  shortcutBtn: { marginTop: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.sm, backgroundColor: colors.accentBg, alignSelf: 'flex-start' },
   shortcutText: { fontSize: 11, color: colors.accent2, fontWeight: '500' },
 
-  // Balance bar
   balanceBar: { borderRadius: radius.sm, padding: 10, marginBottom: 12, marginTop: 4 },
   balanceBarOk: { backgroundColor: 'rgba(52,211,153,0.08)' },
   balanceBarWarn: { backgroundColor: 'rgba(251,191,36,0.08)' },
   balanceBarText: { fontSize: 13, fontFamily: 'monospace', fontWeight: '500', textAlign: 'center' },
 
-  // Receipt
   receiptImageBlock: { marginBottom: 12 },
-  receiptImageBtn: {
-    backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
-    borderRadius: radius.sm, padding: 12, alignItems: 'center',
-  },
+  receiptImageBtn: { backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.sm, padding: 12, alignItems: 'center' },
   receiptImageBtnText: { fontSize: 13, color: colors.accent2, fontWeight: '500' },
-  receiptImage: {
-    width: '100%', height: 300, borderRadius: radius.sm,
-    marginTop: 8, backgroundColor: colors.surface3,
-  },
+  receiptImage: { width: '100%', height: 300, borderRadius: radius.sm, marginTop: 8, backgroundColor: colors.surface3 },
 });

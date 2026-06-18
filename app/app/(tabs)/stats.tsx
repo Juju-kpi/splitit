@@ -1,5 +1,11 @@
 // app/app/(tabs)/stats.tsx
-import React from 'react';
+// Ajouts vs original :
+//   - Section "Mes dépenses perso" : top mois, dépense moyenne, plus grand payeur
+//   - Section "Par groupe" enrichie : dépenses incomplètes, taux de complétion
+//   - Section "Activité" : timeline des 5 dernières dépenses tous groupes
+//   - Section "Qui me doit / à qui je dois" : vue globale consolidée
+
+import React, { useMemo } from 'react';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -30,6 +36,16 @@ function StatBox({ value, label, color = colors.accent2, sub }: {
   );
 }
 
+function isExpenseIncomplete(exp: any): boolean {
+  if (typeof exp.isComplete === 'boolean') return !exp.isComplete;
+  const items: any[] = exp.items || [];
+  if (items.length > 0 && items.some((i: any) => !i.assignedTo || i.assignedTo.length === 0)) return true;
+  const splits: any[] = exp.splits || [];
+  const splitTotal = splits.reduce((s: number, sp: any) => s + sp.amount, 0);
+  if (splits.length > 0 && Math.abs(splitTotal - exp.totalAmount) > 0.02) return true;
+  return false;
+}
+
 export default function StatsScreen() {
   const router = useRouter();
   const user = useAuthStore(s => s.user);
@@ -52,7 +68,7 @@ export default function StatsScreen() {
 
   const groupStats = (groups || []).map((g: any, i: number) => {
     const full = groupQueries[i]?.data;
-    if (!full) return { group: g, myShare: null, total: null, memberCount: g.members?.length || 0, paid: null };
+    if (!full) return { group: g, myShare: null, total: null, memberCount: g.members?.length || 0, paid: null, incomplete: 0, completionRate: null };
     const myMember = full.members?.find((m: any) => m.userId === user?.id);
     const myShare = full.expenses?.reduce((s: number, exp: any) => {
       const split = exp.splits?.find((sp: any) => sp.memberId === myMember?.id);
@@ -68,12 +84,82 @@ export default function StatsScreen() {
     const total = full.expenses?.reduce((s: number, exp: any) => s + exp.totalAmount, 0) ?? 0;
     const memberCount = full.members?.length || 0;
     const myBalance = myPaid - myShare;
-    return { group: g, myShare, myPaid, myBalance, total, memberCount, full };
+    const incompleteExps = (full.expenses || []).filter(isExpenseIncomplete);
+    const incomplete = incompleteExps.length;
+    const expCount = full.expenses?.length || 0;
+    const completionRate = expCount > 0 ? ((expCount - incomplete) / expCount) * 100 : 100;
+    return { group: g, myShare, myPaid, myBalance, total, memberCount, full, incomplete, completionRate };
   });
 
   const myTotalShare = groupStats.reduce((s, gs) => s + (gs.myShare || 0), 0);
   const myTotalPaid = groupStats.reduce((s, gs) => s + (gs.myPaid || 0), 0);
   const netBalance = myTotalPaid - myTotalShare;
+
+  // ── Toutes les dépenses, chronologiques ──────────────────────────────
+  const allExpenses = useMemo(() => {
+    const exps: any[] = [];
+    groupStats.forEach(gs => {
+      if (!gs.full) return;
+      (gs.full.expenses || []).forEach((exp: any) => {
+        exps.push({ ...exp, groupName: gs.group.name, groupEmoji: gs.group.emoji, groupId: gs.group.id });
+      });
+    });
+    return exps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [groupStats]);
+
+  // ── Dépenses du mois en cours ────────────────────────────────────────
+  const now = new Date();
+  const thisMonthExps = allExpenses.filter(exp => {
+    const d = new Date(exp.createdAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const thisMonthTotal = thisMonthExps.reduce((s, exp) => {
+    const myMemberInGroup = groupStats.find(gs => gs.group.id === exp.groupId)?.full?.members?.find((m: any) => m.userId === user?.id);
+    const mySplit = exp.splits?.find((sp: any) => sp.memberId === myMemberInGroup?.id);
+    return s + (mySplit?.amount || 0);
+  }, 0);
+
+  // ── Dépense moyenne ──────────────────────────────────────────────────
+  const avgExpense = allExpenses.length > 0
+    ? allExpenses.reduce((s, e) => s + e.totalAmount, 0) / allExpenses.length
+    : 0;
+
+  // ── Membre qui a le plus payé dans mes groupes ───────────────────────
+  const topPayerMap: Record<string, { name: string; total: number }> = {};
+  groupStats.forEach(gs => {
+    if (!gs.full) return;
+    (gs.full.expenses || []).forEach((exp: any) => {
+      (exp.payments || []).forEach((p: any) => {
+        const name = p.member?.displayName || '?';
+        if (!topPayerMap[name]) topPayerMap[name] = { name, total: 0 };
+        topPayerMap[name].total += p.amount;
+      });
+    });
+  });
+  const topPayers = Object.values(topPayerMap).sort((a, b) => b.total - a.total).slice(0, 3);
+
+  // ── Soldes globaux consolidés ────────────────────────────────────────
+  const globalDebts: Record<string, { name: string; amount: number; type: 'owe' | 'owed' }> = {};
+  groupStats.forEach(gs => {
+    if (!gs.full) return;
+    const myMember = gs.full.members?.find((m: any) => m.userId === user?.id);
+    if (!myMember) return;
+    (gs.full.balances || []).forEach((b: any) => {
+      if (b.fromMemberId === myMember.id) {
+        const key = `owe_${b.toMember?.displayName}`;
+        if (!globalDebts[key]) globalDebts[key] = { name: b.toMember?.displayName, amount: 0, type: 'owe' };
+        globalDebts[key].amount += b.amount;
+      } else if (b.toMemberId === myMember.id) {
+        const key = `owed_${b.fromMember?.displayName}`;
+        if (!globalDebts[key]) globalDebts[key] = { name: b.fromMember?.displayName, amount: 0, type: 'owed' };
+        globalDebts[key].amount += b.amount;
+      }
+    });
+  });
+  const oweList = Object.values(globalDebts).filter(d => d.type === 'owe').sort((a, b) => b.amount - a.amount);
+  const owedList = Object.values(globalDebts).filter(d => d.type === 'owed').sort((a, b) => b.amount - a.amount);
+
+  const totalIncomplete = groupStats.reduce((s, gs) => s + (gs.incomplete || 0), 0);
 
   return (
     <View style={styles.screen}>
@@ -124,13 +210,127 @@ export default function StatsScreen() {
               </View>
             </>
           )}
+          {totalIncomplete > 0 && (
+            <View style={styles.incompleteAlert}>
+              <Text style={styles.incompleteAlertText}>
+                ⏳ {totalIncomplete} dépense{totalIncomplete > 1 ? 's' : ''} à compléter dans tes groupes
+              </Text>
+            </View>
+          )}
         </Card>
+
+        {/* Ce mois-ci */}
+        {allExpenses.length > 0 && (
+          <>
+            <SectionLabel label="Ce mois-ci" />
+            <Card>
+              <View style={styles.statRow}>
+                <StatBox
+                  value={thisMonthExps.length}
+                  label="Dépenses"
+                  color={colors.accent2}
+                />
+                <View style={styles.statDivider} />
+                <StatBox
+                  value={thisMonthTotal.toFixed(0)}
+                  label="Ma part CHF"
+                  sub="CHF"
+                  color={colors.amber}
+                />
+                <View style={styles.statDivider} />
+                <StatBox
+                  value={avgExpense.toFixed(0)}
+                  label="Moy. dépense"
+                  sub="CHF"
+                  color={colors.text2}
+                />
+              </View>
+            </Card>
+          </>
+        )}
+
+        {/* Soldes globaux */}
+        {(oweList.length > 0 || owedList.length > 0) && (
+          <>
+            <SectionLabel label="Mes soldes globaux" />
+            <Card>
+              {owedList.length > 0 && (
+                <>
+                  <Text style={styles.debtHeader}>✓ On me doit</Text>
+                  {owedList.map((d, i) => (
+                    <View key={i} style={styles.debtRow}>
+                      <Text style={styles.debtName}>{d.name}</Text>
+                      <Text style={[styles.debtAmt, { color: colors.green }]}>+{d.amount.toFixed(2)} CHF</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+              {owedList.length > 0 && oweList.length > 0 && <View style={styles.debtSeparator} />}
+              {oweList.length > 0 && (
+                <>
+                  <Text style={styles.debtHeader}>⚡ Je dois</Text>
+                  {oweList.map((d, i) => (
+                    <View key={i} style={styles.debtRow}>
+                      <Text style={styles.debtName}>{d.name}</Text>
+                      <Text style={[styles.debtAmt, { color: colors.red }]}>−{d.amount.toFixed(2)} CHF</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+            </Card>
+          </>
+        )}
+
+        {/* Top payeurs */}
+        {topPayers.length > 0 && (
+          <>
+            <SectionLabel label="Top payeurs (tous groupes)" />
+            <Card>
+              {topPayers.map((p, i) => (
+                <View key={i} style={styles.topPayerRow}>
+                  <Text style={styles.topPayerRank}>{['🥇', '🥈', '🥉'][i]}</Text>
+                  <Text style={styles.topPayerName}>{p.name}</Text>
+                  <Text style={styles.topPayerAmt}>{p.total.toFixed(2)} CHF</Text>
+                </View>
+              ))}
+              <MiniBar value={topPayers[0]?.total || 0} max={topPayers[0]?.total || 1} color={colors.amber} />
+            </Card>
+          </>
+        )}
+
+        {/* Activité récente */}
+        {allExpenses.length > 0 && (
+          <>
+            <SectionLabel label="Activité récente" />
+            <Card style={{ padding: 0, overflow: 'hidden' }}>
+              {allExpenses.slice(0, 6).map((exp, i) => (
+                <TouchableOpacity
+                  key={exp.id}
+                  style={[styles.activityRow, i > 0 && styles.activityRowBorder]}
+                  onPress={() => router.push(`/group/${exp.groupId}`)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.activityIcon}>
+                    <Text style={{ fontSize: 16 }}>
+                      {isExpenseIncomplete(exp) ? '⏳' : exp.receiptImageUrl ? '🧾' : '✏️'}
+                    </Text>
+                  </View>
+                  <View style={styles.activityInfo}>
+                    <Text style={styles.activityDesc} numberOfLines={1}>{exp.description}</Text>
+                    <Text style={styles.activityGroup}>{exp.groupEmoji} {exp.groupName}</Text>
+                  </View>
+                  <Text style={styles.activityAmt}>{exp.totalAmount.toFixed(2)} CHF</Text>
+                </TouchableOpacity>
+              ))}
+            </Card>
+          </>
+        )}
 
         {/* Per-group breakdown */}
         {totalGroups > 0 && (
           <>
             <SectionLabel label="Par groupe" />
-            {groupStats.map(({ group: g, myShare, myPaid, myBalance, total, memberCount }) => (
+            {groupStats.map(({ group: g, myShare, myPaid, myBalance, total, memberCount, incomplete, completionRate }) => (
               <TouchableOpacity key={g.id} activeOpacity={0.78} onPress={() => router.push(`/group/${g.id}`)}>
                 <View style={styles.groupCard}>
                   <View style={styles.groupAccentBar} />
@@ -159,6 +359,7 @@ export default function StatsScreen() {
                         <Text style={styles.groupStatLabel}>ma part CHF</Text>
                       </View>
                     </View>
+
                     {total !== null && total > 0 && myShare !== null && (
                       <View style={{ marginTop: 10 }}>
                         <MiniBar value={myShare} max={total} color={colors.accent} />
@@ -167,8 +368,28 @@ export default function StatsScreen() {
                         </Text>
                       </View>
                     )}
+
+                    {/* Taux de complétion des dépenses */}
+                    {g.expenseCount > 0 && (
+                      <View style={{ marginTop: 8 }}>
+                        <MiniBar
+                          value={completionRate ?? 100}
+                          max={100}
+                          color={completionRate === 100 ? colors.green : colors.amber}
+                        />
+                        <Text style={styles.barLabel}>
+                          {completionRate === 100
+                            ? '✓ Toutes les dépenses sont complètes'
+                            : `${(completionRate ?? 0).toFixed(0)}% complet — ${incomplete} à remplir`}
+                        </Text>
+                      </View>
+                    )}
+
                     {myBalance !== null && myBalance !== undefined && Math.abs(myBalance) > 0.01 && (
-                      <View style={[styles.balanceBadge, { backgroundColor: myBalance > 0 ? colors.greenBg : colors.redBg, borderColor: myBalance > 0 ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)' }]}>
+                      <View style={[styles.balanceBadge, {
+                        backgroundColor: myBalance > 0 ? colors.greenBg : colors.redBg,
+                        borderColor: myBalance > 0 ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)',
+                      }]}>
                         <Text style={[styles.balanceBadgeText, { color: myBalance > 0 ? colors.green : colors.red }]}>
                           {myBalance > 0 ? `✓ On me doit ${myBalance.toFixed(2)} CHF` : `⚡ Je dois ${Math.abs(myBalance).toFixed(2)} CHF`}
                         </Text>
@@ -220,14 +441,12 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: spacing.xl },
 
-  // Hero
   heroCard: { marginTop: 16 },
   heroLabel: { fontSize: 11, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1.3, marginBottom: 8 },
   heroAmount: { fontSize: 44, fontWeight: '200', fontFamily: 'monospace', letterSpacing: -1 },
   heroCurrency: { fontSize: 18, color: colors.text3 },
   heroSub: { fontSize: 12, color: colors.text3, marginTop: 6, fontWeight: '500' },
 
-  // Stats
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 8 },
   statBox: { alignItems: 'center', flex: 1 },
   statValue: { fontSize: 26, fontWeight: '300', fontFamily: 'monospace' },
@@ -236,7 +455,32 @@ const styles = StyleSheet.create({
   statDivider: { width: 0.5, height: 44, backgroundColor: colors.glassBorder },
   globalSeparator: { height: 0.5, backgroundColor: colors.glassBorder, marginVertical: 8 },
 
-  // Group cards
+  // Incomplete alert
+  incompleteAlert: { marginTop: 12, backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)' },
+  incompleteAlertText: { fontSize: 12, color: colors.amber, fontWeight: '600', textAlign: 'center' },
+
+  // Debts
+  debtHeader: { fontSize: 12, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+  debtRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: colors.glassBorder },
+  debtName: { fontSize: 14, color: colors.text },
+  debtAmt: { fontSize: 14, fontFamily: 'monospace', fontWeight: '600' },
+  debtSeparator: { height: 0.5, backgroundColor: colors.glassBorder, marginVertical: 12 },
+
+  // Top payers
+  topPayerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: colors.glassBorder },
+  topPayerRank: { fontSize: 20 },
+  topPayerName: { flex: 1, fontSize: 14, color: colors.text, fontWeight: '500' },
+  topPayerAmt: { fontSize: 14, fontFamily: 'monospace', color: colors.amber, fontWeight: '500' },
+
+  // Activity feed
+  activityRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
+  activityRowBorder: { borderTopWidth: 0.5, borderTopColor: colors.glassBorder },
+  activityIcon: { width: 34, height: 34, borderRadius: 8, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
+  activityInfo: { flex: 1 },
+  activityDesc: { fontSize: 13, fontWeight: '500', color: colors.text },
+  activityGroup: { fontSize: 11, color: colors.text3, marginTop: 2 },
+  activityAmt: { fontSize: 13, fontFamily: 'monospace', color: colors.text2 },
+
   groupCard: {
     flexDirection: 'row', marginBottom: 10, borderRadius: radius.md, overflow: 'hidden',
     backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorder, ...shadows.card,
@@ -254,17 +498,14 @@ const styles = StyleSheet.create({
   balanceBadge: { borderRadius: radius.sm, padding: 8, marginTop: 10, alignItems: 'center', borderWidth: 1 },
   balanceBadgeText: { fontSize: 12, fontWeight: '700' },
 
-  // Bar
   barTrack: { height: 4, backgroundColor: colors.surface2, borderRadius: 2, overflow: 'hidden', marginTop: 8 },
   barFill: { height: '100%', borderRadius: 2 },
   barLabel: { fontSize: 10, color: colors.text3, marginTop: 5 },
 
-  // OCR
   ocrHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   ocrTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
   ocrVersion: { fontSize: 12, color: colors.accent2, fontFamily: 'monospace' },
 
-  // Empty
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyEmoji: { fontSize: 48, marginBottom: 16 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },

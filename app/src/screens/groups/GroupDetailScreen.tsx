@@ -1,4 +1,11 @@
 // app/src/screens/groups/GroupDetailScreen.tsx
+// Changements vs original :
+//   - Badge "⏳ À compléter" sur les dépenses incomplètes
+//     (items non assignés OU somme splits ≠ totalAmount)
+//   - Tap sur dépense incomplète → AddExpenseScreen en mode edit
+//   - Compteur "X dépense(s) à compléter" dans le résumé du groupe
+//   (Tout le reste est identique à l'original)
+
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
@@ -12,6 +19,26 @@ import { Avatar, Card, SectionLabel, Divider, Button } from '../../components/ui
 import { colors, spacing, shadows, radius } from '../../theme';
 import { Expense, Balance } from '../../../../shared/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// ── Helper : dépense incomplète ? ─────────────────────────────────────────
+// Miroir client-side de computeIsComplete côté backend.
+// On ne bloque pas l'affichage — on ajoute juste un badge.
+function isExpenseIncomplete(exp: any): boolean {
+  // Si le backend a déjà calculé isComplete, on lui fait confiance
+  if (typeof exp.isComplete === 'boolean') return !exp.isComplete;
+
+  // Sinon on calcule côté client en fallback
+  const items: any[] = exp.items || [];
+  if (items.length > 0) {
+    const hasUnassigned = items.some((item: any) => !item.assignedTo || item.assignedTo.length === 0);
+    if (hasUnassigned) return true;
+  }
+  const splits: any[] = exp.splits || [];
+  const splitTotal = splits.reduce((s: number, sp: any) => s + sp.amount, 0);
+  if (splits.length > 0 && Math.abs(splitTotal - exp.totalAmount) > 0.02) return true;
+
+  return false;
+}
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -51,6 +78,9 @@ export default function GroupDetailScreen() {
     const mySplit = exp.splits?.find((s: any) => s.memberId === myMember?.id);
     return sum + (mySplit?.amount || 0);
   }, 0);
+
+  // Compte les dépenses incomplètes
+  const incompleteCount = (group.expenses || []).filter(isExpenseIncomplete).length;
 
   async function handleShare() {
     try {
@@ -111,7 +141,6 @@ export default function GroupDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Header — safe area gérée ici */}
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -182,6 +211,15 @@ export default function GroupDetailScreen() {
                   <Text style={styles.summaryLabel}>Dépenses</Text>
                 </View>
               </View>
+
+              {/* Badge dépenses à compléter */}
+              {incompleteCount > 0 && (
+                <View style={styles.incompleteBanner}>
+                  <Text style={styles.incompleteBannerText}>
+                    ⏳ {incompleteCount} dépense{incompleteCount > 1 ? 's' : ''} à compléter
+                  </Text>
+                </View>
+              )}
             </Card>
           </>
         )}
@@ -290,25 +328,46 @@ export default function GroupDetailScreen() {
 
         {/* Expenses list */}
         <SectionLabel label="Dépenses" />
-        {(group.expenses || []).map((exp: Expense) => {
-          const payments = (exp as any).payments || [];
+        {(group.expenses || []).map((exp: any) => {
+          const payments = exp.payments || [];
           const payerLabel = payments.length > 1
             ? payments.map((p: any) => `${p.member?.displayName} (${p.amount.toFixed(0)})`).join(', ')
             : payments[0]?.member?.displayName ?? '?';
+
+          const incomplete = isExpenseIncomplete(exp);
 
           return (
             <TouchableOpacity
               key={exp.id}
               activeOpacity={0.8}
-              onPress={() => router.push(`/expense/${exp.id}`)}
+              onPress={() => {
+                if (incomplete) {
+                  // Mode edit : tous les membres peuvent compléter
+                  router.push(`/expense/add?groupId=${id}&expenseId=${exp.id}&isEdit=true`);
+                } else {
+                  router.push(`/expense/${exp.id}`);
+                }
+              }}
             >
-              <View style={styles.expenseItem}>
-                <View style={[styles.expIcon, { backgroundColor: colors.accentBg }]}>
-                  <Text style={{ fontSize: 18 }}>{exp.receiptImageUrl ? '🧾' : '✏️'}</Text>
+              <View style={[styles.expenseItem, incomplete && styles.expenseItemIncomplete]}>
+                <View style={[styles.expIcon, { backgroundColor: incomplete ? 'rgba(251,191,36,0.12)' : colors.accentBg }]}>
+                  <Text style={{ fontSize: 18 }}>
+                    {incomplete ? '⏳' : exp.receiptImageUrl ? '🧾' : '✏️'}
+                  </Text>
                 </View>
                 <View style={styles.expInfo}>
-                  <Text style={styles.expName}>{exp.description}</Text>
+                  <View style={styles.expNameRow}>
+                    <Text style={styles.expName}>{exp.description}</Text>
+                    {incomplete && (
+                      <View style={styles.incompleteBadge}>
+                        <Text style={styles.incompleteBadgeText}>À compléter</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.expSub}>payé par {payerLabel}</Text>
+                  {incomplete && (
+                    <Text style={styles.expCompleteHint}>Appuie pour compléter →</Text>
+                  )}
                 </View>
                 <View style={styles.expRight}>
                   <Text style={styles.expAmt}>{exp.totalAmount.toFixed(2)} CHF</Text>
@@ -327,7 +386,7 @@ export default function GroupDetailScreen() {
         )}
       </ScrollView>
 
-      {/* FAB — safe area en bas */}
+      {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, { bottom: Math.max(insets.bottom, 16) + 16 }]}
         onPress={() => router.push(`/expense/add?groupId=${id}`)}
@@ -399,21 +458,18 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36,
-    justifyContent: 'center',
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
   },
   backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
   title: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   membersBtn: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border2,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36,
-    justifyContent: 'center',
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
   },
   membersBtnText: { color: colors.text2, fontSize: 11, fontWeight: '600' },
   shareBtn: {
     backgroundColor: colors.accentBg, borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.3)',
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, minHeight: 36,
-    justifyContent: 'center',
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
   },
   shareBtnText: { color: colors.accent2, fontSize: 12, fontWeight: '600' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 120 },
@@ -431,11 +487,15 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 11, color: colors.text3, marginTop: 4, fontWeight: '500' },
   summaryDivider: { width: 0.5, height: 40, backgroundColor: colors.border },
 
-  balancesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  logBtn: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.border2, marginBottom: 4,
+  // Bannière dépenses à compléter dans le résumé
+  incompleteBanner: {
+    marginTop: 14, backgroundColor: 'rgba(251,191,36,0.08)',
+    borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)',
   },
+  incompleteBannerText: { fontSize: 13, color: colors.amber, fontWeight: '600', textAlign: 'center' },
+
+  balancesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  logBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border2, marginBottom: 4 },
   logBtnText: { fontSize: 11, color: colors.text2, fontWeight: '500' },
   balanceHint: { fontSize: 11, color: colors.text3, marginBottom: 12 },
   balanceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
@@ -447,29 +507,34 @@ const styles = StyleSheet.create({
   balanceArrowLabel: { fontSize: 11, color: colors.text3, marginTop: 1 },
   balanceAmt: { fontSize: 14, fontFamily: 'monospace', color: colors.amber, fontWeight: '600' },
   balanceAmtMe: { color: colors.accent2 },
-
-  balanceDetail: {
-    backgroundColor: colors.surface2, borderRadius: radius.sm,
-    padding: 12, marginBottom: 8, gap: 6,
-  },
+  balanceDetail: { backgroundColor: colors.surface2, borderRadius: radius.sm, padding: 12, marginBottom: 8, gap: 6 },
   detailLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   detailDesc: { fontSize: 12, color: colors.text2, flex: 1 },
   detailAmt: { fontSize: 12, fontFamily: 'monospace', color: colors.amber, marginLeft: 8 },
-  settleBtn: {
-    marginTop: 8, backgroundColor: colors.accent, borderRadius: radius.sm,
-    padding: 10, alignItems: 'center',
-  },
+  settleBtn: { marginTop: 8, backgroundColor: colors.accent, borderRadius: radius.sm, padding: 10, alignItems: 'center' },
   settleBtnText: { fontSize: 13, color: colors.white, fontWeight: '600' },
 
+  // Expense items
   expenseItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border,
     borderRadius: 14, padding: 14, marginBottom: 8,
   },
+  expenseItemIncomplete: {
+    borderColor: 'rgba(251,191,36,0.35)',
+    backgroundColor: 'rgba(251,191,36,0.03)',
+  },
   expIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   expInfo: { flex: 1 },
+  expNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   expName: { fontSize: 14, fontWeight: '500', color: colors.text },
+  incompleteBadge: {
+    backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: radius.full,
+    paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)',
+  },
+  incompleteBadgeText: { fontSize: 10, color: colors.amber, fontWeight: '700' },
   expSub: { fontSize: 11, color: colors.text3, marginTop: 2 },
+  expCompleteHint: { fontSize: 10, color: colors.amber, marginTop: 3, fontWeight: '500' },
   expRight: { alignItems: 'flex-end' },
   expAmt: { fontSize: 15, fontWeight: '500', fontFamily: 'monospace', color: colors.text },
 
@@ -487,20 +552,11 @@ const styles = StyleSheet.create({
   fabText: { color: colors.white, fontSize: 28, lineHeight: 32 },
 
   modalScreen: { flex: 1, backgroundColor: colors.bg },
-  modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: spacing.xl, borderBottomWidth: 0.5, borderBottomColor: colors.border,
-  },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.xl, borderBottomWidth: 0.5, borderBottomColor: colors.border },
   modalTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  modalClose: {
-    paddingHorizontal: 12, paddingVertical: 6,
-    backgroundColor: colors.surface2, borderRadius: radius.full,
-  },
+  modalClose: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.surface2, borderRadius: radius.full },
   modalCloseText: { fontSize: 13, color: colors.text2 },
-  logEntry: {
-    backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border,
-    borderRadius: radius.md, padding: 14, marginBottom: 10,
-  },
+  logEntry: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
   logEntryMe: { borderColor: colors.accent, backgroundColor: colors.accentBg },
   logEntryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   logEntryTitle: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 1 },
