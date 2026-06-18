@@ -367,7 +367,7 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
     await prisma.expensePayment.createMany({
       data: payments.map(p => ({ memberId: p.memberId, amount: p.amount, expenseId: req.params.id })),
     });
-    const paidByMemberId = primaryPayer(payments);
+    const paidByMemberId = primaryPayer(payments as { memberId: string; amount: number }[]);
     await prisma.expense.update({ where: { id: req.params.id }, data: { paidByMemberId } });
   }
 
