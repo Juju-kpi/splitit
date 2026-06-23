@@ -12,6 +12,7 @@ import { colors, spacing, radius } from '../../src/theme';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuthStore } from '../../src/store/authStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ExpenseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +22,7 @@ export default function ExpenseDetailScreen() {
 
   const [editing, setEditing] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Edit state
   const [editDesc, setEditDesc] = useState('');
@@ -100,7 +102,7 @@ export default function ExpenseDetailScreen() {
   if (editing) {
     return (
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) + 6 }]}>
           <TouchableOpacity onPress={() => setEditing(false)} style={styles.backBtn}>
             <Text style={styles.backText}>← Annuler</Text>
           </TouchableOpacity>
@@ -165,7 +167,7 @@ export default function ExpenseDetailScreen() {
   // ── View mode ────────────────────────────────────────────────────────
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) + 6 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>← Retour</Text>
         </TouchableOpacity>
