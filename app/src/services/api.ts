@@ -1,5 +1,7 @@
 // app/src/services/api.ts
-// Ajout vs original : authApi.deleteAccount
+// Changements vs version précédente :
+//   - groupsApi.joinPreview : GET /groups/join-preview/:code
+//   - groupsApi.join        : accepte claimMemberId optionnel
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
@@ -84,13 +86,11 @@ export const authApi = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }).then(r => r.data.data),
   me: () => api.get('/auth/me').then(r => r.data.data),
-  logout: (refreshToken: string) =>
-    api.post('/auth/logout', { refreshToken }),
+  logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
   forgotPassword: (email: string) =>
     api.post('/auth/forgot-password', { email }).then(r => r.data.data),
   resetPassword: (token: string, password: string) =>
     api.post('/auth/reset-password', { token, password }).then(r => r.data.data),
-  // NOUVEAU
   deleteAccount: (password: string) =>
     api.delete('/auth/account', { data: { password } }).then(r => r.data.data),
 };
@@ -100,8 +100,15 @@ export const groupsApi = {
   get: (id: string) => api.get(`/groups/${id}`).then(r => r.data.data),
   create: (name: string, emoji: string, displayName: string) =>
     api.post('/groups', { name, emoji, displayName }).then(r => r.data.data),
-  join: (inviteCode: string, displayName: string) =>
-    api.post(`/groups/join/${inviteCode}`, { displayName }).then(r => r.data.data),
+
+  // NOUVEAU — récupère le nom du groupe + membres sans compte avant de rejoindre
+  joinPreview: (inviteCode: string) =>
+    api.get(`/groups/join-preview/${inviteCode}`).then(r => r.data.data),
+
+  // Étendu — claimMemberId optionnel
+  join: (inviteCode: string, displayName: string, claimMemberId?: string) =>
+    api.post(`/groups/join/${inviteCode}`, { displayName, claimMemberId }).then(r => r.data.data),
+
   addMember: (groupId: string, displayName: string) =>
     api.post(`/groups/${groupId}/members`, { displayName }).then(r => r.data.data),
 };
@@ -115,7 +122,6 @@ export const expensesApi = {
     api.patch(`/expenses/${id}/settle`, { memberId }).then(r => r.data.data),
   update: (id: string, payload: any) =>
     api.put(`/expenses/${id}`, payload).then(r => r.data.data),
-  // NOUVEAU
   updateItems: (id: string, payload: {
     items: Array<{
       name: string; price: number; ocrRaw?: string;
