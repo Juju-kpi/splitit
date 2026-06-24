@@ -3,7 +3,7 @@
     "name": "Splitit",
     "owner": "areskpi",
     "slug": "splitit",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "scheme": "splitit",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
