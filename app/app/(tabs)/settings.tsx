@@ -17,6 +17,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 import { useAuthStore } from '../../src/store/authStore';
 import { ocrApi, authApi, userApi } from '../../src/services/api';
 import { Card, GlassCard, SectionLabel, Notice, ScreenHeader, Avatar } from '../../src/components/ui';
@@ -48,6 +49,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -63,7 +66,7 @@ async function registerForPushNotifications(): Promise<string | null> {
   if (finalStatus !== 'granted') return null;
 
   const token = await Notifications.getExpoPushTokenAsync({
-    projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
+    projectId: Constants.expoConfig?.extra?.eas?.projectId,
   });
   return token.data;
 }
@@ -142,7 +145,7 @@ export default function SettingsScreen() {
       const stored = await Notifications.getPermissionsAsync();
       if (stored.status === 'granted') {
         const token = await Notifications.getExpoPushTokenAsync({
-          projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
+          projectId: Constants.expoConfig?.extra?.eas?.projectId,
         }).catch(() => null);
         if (token) {
           setPushToken(token.data);
