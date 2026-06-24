@@ -33,6 +33,10 @@
     },
     "plugins": [
       "expo-router",
+       ["expo-notifications", {
+    "icon": "./assets/notification-icon.png",
+    "color": "#4F46E5"
+  }],
       "expo-secure-store",
       [
         "expo-camera",

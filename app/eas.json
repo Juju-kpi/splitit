@@ -18,7 +18,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://splitit-9x32.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://splitit-9x32.onrender.com",
+        "EXPO_PUBLIC_PROJECT_ID": "1278a9ec-153f-47ec-ba0c-f36fad5d5fcc"
       }
     }
   }

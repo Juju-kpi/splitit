@@ -142,3 +142,23 @@ export const ocrApi = {
     api.post('/ocr/correction', correction).then(r => r.data.data),
   getStats: () => api.get('/ocr/stats').then(r => r.data.data),
 };
+
+// Ajouts à app/src/services/api.ts
+// Colle ces méthodes dans le fichier existant
+
+export const userApi = {
+  // Met à jour avatarColor (+ sync GroupMember)
+  updateProfile: (payload: { avatarColor?: string; username?: string }) =>
+    api.patch('/users/profile', payload).then(r => r.data.data),
+
+  // Stocke push token + préférences notifs
+  updateNotificationPrefs: (payload: {
+    pushToken: string | null;
+    notifExpense: boolean;
+    notifReminder: boolean;
+  }) => api.patch('/users/notification-prefs', payload).then(r => r.data.data),
+
+  // Demande export PDF par email
+  requestDataExport: () =>
+    api.post('/users/export').then(r => r.data.data),
+};
