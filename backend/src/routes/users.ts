@@ -80,6 +80,7 @@ router.post('/export', async (req: AuthRequest, res: Response) => {
                 orderBy: { createdAt: 'desc' },
                 take: 50,
               },
+              _count: { select: { members: true } },
             },
           },
         },
@@ -115,7 +116,7 @@ router.post('/export', async (req: AuthRequest, res: Response) => {
       <div style="margin-bottom:32px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
         <div style="background:#0D1128;color:white;padding:12px 16px">
           <strong>${gm.group.emoji} ${gm.group.name}</strong>
-          <span style="float:right;opacity:0.7">${gm.group.members?.length || 0} membres</span>
+          <span style="float:right;opacity:0.7">${gm.group._count?.members || 0} membres</span>
         </div>
         <div style="padding:12px 16px;background:#f9fafb;display:flex;gap:32px">
           <div><div style="font-size:11px;color:#666">Total groupe</div><div style="font-size:18px;font-weight:600">${groupTotal.toFixed(2)} CHF</div></div>
