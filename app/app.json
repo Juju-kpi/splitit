@@ -24,7 +24,7 @@
       }
     },
     "android": {
-      "versionCode": 2,
+      "versionCode": 3,
       "package": "com.julien.splitit",
       "permissions": [
         "android.permission.CAMERA",
