@@ -394,4 +394,97 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
   res.json({ data: updated });
 });
 
+// Ajouts à backend/src/routes/expenses.ts
+// Colle ces 2 routes avant le `export default router`
+
+// ── POST /api/expenses/:id/duplicate ─────────────────────────────────────
+// Crée une copie exacte de la dépense (mêmes items, splits, payeurs)
+// La copie est marquée isComplete=false pour permettre d'ajuster
+router.post('/:id/duplicate', async (req: AuthRequest, res: Response) => {
+  const original = await prisma.expense.findUnique({
+    where: { id: req.params.id },
+    include: {
+      items: { include: { assignedTo: true } },
+      splits: true,
+      payments: true,
+    },
+  });
+  if (!original) return res.status(404).json({ error: 'Not found' });
+
+  const membership = await prisma.groupMember.findFirst({
+    where: { groupId: original.groupId, userId: req.userId },
+  });
+  if (!membership) return res.status(403).json({ error: 'Forbidden' });
+
+  const copy = await prisma.expense.create({
+    data: {
+      groupId: original.groupId,
+      description: `${original.description} (copie)`,
+      totalAmount: original.totalAmount,
+      currency: original.currency,
+      paidByMemberId: original.paidByMemberId,
+      splitType: original.splitType,
+      ocrConfidence: original.ocrConfidence,
+      isComplete: false,
+      items: {
+        create: original.items.map(item => ({
+          name: item.name,
+          price: item.price,
+          ocrRaw: item.ocrRaw,
+          ocrConfidence: item.ocrConfidence,
+          corrected: item.corrected,
+          assignedTo: {
+            create: item.assignedTo.map(a => ({ memberId: a.memberId })),
+          },
+        })),
+      },
+      splits: {
+        create: original.splits.map(s => ({
+          memberId: s.memberId,
+          amount: s.amount,
+        })),
+      },
+      payments: {
+        create: original.payments.map(p => ({
+          memberId: p.memberId,
+          amount: p.amount,
+        })),
+      },
+    },
+    include: {
+      payments: { include: { member: true } },
+      items: { include: { assignedTo: { include: { member: true } } } },
+      splits: { include: { member: true } },
+    },
+  });
+
+  res.status(201).json({ data: copy });
+});
+
+// ── PATCH /api/expenses/:id/note ─────────────────────────────────────────
+// Met à jour la note/commentaire d'une dépense
+// (géré via PUT /:id existant — le champ `note` est déjà dans le schema)
+// Cette route est un alias pratique
+router.patch('/:id/note', async (req: AuthRequest, res: Response) => {
+  const schema = z.object({ note: z.string().max(500) });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
+
+  const expense = await prisma.expense.findUnique({ where: { id: req.params.id } });
+  if (!expense) return res.status(404).json({ error: 'Not found' });
+
+  const membership = await prisma.groupMember.findFirst({
+    where: { groupId: expense.groupId, userId: req.userId },
+  });
+  if (!membership) return res.status(403).json({ error: 'Forbidden' });
+
+  const updated = await prisma.expense.update({
+    where: { id: req.params.id },
+    data: { note: parsed.data.note },
+  });
+
+  res.json({ data: updated });
+});
+
+
 export default router;
