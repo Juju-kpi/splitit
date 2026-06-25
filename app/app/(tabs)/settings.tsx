@@ -26,7 +26,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.2.1';
 const PRIVACY_URL = 'https://juju-kpi.github.io/splitit/privacy-policy.md';
 
 // 10 couleurs de palette
@@ -453,7 +453,7 @@ export default function SettingsScreen() {
           <SettingRow
             icon="💬"
             label="Envoyer un feedback"
-            onPress={() => Linking.openURL('mailto:hello@splitit.app?subject=Feedback SplitIt')}
+            onPress={() => Linking.openURL('mailto:ares88775@gmail.com?subject=Feedback SplitIt')}
           />
         </Card>
 
