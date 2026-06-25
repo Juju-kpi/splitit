@@ -25,6 +25,8 @@ import { colors, spacing, radius } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { t } from '../../src/i18n';
+
 
 const APP_VERSION = '1.2.1';
 const PRIVACY_URL = 'https://juju-kpi.github.io/splitit/privacy-policy.md';
@@ -62,13 +64,24 @@ async function registerForPushNotifications(): Promise<string | null> {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
-
   if (finalStatus !== 'granted') return null;
 
-  const token = await Notifications.getExpoPushTokenAsync({
-    projectId: Constants.expoConfig?.extra?.eas?.projectId,
-  });
-  return token.data;
+  try {
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId; // ← fallback EAS
+    
+    if (!projectId) {
+      console.error('[Push] projectId manquant dans app.json/eas.json');
+      return null;
+    }
+
+    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+    return token.data;
+  } catch (e) {
+    console.error('[Push] getExpoPushTokenAsync failed:', e);
+    return null;
+  }
 }
 
 // ── SettingRow ─────────────────────────────────────────────────────────────
@@ -222,10 +235,12 @@ export default function SettingsScreen() {
           onPress: async () => {
             setExportLoading(true);
             try {
-              await userApi.requestDataExport();
-              Alert.alert('✓ Email envoyé', `Vérifie ta boîte mail (${user?.email}).`);
-            } catch {
-              Alert.alert('Erreur', 'Impossible d\'envoyer l\'export. Réessaie plus tard.');
+                  await userApi.requestDataExport();
+                Alert.alert('✓ Email envoyé', `Vérifie ta boîte mail (${user?.email}).`);
+            } catch (e: any) {
+            const msg = e?.response?.data?.error || e?.message || 'Erreur inconnue';
+            console.error('[Export]', e?.response?.status, msg);
+            Alert.alert('Erreur export', msg);  // ← afficher le vrai message d'erreur
             } finally {
               setExportLoading(false);
             }

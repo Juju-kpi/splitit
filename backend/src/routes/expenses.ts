@@ -232,6 +232,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     splitType: z.enum(['EQUAL', 'ITEMIZED', 'CUSTOM']).optional(),
     splitMemberIds: z.array(z.string()).optional(),
     customSplits: z.array(z.object({ memberId: z.string(), amount: z.number() })).optional(),
+    note: z.string().max(500).optional(),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
@@ -240,15 +241,43 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   const totalAmount = d.totalAmount ?? expense.totalAmount;
   const splitType = d.splitType ?? expense.splitType;
 
-  await prisma.expenseSplit.deleteMany({ where: { expenseId: req.params.id } });
+  //await prisma.expenseSplit.deleteMany({ where: { expenseId: req.params.id } });
   let splits: { memberId: string; amount: number }[] = [];
 
-  if (splitType === 'EQUAL' && d.splitMemberIds) {
-    const share = Math.round((totalAmount / d.splitMemberIds.length) * 100) / 100;
-    splits = d.splitMemberIds.map(memberId => ({ memberId, amount: share }));
-  } else if (splitType === 'CUSTOM' && d.customSplits) {
-    splits = d.customSplits as { memberId: string; amount: number }[];
-  }
+if (splitType === 'EQUAL' && d.splitMemberIds) {
+  const share = Math.round((totalAmount / d.splitMemberIds.length) * 100) / 100;
+  splits = d.splitMemberIds.map(memberId => ({ memberId, amount: share }));
+
+} else if (splitType === 'EQUAL' && !d.splitMemberIds) {
+  const existing = await prisma.expenseSplit.findMany({
+    where: { expenseId: req.params.id }
+  });
+
+  splits = existing.map(s => ({
+    memberId: s.memberId,
+    amount: s.amount
+  }));
+
+} else if (splitType === 'CUSTOM' && d.customSplits) {
+  splits = d.customSplits as {
+    memberId: string;
+    amount: number;
+  }[];
+}
+
+// Seulement si de nouveaux splits sont fournis
+if (d.splitMemberIds || d.customSplits) {
+  await prisma.expenseSplit.deleteMany({
+    where: { expenseId: req.params.id }
+  });
+
+  await prisma.expenseSplit.createMany({
+    data: splits.map(s => ({
+      ...s,
+      expenseId: req.params.id
+    }))
+  });
+}
 
   let paidByMemberId = expense.paidByMemberId;
   if (d.payments && d.payments.length > 0) {
@@ -270,6 +299,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     data: {
       ...(d.description && { description: d.description }),
       ...(d.totalAmount && { totalAmount: d.totalAmount }),
+      ...(d.note !== undefined && { note: d.note }),
       paidByMemberId,
       splits: splits.length > 0 ? { create: splits } : undefined,
     },
@@ -458,7 +488,18 @@ router.post('/:id/duplicate', async (req: AuthRequest, res: Response) => {
     },
   });
 
-  res.status(201).json({ data: copy });
+  // Après le prisma.expense.create, recalculer isComplete
+const isComplete = await computeIsComplete(copy.id);
+const finalCopy = await prisma.expense.update({
+  where: { id: copy.id },
+  data: { isComplete },
+  include: {
+    payments: { include: { member: true } },
+    items: { include: { assignedTo: { include: { member: true } } } },
+    splits: { include: { member: true } },
+  },
+});
+res.status(201).json({ data: finalCopy });
 });
 
 // ── PATCH /api/expenses/:id/note ─────────────────────────────────────────

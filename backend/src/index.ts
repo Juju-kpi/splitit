@@ -15,6 +15,8 @@ import ocrRouter from './routes/ocr';
 import usersRouter from './routes/users';
 import { authenticate } from './middleware/auth';
 import { runTrainingPipeline } from './services/trainingPipeline';
+import dns from 'dns';
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 app.set('trust proxy', 1);
