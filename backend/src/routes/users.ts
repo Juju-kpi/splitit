@@ -1,15 +1,26 @@
-// backend/src/routes/users.ts  — NOUVEAU FICHIER
-// Routes utilisateur : update profil, prefs notifs, export données PDF
+// backend/src/routes/users.ts
+// Changement : export via Gmail SMTP (nodemailer) au lieu de Resend
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
+import nodemailer from 'nodemailer';
 import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+// ── Nodemailer Gmail transporter ──────────────────────────────────────────
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
+
 // ── PATCH /api/users/profile ─────────────────────────────────────────────
-// Met à jour avatarColor
 router.patch('/profile', async (req: AuthRequest, res: Response) => {
   const schema = z.object({
     avatarColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
@@ -24,7 +35,6 @@ router.patch('/profile', async (req: AuthRequest, res: Response) => {
     select: { id: true, email: true, username: true, avatarColor: true, createdAt: true },
   });
 
-  // Si avatarColor change, mettre à jour aussi les GroupMember
   if (parsed.data.avatarColor) {
     await prisma.groupMember.updateMany({
       where: { userId: req.userId },
@@ -36,7 +46,6 @@ router.patch('/profile', async (req: AuthRequest, res: Response) => {
 });
 
 // ── PATCH /api/users/notification-prefs ──────────────────────────────────
-// Stocke le push token + préférences notifs
 router.patch('/notification-prefs', async (req: AuthRequest, res: Response) => {
   const schema = z.object({
     pushToken: z.string().nullable(),
@@ -63,7 +72,7 @@ router.patch('/notification-prefs', async (req: AuthRequest, res: Response) => {
 });
 
 // ── POST /api/users/export ───────────────────────────────────────────────
-// Génère un PDF récap et l'envoie par email via Resend
+// Génère un récap HTML et l'envoie par email via Gmail SMTP
 router.post('/export', async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
@@ -90,7 +99,6 @@ router.post('/export', async (req: AuthRequest, res: Response) => {
 
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  // Construction du contenu HTML pour le PDF
   const totalSpent = user.groupMembers.reduce((sum, gm) => {
     return sum + gm.group.expenses.reduce((s, exp) => {
       const mySplit = exp.splits.find(sp => sp.memberId === gm.id);
@@ -104,6 +112,7 @@ router.post('/export', async (req: AuthRequest, res: Response) => {
       const sp = e.splits.find(sp => sp.memberId === gm.id);
       return s + (sp?.amount || 0);
     }, 0);
+
     const expensesHtml = gm.group.expenses.slice(0, 10).map(e =>
       `<tr>
         <td style="padding:6px 8px;border-bottom:1px solid #eee">${e.description}</td>
@@ -116,11 +125,11 @@ router.post('/export', async (req: AuthRequest, res: Response) => {
       <div style="margin-bottom:32px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
         <div style="background:#0D1128;color:white;padding:12px 16px">
           <strong>${gm.group.emoji} ${gm.group.name}</strong>
-          <span style="float:right;opacity:0.7">${gm.group._count?.members || 0} membres</span>
+          <span style="float:right;opacity:0.7">${gm.group._count.members} membres</span>
         </div>
-        <div style="padding:12px 16px;background:#f9fafb;display:flex;gap:32px">
-          <div><div style="font-size:11px;color:#666">Total groupe</div><div style="font-size:18px;font-weight:600">${groupTotal.toFixed(2)} CHF</div></div>
-          <div><div style="font-size:11px;color:#666">Ma part</div><div style="font-size:18px;font-weight:600;color:#4F46E5">${myShare.toFixed(2)} CHF</div></div>
+        <div style="padding:12px 16px;background:#f9fafb">
+          <span style="margin-right:24px"><small style="color:#666">Total groupe</small><br><strong>${groupTotal.toFixed(2)} CHF</strong></span>
+          <span><small style="color:#666">Ma part</small><br><strong style="color:#4F46E5">${myShare.toFixed(2)} CHF</strong></span>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f3f4f6">
@@ -134,52 +143,39 @@ router.post('/export', async (req: AuthRequest, res: Response) => {
   }).join('');
 
   const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><style>body{font-family:sans-serif;color:#111;max-width:700px;margin:0 auto;padding:32px}</style></head>
-<body>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family:sans-serif;color:#111;max-width:700px;margin:0 auto;padding:32px">
   <div style="background:#0D1128;color:white;padding:24px;border-radius:12px;margin-bottom:32px">
     <h1 style="margin:0;font-size:24px">SplitIt — Export de données</h1>
     <p style="margin:8px 0 0;opacity:0.7">Généré le ${new Date().toLocaleDateString('fr-CH')} pour ${user.username}</p>
   </div>
-  <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin-bottom:32px;display:flex;gap:32px">
-    <div><div style="font-size:11px;color:#666;text-transform:uppercase">Total dépensé</div><div style="font-size:28px;font-weight:300">${totalSpent.toFixed(2)} CHF</div></div>
-    <div><div style="font-size:11px;color:#666;text-transform:uppercase">Groupes</div><div style="font-size:28px;font-weight:300">${user.groupMembers.length}</div></div>
+  <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin-bottom:32px">
+    <span style="margin-right:32px"><small style="color:#666;display:block">Total dépensé (ma part)</small><span style="font-size:28px;font-weight:300">${totalSpent.toFixed(2)} CHF</span></span>
+    <span><small style="color:#666;display:block">Groupes</small><span style="font-size:28px;font-weight:300">${user.groupMembers.length}</span></span>
   </div>
   ${groupsHtml}
-  <p style="color:#999;font-size:11px;margin-top:32px">Cet export contient vos 50 dépenses les plus récentes par groupe. Pour toute question : hello@splitit.app</p>
-</body>
-</html>`;
+  <p style="color:#999;font-size:11px;margin-top:32px">Cet export contient vos 50 dépenses les plus récentes par groupe. Contact : hello@splitit.app</p>
+</body></html>`;
 
-  // Envoi via Resend
-  if (!process.env.RESEND_API_KEY) {
-    console.log('[Export] RESEND_API_KEY not set, skipping email');
-    return res.json({ data: { ok: true, note: 'Email not sent (no RESEND_API_KEY)' } });
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.log('[Export] Gmail credentials not set');
+    return res.status(503).json({ error: 'Service email non configuré.' });
   }
 
   try {
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: process.env.APP_FROM_EMAIL || 'noreply@splitit.app',
-        to: [user.email],
-        subject: 'SplitIt — Export de tes données',
-        html,
-      }),
+    const transporter = getTransporter();
+    await transporter.sendMail({
+      from: `"SplitIt" <${process.env.GMAIL_USER}>`,
+      to: user.email,
+      subject: 'SplitIt — Export de tes données',
+      html,
     });
 
-    if (!resendRes.ok) {
-      console.error('[Export] Resend error:', await resendRes.text());
-      return res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'email.' });
-    }
-
+    console.log(`[Export] Email sent to ${user.email}`);
     res.json({ data: { ok: true } });
   } catch (e) {
-    console.error('[Export] Error:', e);
-    res.status(500).json({ error: 'Erreur serveur.' });
+    console.error('[Export] Gmail error:', e);
+    res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'email.' });
   }
 });
 

@@ -5,7 +5,7 @@
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { CreateExpenseInput } from '../../../../shared/types';
+type CreateExpenseInput = any;
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
 const KEYS = { accessToken: 'splitit_access_token', refreshToken: 'splitit_refresh_token' };
@@ -122,6 +122,8 @@ export const expensesApi = {
     api.patch(`/expenses/${id}/settle`, { memberId }).then(r => r.data.data),
   update: (id: string, payload: any) =>
     api.put(`/expenses/${id}`, payload).then(r => r.data.data),
+  duplicate: (id: string) =>
+  api.post(`/expenses/${id}/duplicate`).then(r => r.data.data),
   updateItems: (id: string, payload: {
     items: Array<{
       name: string; price: number; ocrRaw?: string;

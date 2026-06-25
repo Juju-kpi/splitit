@@ -95,6 +95,7 @@ model Expense {
   payments        ExpensePayment[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  note            String?
 
   @@map("expenses")
 }
