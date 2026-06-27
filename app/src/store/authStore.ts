@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { authApi, saveTokens, clearTokens, authSignal } from '../services/api';
 import { User } from '../../../shared/types';
+import { userApi } from '../services/api';
+import i18n from '../i18n';
 
 interface AuthState {
   user: User | null;
@@ -22,18 +24,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
 
   initialize: async () => {
-    try {
-      const token = await SecureStore.getItemAsync('splitit_access_token');
-      if (token) {
-        const user = await authApi.me();
-        set({ user, isAuthenticated: true });
+  try {
+    const token = await SecureStore.getItemAsync('splitit_access_token');
+    if (token) {
+      const user = await userApi.getMe(); // ← au lieu de authApi.me()
+      // Restaurer la langue immédiatement
+      if (user.preferredLanguage) {
+        i18n.locale = user.preferredLanguage;
       }
-    } catch {
-      await clearTokens();
-    } finally {
-      set({ isLoading: false });
+      set({ user, isAuthenticated: true });
     }
-  },
+  } catch {
+    await clearTokens();
+  } finally {
+    set({ isLoading: false });
+  }
+},
 
   login: async (email, password) => {
     const data = await authApi.login(email, password);

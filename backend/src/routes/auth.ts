@@ -116,7 +116,11 @@ router.post('/logout', authenticate, async (req: AuthRequest, res: Response) => 
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
-    select: { id: true, email: true, username: true, avatarColor: true, createdAt: true },
+    select: {
+      id: true, email: true, username: true, avatarColor: true,
+      pushToken: true, notifExpense: true, notifReminder: true,
+      preferredLanguage: true, preferredCurrency: true, createdAt: true,
+    },
   });
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ data: user });

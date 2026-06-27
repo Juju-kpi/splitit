@@ -173,4 +173,6 @@ export const userApi = {
 
   requestDataExport: () =>
     api.post('/users/export').then(r => r.data.data),
+
+  getMe: () => api.get('/users/me').then(r => r.data.data),
 };
