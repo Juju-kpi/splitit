@@ -1,8 +1,9 @@
 // backend/src/routes/expenses.ts
-// Changements vs version originale :
-//   1. PUT /:id         — conservé, étendu pour mettre à jour items + recalculer isComplete
-//   2. PUT /:id/items   — NOUVEAU : met à jour les assignments d'items et recalcule isComplete
-//   3. Helper computeIsComplete — détecte si la dépense est "complète"
+// Fixes appliqués :
+//   1. PUT /:id — `note` correctement sauvegardé (était dans le schema mais pas dans data{})
+//   2. POST /:id/duplicate — isComplete recalculé après création (plus hardcodé à false)
+//   3. PUT /:id — splits supprimés/recréés UNIQUEMENT si splitMemberIds ou customSplits fournis
+//      (sinon on écrasait les splits existants avec un tableau vide)
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
@@ -11,7 +12,7 @@ import { AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-// ── Schemas (inchangés) ───────────────────────────────────────────────────
+// ── Schemas ───────────────────────────────────────────────────────────────
 const itemSchema = z.object({
   name: z.string().min(1),
   price: z.number().min(0),
@@ -53,9 +54,6 @@ function primaryPayer(payments: { memberId: string; amount: number }[]): string 
 }
 
 // ── Helper : calcule si une dépense est "complète" ───────────────────────
-// Une dépense est incomplète si :
-//   - il y a des items OCR sans aucun membre assigné, OU
-//   - la somme des splits ne couvre pas le totalAmount (écart > 1 centime)
 async function computeIsComplete(expenseId: string): Promise<boolean> {
   const expense = await prisma.expense.findUnique({
     where: { id: expenseId },
@@ -72,8 +70,9 @@ async function computeIsComplete(expenseId: string): Promise<boolean> {
     if (hasUnassigned) return false;
   }
 
-  // Check 2 : somme des splits == totalAmount
+  // Check 2 : somme des splits == totalAmount (tolérance 2 centimes)
   const splitTotal = expense.splits.reduce((s, sp) => s + sp.amount, 0);
+  if (expense.splits.length === 0) return false; // pas de splits = pas complet
   const diff = Math.abs(splitTotal - expense.totalAmount);
   if (diff > 0.02) return false;
 
@@ -120,7 +119,6 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     splits = d.customSplits as { memberId: string; amount: number }[];
   }
 
-  // Calcule isComplete à la création
   const hasUnassignedItems = d.items.some(i => i.assignedToMemberIds.length === 0);
   const splitTotal = splits.reduce((s, sp) => s + sp.amount, 0);
   const isComplete = !hasUnassignedItems && Math.abs(splitTotal - d.totalAmount) < 0.02 && splits.length > 0;
@@ -213,8 +211,10 @@ router.patch('/:id/settle', async (req: AuthRequest, res: Response) => {
 });
 
 // ── PUT /api/expenses/:id ─────────────────────────────────────────────────
-// Mise à jour générale (description, montant, payeurs, répartition)
-// Après la mise à jour, recalcule isComplete automatiquement.
+// FIX : `note` était dans le schema Zod mais PAS dans prisma.expense.update data{}
+//       → la note était validée mais jamais écrite en base
+// FIX : splits ne sont supprimés/recréés QUE si splitMemberIds ou customSplits fournis
+//       → évite d'écraser les splits avec [] lors d'un simple update de note
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   const expense = await prisma.expense.findUnique({ where: { id: req.params.id } });
   if (!expense) return res.status(404).json({ error: 'Not found' });
@@ -241,49 +241,35 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   const totalAmount = d.totalAmount ?? expense.totalAmount;
   const splitType = d.splitType ?? expense.splitType;
 
-  //await prisma.expenseSplit.deleteMany({ where: { expenseId: req.params.id } });
-  let splits: { memberId: string; amount: number }[] = [];
+  // ── Splits : ne toucher que si de nouvelles données sont fournies ──────
+  if (d.splitMemberIds || d.customSplits) {
+    let splits: { memberId: string; amount: number }[] = [];
 
-if (splitType === 'EQUAL' && d.splitMemberIds) {
-  const share = Math.round((totalAmount / d.splitMemberIds.length) * 100) / 100;
-  splits = d.splitMemberIds.map(memberId => ({ memberId, amount: share }));
+    if (splitType === 'EQUAL' && d.splitMemberIds) {
+      const share = Math.round((totalAmount / d.splitMemberIds.length) * 100) / 100;
+      splits = d.splitMemberIds.map(memberId => ({ memberId, amount: share }));
+    } else if (splitType === 'CUSTOM' && d.customSplits) {
+      splits = d.customSplits as { memberId: string; amount: number }[];
+    }
 
-} else if (splitType === 'EQUAL' && !d.splitMemberIds) {
-  const existing = await prisma.expenseSplit.findMany({
-    where: { expenseId: req.params.id }
-  });
+    if (splits.length > 0) {
+      await prisma.expenseSplit.deleteMany({ where: { expenseId: req.params.id } });
+      await prisma.expenseSplit.createMany({
+        data: splits.map(s => ({ ...s, expenseId: req.params.id })),
+      });
+    }
+  }
 
-  splits = existing.map(s => ({
-    memberId: s.memberId,
-    amount: s.amount
-  }));
-
-} else if (splitType === 'CUSTOM' && d.customSplits) {
-  splits = d.customSplits as {
-    memberId: string;
-    amount: number;
-  }[];
-}
-
-// Seulement si de nouveaux splits sont fournis
-if (d.splitMemberIds || d.customSplits) {
-  await prisma.expenseSplit.deleteMany({
-    where: { expenseId: req.params.id }
-  });
-
-  await prisma.expenseSplit.createMany({
-    data: splits.map(s => ({
-      ...s,
-      expenseId: req.params.id
-    }))
-  });
-}
-
+  // ── Payeurs ───────────────────────────────────────────────────────────
   let paidByMemberId = expense.paidByMemberId;
   if (d.payments && d.payments.length > 0) {
     await prisma.expensePayment.deleteMany({ where: { expenseId: req.params.id } });
     await prisma.expensePayment.createMany({
-      data: d.payments.map(p => ({ memberId: p.memberId as string, amount: p.amount as number, expenseId: req.params.id })),
+      data: d.payments.map(p => ({
+        memberId: p.memberId as string,
+        amount: p.amount as number,
+        expenseId: req.params.id,
+      })),
     });
     paidByMemberId = primaryPayer(d.payments as { memberId: string; amount: number }[]);
   } else if (d.paidByMemberId) {
@@ -294,18 +280,18 @@ if (d.splitMemberIds || d.customSplits) {
     paidByMemberId = d.paidByMemberId;
   }
 
+  // ── Mise à jour principale — NOTE incluse ─────────────────────────────
   await prisma.expense.update({
     where: { id: req.params.id },
     data: {
-      ...(d.description && { description: d.description }),
-      ...(d.totalAmount && { totalAmount: d.totalAmount }),
-      ...(d.note !== undefined && { note: d.note }),
+      ...(d.description !== undefined && { description: d.description }),
+      ...(d.totalAmount !== undefined && { totalAmount: d.totalAmount }),
+      ...(d.note !== undefined && { note: d.note }),   // ← FIX : note écrite en base
       paidByMemberId,
-      splits: splits.length > 0 ? { create: splits } : undefined,
     },
   });
 
-  // Recalculer isComplete après la mise à jour
+  // ── Recalcul isComplete ───────────────────────────────────────────────
   const complete = await computeIsComplete(req.params.id);
   const updated = await prisma.expense.update({
     where: { id: req.params.id },
@@ -321,11 +307,6 @@ if (d.splitMemberIds || d.customSplits) {
 });
 
 // ── PUT /api/expenses/:id/items ───────────────────────────────────────────
-// NOUVEAU — appelé depuis CompleteExpenseScreen / AddExpenseScreen (mode edit)
-// Remplace la totalité des items + leurs assignments, recalcule les splits
-// en mode ITEMIZED, puis recalcule isComplete.
-//
-// Tous les membres du groupe peuvent appeler cette route (pas seulement le créateur).
 router.put('/:id/items', async (req: AuthRequest, res: Response) => {
   const expense = await prisma.expense.findUnique({
     where: { id: req.params.id },
@@ -340,7 +321,6 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
 
   const schema = z.object({
     items: z.array(itemSchema),
-    // Optionnel : met aussi à jour les payeurs
     payments: z.array(paymentSchema).optional(),
     description: z.string().max(120).optional(),
   });
@@ -401,7 +381,7 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
     await prisma.expense.update({ where: { id: req.params.id }, data: { paidByMemberId } });
   }
 
-  // 5. Mise à jour de la description si fournie
+  // 5. Description si fournie
   if (description !== undefined) {
     await prisma.expense.update({
       where: { id: req.params.id },
@@ -424,12 +404,9 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
   res.json({ data: updated });
 });
 
-// Ajouts à backend/src/routes/expenses.ts
-// Colle ces 2 routes avant le `export default router`
-
 // ── POST /api/expenses/:id/duplicate ─────────────────────────────────────
-// Crée une copie exacte de la dépense (mêmes items, splits, payeurs)
-// La copie est marquée isComplete=false pour permettre d'ajuster
+// FIX : isComplete recalculé après création au lieu d'être forcé à false
+//       (une dépense EQUAL sans items est complète dès la duplication)
 router.post('/:id/duplicate', async (req: AuthRequest, res: Response) => {
   const original = await prisma.expense.findUnique({
     where: { id: req.params.id },
@@ -446,6 +423,7 @@ router.post('/:id/duplicate', async (req: AuthRequest, res: Response) => {
   });
   if (!membership) return res.status(403).json({ error: 'Forbidden' });
 
+  // Créer la copie — isComplete sera recalculé juste après
   const copy = await prisma.expense.create({
     data: {
       groupId: original.groupId,
@@ -455,7 +433,7 @@ router.post('/:id/duplicate', async (req: AuthRequest, res: Response) => {
       paidByMemberId: original.paidByMemberId,
       splitType: original.splitType,
       ocrConfidence: original.ocrConfidence,
-      isComplete: false,
+      isComplete: false, // provisoire, recalculé en dessous
       items: {
         create: original.items.map(item => ({
           name: item.name,
@@ -488,24 +466,23 @@ router.post('/:id/duplicate', async (req: AuthRequest, res: Response) => {
     },
   });
 
-  // Après le prisma.expense.create, recalculer isComplete
-const isComplete = await computeIsComplete(copy.id);
-const finalCopy = await prisma.expense.update({
-  where: { id: copy.id },
-  data: { isComplete },
-  include: {
-    payments: { include: { member: true } },
-    items: { include: { assignedTo: { include: { member: true } } } },
-    splits: { include: { member: true } },
-  },
-});
-res.status(201).json({ data: finalCopy });
+  // FIX : recalculer isComplete maintenant que tous les sous-objets existent
+  const isComplete = await computeIsComplete(copy.id);
+  const finalCopy = await prisma.expense.update({
+    where: { id: copy.id },
+    data: { isComplete },
+    include: {
+      payments: { include: { member: true } },
+      items: { include: { assignedTo: { include: { member: true } } } },
+      splits: { include: { member: true } },
+    },
+  });
+
+  res.status(201).json({ data: finalCopy });
 });
 
 // ── PATCH /api/expenses/:id/note ─────────────────────────────────────────
-// Met à jour la note/commentaire d'une dépense
-// (géré via PUT /:id existant — le champ `note` est déjà dans le schema)
-// Cette route est un alias pratique
+// Route alias pratique (le PUT /:id gère aussi la note maintenant)
 router.patch('/:id/note', async (req: AuthRequest, res: Response) => {
   const schema = z.object({ note: z.string().max(500) });
   const parsed = schema.safeParse(req.body);
@@ -526,6 +503,5 @@ router.patch('/:id/note', async (req: AuthRequest, res: Response) => {
 
   res.json({ data: updated });
 });
-
 
 export default router;

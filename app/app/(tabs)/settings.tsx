@@ -1,11 +1,10 @@
 // app/app/(tabs)/settings.tsx
-// Production-ready settings screen
-// Features:
-//   - Couleur de profil : palette 10 couleurs, sauvegarde en DB
-//   - Notifications : Expo Push Notifications réelles (nouvelle dépense + rappel complétion)
-//   - Export données : email PDF via backend
-//   - Politique de confidentialité : WebBrowser vers GitHub Pages
-//   - Suppression de compte : flow 2 étapes existant conservé
+// Fixes et ajouts :
+//   - Notifs prod : useEffect init utilise aussi la fonction registerForPushNotifications()
+//     avec le bon projectId (résout le bug "token undefined en build Play Store")
+//   - Langue : picker FR/EN/DE/ES/IT → sauvegarde en DB + applique i18n.locale immédiatement
+//   - Devise : picker CHF/EUR/USD/GBP → sauvegarde en DB (pas de conversion)
+//   - Export erreur : affiche le vrai message d'erreur backend
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -25,24 +24,35 @@ import { colors, spacing, radius } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { t } from '../../src/i18n';
-
+import i18n, { t } from '../../src/i18n';
+import {
+  PreferredLanguage,
+  PreferredCurrency,
+} from '../../src/types/preferences';
 
 const APP_VERSION = '1.2.1';
 const PRIVACY_URL = 'https://juju-kpi.github.io/splitit/privacy-policy.md';
 
-// 10 couleurs de palette
 const AVATAR_COLORS = [
-  '#4F46E5', // indigo
-  '#7C3AED', // violet
-  '#DB2777', // pink
-  '#DC2626', // red
-  '#EA580C', // orange
-  '#CA8A04', // yellow
-  '#16A34A', // green
-  '#0891B2', // cyan
-  '#2563EB', // blue
-  '#475569', // slate
+  '#4F46E5', '#7C3AED', '#DB2777', '#DC2626', '#EA580C',
+  '#CA8A04', '#16A34A', '#0891B2', '#2563EB', '#475569',
+];
+
+// Langue : code → label affiché
+const LANGUAGES: { code: string; label: string; flag: string }[] = [
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+];
+
+// Devise : code → symbole
+const CURRENCIES: { code: string; label: string; symbol: string }[] = [
+  { code: 'CHF', label: 'CHF — Franc suisse', symbol: 'Fr.' },
+  { code: 'EUR', label: 'EUR — Euro', symbol: '€' },
+  { code: 'USD', label: 'USD — Dollar US', symbol: '$' },
+  { code: 'GBP', label: 'GBP — Livre sterling', symbol: '£' },
 ];
 
 // ── Notifications setup ────────────────────────────────────────────────────
@@ -56,6 +66,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// FIX NOTIFS PROD : projectId correctement résolu depuis app.json/eas.json
 async function registerForPushNotifications(): Promise<string | null> {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -67,17 +78,19 @@ async function registerForPushNotifications(): Promise<string | null> {
   if (finalStatus !== 'granted') return null;
 
   try {
+    // Ordre de priorité : extra.eas.projectId → easConfig.projectId (build standalone)
     const projectId =
       Constants.expoConfig?.extra?.eas?.projectId ??
-      Constants.easConfig?.projectId; // ← fallback EAS
-    
+      (Constants as any).easConfig?.projectId;
+
     if (!projectId) {
-      console.error('[Push] projectId manquant dans app.json/eas.json');
+      console.error('[Push] projectId manquant — vérifier app.json extra.eas.projectId');
       return null;
     }
 
-    const token = await Notifications.getExpoPushTokenAsync({ projectId });
-    return token.data;
+    const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
+    console.log('[Push] Token obtenu:', tokenResult.data.slice(0, 20) + '…');
+    return tokenResult.data;
   } catch (e) {
     console.error('[Push] getExpoPushTokenAsync failed:', e);
     return null;
@@ -130,6 +143,12 @@ export default function SettingsScreen() {
   const [colorModalVisible, setColorModalVisible] = useState(false);
   const [selectedColor, setSelectedColor] = useState(user?.avatarColor || AVATAR_COLORS[0]);
 
+  // Langue & Devise modals
+  const [langModalVisible, setLangModalVisible] = useState(false);
+  const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+  const [selectedLang, setSelectedLang] = useState((user as any)?.preferredLanguage ?? i18n.locale ?? 'fr');
+  const [selectedCurrency, setSelectedCurrency] = useState((user as any)?.preferredCurrency ?? 'CHF');
+
   // Notifications
   const [notifExpense, setNotifExpense] = useState(false);
   const [notifReminder, setNotifReminder] = useState(false);
@@ -152,17 +171,16 @@ export default function SettingsScreen() {
     refetchInterval: 60_000,
   });
 
-  // ── Init notifications state from stored prefs ────────────────────────
+  // ── Init notifications state — FIX : utilise registerForPushNotifications ──
+  // (au lieu d'appeler getExpoPushTokenAsync directement sans gestion d'erreur)
   useEffect(() => {
     (async () => {
       const stored = await Notifications.getPermissionsAsync();
       if (stored.status === 'granted') {
-        const token = await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig?.extra?.eas?.projectId,
-        }).catch(() => null);
+        // Réutilise la même fonction que lors du toggle → même logique de projectId
+        const token = await registerForPushNotifications();
         if (token) {
-          setPushToken(token.data);
-          // Restore user prefs from backend
+          setPushToken(token);
           const prefs = user as any;
           setNotifExpense(prefs?.notifExpense ?? false);
           setNotifReminder(prefs?.notifReminder ?? false);
@@ -182,7 +200,7 @@ export default function SettingsScreen() {
         if (!token) {
           Alert.alert(
             'Permission refusée',
-            'Active les notifications dans les réglages de ton téléphone pour recevoir des alertes.',
+            'Active les notifications dans les réglages de ton téléphone.',
             [
               { text: 'Annuler', style: 'cancel' },
               { text: 'Ouvrir les réglages', onPress: () => Linking.openSettings() },
@@ -194,7 +212,6 @@ export default function SettingsScreen() {
         setPushToken(token);
       }
 
-      // Mettre à jour les préférences en DB
       const newPrefs = {
         pushToken: token,
         notifExpense: type === 'expense' ? value : notifExpense,
@@ -206,8 +223,9 @@ export default function SettingsScreen() {
       if (type === 'expense') setNotifExpense(value);
       else setNotifReminder(value);
 
-    } catch (e) {
-      Alert.alert('Erreur', 'Impossible de mettre à jour les préférences.');
+    } catch (e: any) {
+      console.error('[Notif toggle error]', e?.response?.data || e?.message);
+      Alert.alert('Erreur', e?.response?.data?.error || 'Impossible de mettre à jour les préférences.');
     } finally {
       setNotifLoading(false);
     }
@@ -223,11 +241,34 @@ export default function SettingsScreen() {
     onError: () => Alert.alert('Erreur', 'Impossible de sauvegarder la couleur.'),
   });
 
+  // ── Langue save ───────────────────────────────────────────────────────
+  const langMutation = useMutation({
+  mutationFn: (lang: PreferredLanguage) =>
+    userApi.updatePreferences({ preferredLanguage: lang }),
+
+  onSuccess: (_, lang) => {
+    i18n.locale = lang;
+    setUser({ ...(user as any), preferredLanguage: lang });
+    setLangModalVisible(false);
+  },
+});
+
+  // ── Devise save ───────────────────────────────────────────────────────
+  const currencyMutation = useMutation({
+  mutationFn: (currency: PreferredCurrency) =>
+    userApi.updatePreferences({ preferredCurrency: currency }),
+
+  onSuccess: (_, currency) => {
+    setUser({ ...(user as any), preferredCurrency: currency });
+    setCurrencyModalVisible(false);
+  },
+});
+
   // ── Export data ───────────────────────────────────────────────────────
   async function handleExportData() {
     Alert.alert(
       'Exporter mes données',
-      `Un PDF récapitulatif de tes dépenses, groupes et soldes sera envoyé à ${user?.email}.`,
+      `Un récapitulatif de tes dépenses sera envoyé à ${user?.email}.`,
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -235,12 +276,13 @@ export default function SettingsScreen() {
           onPress: async () => {
             setExportLoading(true);
             try {
-                  await userApi.requestDataExport();
-                Alert.alert('✓ Email envoyé', `Vérifie ta boîte mail (${user?.email}).`);
+              await userApi.requestDataExport();
+              Alert.alert('✓ Email envoyé', `Vérifie ta boîte mail (${user?.email}).`);
             } catch (e: any) {
-            const msg = e?.response?.data?.error || e?.message || 'Erreur inconnue';
-            console.error('[Export]', e?.response?.status, msg);
-            Alert.alert('Erreur export', msg);  // ← afficher le vrai message d'erreur
+              // FIX : afficher le vrai message d'erreur pour faciliter le debug
+              const msg = e?.response?.data?.error || e?.message || 'Erreur inconnue';
+              console.error('[Export error]', e?.response?.status, msg);
+              Alert.alert('Erreur export', msg);
             } finally {
               setExportLoading(false);
             }
@@ -293,6 +335,9 @@ export default function SettingsScreen() {
   const accuracy = ocrStats?.accuracyEstimate || 72;
   const total = ocrStats?.totalCorrections || 0;
   const untrained = ocrStats?.untrainedCount || 0;
+
+  const currentLang = LANGUAGES.find(l => l.code === selectedLang) ?? LANGUAGES[0];
+  const currentCurrency = CURRENCIES.find(c => c.code === selectedCurrency) ?? CURRENCIES[0];
 
   return (
     <View style={styles.screen}>
@@ -386,6 +431,25 @@ export default function SettingsScreen() {
           />
         </Card>
 
+        {/* Langue & Devise */}
+        <SectionLabel label="Langue & Devise" />
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <SettingRow
+            icon="🌍"
+            label="Langue"
+            value={`${currentLang.flag} ${currentLang.label}`}
+            onPress={() => setLangModalVisible(true)}
+          />
+          <View style={styles.rowSeparator} />
+          <SettingRow
+            icon="💱"
+            label="Devise"
+            value={`${currentCurrency.symbol} ${currentCurrency.code}`}
+            onPress={() => setCurrencyModalVisible(true)}
+          />
+        </Card>
+        <Notice text="La devise est utilisée pour l'affichage uniquement. Pas de conversion de taux." variant="amber" />
+
         {/* Notifications */}
         <SectionLabel label="Notifications" />
         {pushToken && (
@@ -434,7 +498,7 @@ export default function SettingsScreen() {
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
             icon="📦"
-            label="Exporter mes données (PDF)"
+            label="Exporter mes données"
             onPress={handleExportData}
             loading={exportLoading}
           />
@@ -460,8 +524,8 @@ export default function SettingsScreen() {
           <SettingRow
             icon="⭐️"
             label="Noter l'app"
-            onPress={() => Linking.openURL('market://details?id=com.splitit.app').catch(() =>
-              Linking.openURL('https://play.google.com/store/apps/details?id=com.splitit.app')
+            onPress={() => Linking.openURL('market://details?id=com.julien.splitit').catch(() =>
+              Linking.openURL('https://play.google.com/store/apps/details?id=com.julien.splitit')
             )}
           />
           <View style={styles.rowSeparator} />
@@ -517,8 +581,6 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
-            {/* Preview */}
             <View style={styles.colorPreview}>
               <Avatar
                 initials={(user?.username ?? '??').slice(0, 2).toUpperCase()}
@@ -528,7 +590,6 @@ export default function SettingsScreen() {
               />
               <Text style={styles.colorPreviewName}>{user?.username}</Text>
             </View>
-
             <TouchableOpacity
               style={[styles.colorSaveBtn, colorMutation.isPending && { opacity: 0.6 }]}
               onPress={() => colorMutation.mutate(selectedColor)}
@@ -538,6 +599,93 @@ export default function SettingsScreen() {
               {colorMutation.isPending
                 ? <ActivityIndicator color={colors.white} />
                 : <Text style={styles.colorSaveBtnText}>Sauvegarder</Text>
+              }
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* ── Langue modal ── */}
+      <Modal
+        visible={langModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setLangModalVisible(false)}
+      >
+        <View style={styles.modalScreen}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>🌍 Langue</Text>
+            <TouchableOpacity onPress={() => setLangModalVisible(false)} style={styles.modalClose}>
+              <Text style={styles.modalCloseText}>Annuler</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.pickerContent}>
+            {LANGUAGES.map(lang => (
+              <TouchableOpacity
+                key={lang.code}
+                style={[styles.pickerRow, selectedLang === lang.code && styles.pickerRowSelected]}
+                onPress={() => setSelectedLang(lang.code)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.pickerFlag}>{lang.flag}</Text>
+                <Text style={[styles.pickerLabel, selectedLang === lang.code && { color: colors.accent2, fontWeight: '700' }]}>
+                  {lang.label}
+                </Text>
+                {selectedLang === lang.code && <Text style={styles.pickerCheck}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.colorSaveBtn, { marginTop: 24 }, langMutation.isPending && { opacity: 0.6 }]}
+              onPress={() => langMutation.mutate(selectedLang)}
+              disabled={langMutation.isPending}
+            >
+              {langMutation.isPending
+                ? <ActivityIndicator color={colors.white} />
+                : <Text style={styles.colorSaveBtnText}>Appliquer</Text>
+              }
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* ── Devise modal ── */}
+      <Modal
+        visible={currencyModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setCurrencyModalVisible(false)}
+      >
+        <View style={styles.modalScreen}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>💱 Devise</Text>
+            <TouchableOpacity onPress={() => setCurrencyModalVisible(false)} style={styles.modalClose}>
+              <Text style={styles.modalCloseText}>Annuler</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.pickerContent}>
+            <Notice text="Affichage uniquement — aucune conversion de taux appliquée." variant="amber" />
+            {CURRENCIES.map(currency => (
+              <TouchableOpacity
+                key={currency.code}
+                style={[styles.pickerRow, selectedCurrency === currency.code && styles.pickerRowSelected]}
+                onPress={() => setSelectedCurrency(currency.code)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.pickerSymbol}>{currency.symbol}</Text>
+                <Text style={[styles.pickerLabel, selectedCurrency === currency.code && { color: colors.accent2, fontWeight: '700' }]}>
+                  {currency.label}
+                </Text>
+                {selectedCurrency === currency.code && <Text style={styles.pickerCheck}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.colorSaveBtn, { marginTop: 24 }, currencyMutation.isPending && { opacity: 0.6 }]}
+              onPress={() => currencyMutation.mutate(selectedCurrency)}
+              disabled={currencyMutation.isPending}
+            >
+              {currencyMutation.isPending
+                ? <ActivityIndicator color={colors.white} />
+                : <Text style={styles.colorSaveBtnText}>Appliquer</Text>
               }
             </TouchableOpacity>
           </ScrollView>
@@ -709,10 +857,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
   },
-  colorSwatchSelected: {
-    borderWidth: 3, borderColor: colors.white,
-    shadowOpacity: 0.4, shadowRadius: 8,
-  },
+  colorSwatchSelected: { borderWidth: 3, borderColor: colors.white, shadowOpacity: 0.4, shadowRadius: 8 },
   colorSwatchCheck: { fontSize: 20, color: colors.white, fontWeight: '800' },
   colorPreview: { alignItems: 'center', marginBottom: 32, gap: 12 },
   colorPreviewName: { fontSize: 16, fontWeight: '600', color: colors.text },
@@ -721,6 +866,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 48, alignItems: 'center', width: '100%',
   },
   colorSaveBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+
+  // Langue & Devise picker
+  pickerContent: { padding: spacing.xl, paddingBottom: 60 },
+  pickerRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingVertical: 16, paddingHorizontal: 12,
+    borderRadius: radius.md, marginBottom: 4,
+  },
+  pickerRowSelected: { backgroundColor: colors.accentBg },
+  pickerFlag: { fontSize: 24 },
+  pickerSymbol: { fontSize: 20, width: 32, textAlign: 'center', color: colors.text, fontWeight: '600' },
+  pickerLabel: { flex: 1, fontSize: 15, color: colors.text },
+  pickerCheck: { fontSize: 16, color: colors.accent2, fontWeight: '700' },
 
   deleteWarning: {
     backgroundColor: 'rgba(248,113,113,0.06)', borderWidth: 1,

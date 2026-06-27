@@ -5,6 +5,10 @@
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import {
+  PreferredLanguage,
+  PreferredCurrency,
+} from '../types/preferences';
 type CreateExpenseInput = any;
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
@@ -145,22 +149,28 @@ export const ocrApi = {
   getStats: () => api.get('/ocr/stats').then(r => r.data.data),
 };
 
-// Ajouts à app/src/services/api.ts
-// Colle ces méthodes dans le fichier existant
+// app/src/services/api.ts — PATCH : ajout de userApi.updatePreferences
+
+// ... tout le reste est inchangé, colle UNIQUEMENT ce bloc updatePreferences
+// dans l'objet userApi existant :
 
 export const userApi = {
-  // Met à jour avatarColor (+ sync GroupMember)
   updateProfile: (payload: { avatarColor?: string; username?: string }) =>
     api.patch('/users/profile', payload).then(r => r.data.data),
 
-  // Stocke push token + préférences notifs
   updateNotificationPrefs: (payload: {
     pushToken: string | null;
     notifExpense: boolean;
     notifReminder: boolean;
   }) => api.patch('/users/notification-prefs', payload).then(r => r.data.data),
 
-  // Demande export PDF par email
+  // NOUVEAU — langue et devise
+  updatePreferences: (payload: {
+  preferredLanguage?: PreferredLanguage;
+  preferredCurrency?: PreferredCurrency;
+}) =>
+  api.patch('/users/preferences', payload).then(r => r.data.data),
+
   requestDataExport: () =>
     api.post('/users/export').then(r => r.data.data),
 };
