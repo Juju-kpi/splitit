@@ -28,6 +28,8 @@ model User {
   supabaseId         String?       @unique
   groupMembers       GroupMember[]
   refreshTokens      RefreshToken[]
+  resetToken         String?       @unique
+  resetTokenExpiry   DateTime?
 
   @@map("users")
 }
