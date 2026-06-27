@@ -1,5 +1,3 @@
-// backend/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,20 +10,17 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  username     String   @unique
-  passwordHash String
-  avatarColor  String   @default("#4F46E5")
-  resetToken       String?   @unique
-  resetTokenExpiry DateTime?
+  id            String         @id @default(cuid())
+  email         String         @unique
+  username      String         @unique
+  passwordHash  String
+  avatarColor   String         @default("#4F46E5")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  groupMembers  GroupMember[]
   refreshTokens RefreshToken[]
-  groupMembers GroupMember[]
-  pushToken     String?
-  notifExpense  Boolean  @default(false)
-  notifReminder Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  preferredLanguage  String? @default("fr")
+  preferredCurrency  String? @default("EUR")
 
   @@map("users")
 }
@@ -34,9 +29,9 @@ model RefreshToken {
   id        String   @id @default(cuid())
   token     String   @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
 }
@@ -46,89 +41,64 @@ model Group {
   name       String
   emoji      String        @default("💰")
   inviteCode String        @unique @default(cuid())
-  members    GroupMember[]
-  expenses   Expense[]
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
+  expenses   Expense[]
+  members    GroupMember[]
 
   @@map("groups")
 }
 
 model GroupMember {
-  id             String   @id @default(cuid())
-  groupId        String
-  group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  userId         String?
-  user           User?    @relation(fields: [userId], references: [id])
-  displayName    String
-  avatarColor    String   @default("#4F46E5")
-  avatarInitials String
-  payments       ExpensePayment[]
-  splits         ExpenseSplit[]
+  id              String                  @id @default(cuid())
+  groupId         String
+  userId          String?
+  displayName     String
+  avatarColor     String                  @default("#4F46E5")
+  avatarInitials  String
+  joinedAt        DateTime                @default(now())
   itemAssignments ExpenseItemAssignment[]
-  // Nouveau : dépenses créées par ce membre
-  createdExpenses Expense[] @relation("ExpenseCreator")
-  joinedAt       DateTime @default(now())
+  splits          ExpenseSplit[]
+  expenses        Expense[]
+  group           Group                   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user            User?                   @relation(fields: [userId], references: [id])
 
   @@unique([groupId, userId])
   @@map("group_members")
 }
 
 model Expense {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   groupId         String
-  group           Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
   description     String
   totalAmount     Float
-  currency        String        @default("CHF")
+  currency        String         @default("CHF")
   paidByMemberId  String
-  splitType       SplitType     @default(EQUAL)
+  splitType       SplitType      @default(EQUAL)
   receiptImageUrl String?
   receiptImageKey String?
   ocrConfidence   Float?
-  // Nouveau : suivi complétion collaborative
-  isComplete        Boolean      @default(false)
-  createdByMemberId String?
-  createdBy         GroupMember? @relation("ExpenseCreator", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   items           ExpenseItem[]
   splits          ExpenseSplit[]
-  payments        ExpensePayment[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  note            String?
+  group           Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group_members   GroupMember    @relation(fields: [paidByMemberId], references: [id])
 
   @@map("expenses")
 }
 
-model ExpensePayment {
-  id         String      @id @default(cuid())
-  expenseId  String
-  expense    Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  memberId   String
-  member     GroupMember @relation(fields: [memberId], references: [id])
-  amount     Float
-
-  @@unique([expenseId, memberId])
-  @@map("expense_payments")
-}
-
-enum SplitType {
-  EQUAL
-  ITEMIZED
-  CUSTOM
-}
-
 model ExpenseItem {
-  id            String   @id @default(cuid())
+  id            String                  @id @default(cuid())
   expenseId     String
-  expense       Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   name          String
   price         Float
   ocrRaw        String?
   ocrConfidence Float?
-  corrected     Boolean  @default(false)
+  corrected     Boolean                 @default(false)
+  createdAt     DateTime                @default(now())
   assignedTo    ExpenseItemAssignment[]
-  createdAt     DateTime @default(now())
+  expense       Expense                 @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 
   @@map("expense_items")
 }
@@ -136,8 +106,8 @@ model ExpenseItem {
 model ExpenseItemAssignment {
   id       String      @id @default(cuid())
   itemId   String
-  item     ExpenseItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
   memberId String
+  item     ExpenseItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
   member   GroupMember @relation(fields: [memberId], references: [id])
 
   @@unique([itemId, memberId])
@@ -145,15 +115,15 @@ model ExpenseItemAssignment {
 }
 
 model ExpenseSplit {
-  id         String      @id @default(cuid())
-  expenseId  String
-  expense    Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  memberId   String
-  member     GroupMember @relation(fields: [memberId], references: [id])
-  amount     Float
-  settled    Boolean     @default(false)
-  settledAt  DateTime?
-  createdAt  DateTime    @default(now())
+  id        String      @id @default(cuid())
+  expenseId String
+  memberId  String
+  amount    Float
+  settled   Boolean     @default(false)
+  settledAt DateTime?
+  createdAt DateTime    @default(now())
+  expense   Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  member    GroupMember @relation(fields: [memberId], references: [id])
 
   @@unique([expenseId, memberId])
   @@map("expense_splits")
@@ -186,4 +156,10 @@ model OcrTrainingRun {
   notes           String?
 
   @@map("ocr_training_runs")
+}
+
+enum SplitType {
+  EQUAL
+  ITEMIZED
+  CUSTOM
 }
