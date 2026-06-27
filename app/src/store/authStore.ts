@@ -1,16 +1,30 @@
 // app/src/store/authStore.ts
+// Fix : initialise langStore avec les préférences user au démarrage
+
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { authApi, saveTokens, clearTokens, authSignal } from '../services/api';
-import { User } from '../../../shared/types';
 import { userApi } from '../services/api';
 import i18n from '../i18n';
+import { useLangStore } from './langStore';
+
+interface User {
+  id: string;
+  email: string;
+  username: string;
+  avatarColor: string;
+  createdAt: string;
+  preferredLanguage?: string;
+  preferredCurrency?: string;
+  pushToken?: string;
+  notifExpense?: boolean;
+  notifReminder?: boolean;
+}
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
@@ -18,28 +32,32 @@ interface AuthState {
   setUser: (user: User) => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
 
   initialize: async () => {
-  try {
-    const token = await SecureStore.getItemAsync('splitit_access_token');
-    if (token) {
-      const user = await userApi.getMe(); // ← au lieu de authApi.me()
-      // Restaurer la langue immédiatement
-      if (user.preferredLanguage) {
-        i18n.locale = user.preferredLanguage;
+    try {
+      const token = await SecureStore.getItemAsync('splitit_access_token');
+      if (token) {
+        const user = await userApi.getMe();
+        // Restaurer langue et devise depuis les préférences sauvegardées
+        if (user.preferredLanguage) {
+          i18n.locale = user.preferredLanguage;
+          useLangStore.getState().setLocale(user.preferredLanguage);
+        }
+        if (user.preferredCurrency) {
+          useLangStore.getState().setCurrency(user.preferredCurrency);
+        }
+        set({ user, isAuthenticated: true });
       }
-      set({ user, isAuthenticated: true });
+    } catch {
+      await clearTokens();
+    } finally {
+      set({ isLoading: false });
     }
-  } catch {
-    await clearTokens();
-  } finally {
-    set({ isLoading: false });
-  }
-},
+  },
 
   login: async (email, password) => {
     const data = await authApi.login(email, password);
@@ -65,5 +83,4 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user) => set({ user }),
 }));
 
-// Wire up API interceptor logout signal
 authSignal.onLogout(() => useAuthStore.getState().logout());

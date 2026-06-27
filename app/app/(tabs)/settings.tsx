@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import i18n, { t } from '../../src/i18n';
+import { useLangStore } from '../../src/store/langStore';
 import {
   PreferredLanguage,
   PreferredCurrency,
@@ -243,26 +244,27 @@ export default function SettingsScreen() {
 
   // ── Langue save ───────────────────────────────────────────────────────
   const langMutation = useMutation({
-  mutationFn: (lang: PreferredLanguage) =>
-    userApi.updatePreferences({ preferredLanguage: lang }),
-
-  onSuccess: (_, lang) => {
-    i18n.locale = lang;
-    setUser({ ...(user as any), preferredLanguage: lang });
-    setLangModalVisible(false);
-  },
-});
+    mutationFn: (lang: PreferredLanguage) =>
+      userApi.updatePreferences({ preferredLanguage: lang }),
+    onSuccess: (_, lang) => {
+      useLangStore.getState().setLocale(lang);
+      setUser({ ...(user as any), preferredLanguage: lang });
+      setSelectedLang(lang);
+      setLangModalVisible(false);
+    },
+  });
 
   // ── Devise save ───────────────────────────────────────────────────────
   const currencyMutation = useMutation({
-  mutationFn: (currency: PreferredCurrency) =>
-    userApi.updatePreferences({ preferredCurrency: currency }),
-
-  onSuccess: (_, currency) => {
-    setUser({ ...(user as any), preferredCurrency: currency });
-    setCurrencyModalVisible(false);
-  },
-});
+    mutationFn: (currency: PreferredCurrency) =>
+      userApi.updatePreferences({ preferredCurrency: currency }),
+    onSuccess: (_, currency) => {
+      useLangStore.getState().setCurrency(currency);
+      setUser({ ...(user as any), preferredCurrency: currency });
+      setSelectedCurrency(currency);
+      setCurrencyModalVisible(false);
+    },
+  });
 
   // ── Export data ───────────────────────────────────────────────────────
   async function handleExportData() {

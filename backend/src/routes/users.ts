@@ -20,9 +20,10 @@ async function sendEmailViaResend(opts: {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error('RESEND_API_KEY not configured');
 
-  // FROM : utilise ton domaine vérifié si tu en as un, sinon onboarding@resend.dev
-  // Pour tester sans domaine : "SplitIt <onboarding@resend.dev>"
-  // Avec domaine vérifié  : "SplitIt <noreply@ton-domaine.com>"
+  // Sans domaine vérifié, Resend exige que le destinataire soit smh.redirection@gmail.com
+  // Solution : envoyer à ADMIN_EMAIL (variable d'env) avec l'email user dans le sujet
+  // → Ajoute ADMIN_EMAIL=smh.redirection@gmail.com dans tes variables Render
+  const adminEmail = process.env.ADMIN_EMAIL ?? process.env.GMAIL_USER ?? 'smh.redirection@gmail.com';
   const from = process.env.EMAIL_FROM ?? 'SplitIt <onboarding@resend.dev>';
 
   const res = await fetch('https://api.resend.com/emails', {
@@ -33,9 +34,12 @@ async function sendEmailViaResend(opts: {
     },
     body: JSON.stringify({
       from,
-      to: [opts.to],
-      subject: opts.subject,
-      html: opts.html,
+      to: [adminEmail],
+      subject: `[Export SplitIt] Pour ${opts.to} — ${opts.subject}`,
+      html: `<div style="background:#fffbeb;border:1px solid #fcd34d;padding:12px;border-radius:8px;margin-bottom:24px;font-family:sans-serif">
+        <strong>Export demandé par :</strong> ${opts.to}<br>
+        <small style="color:#666">Sans domaine vérifié, l'export est envoyé à l'admin.</small>
+      </div>` + opts.html,
     }),
   });
 
