@@ -10,17 +10,24 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  username      String         @unique
-  passwordHash  String
-  avatarColor   String         @default("#4F46E5")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  groupMembers  GroupMember[]
-  refreshTokens RefreshToken[]
-  preferredLanguage  String? @default("fr")
-  preferredCurrency  String? @default("EUR")
+  id                 String        @id @default(cuid())
+  email              String        @unique
+  username           String        @unique
+  passwordHash       String
+  avatarColor        String        @default("#4F46E5")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  // Notifications
+  pushToken          String?
+  notifExpense       Boolean       @default(false)
+  notifReminder      Boolean       @default(false)
+  // Préférences
+  preferredLanguage  String?       @default("fr")
+  preferredCurrency  String?       @default("CHF")
+  // Auth
+  supabaseId         String?       @unique
+  groupMembers       GroupMember[]
+  refreshTokens      RefreshToken[]
 
   @@map("users")
 }
@@ -59,7 +66,9 @@ model GroupMember {
   joinedAt        DateTime                @default(now())
   itemAssignments ExpenseItemAssignment[]
   splits          ExpenseSplit[]
-  expenses        Expense[]
+  payments        ExpensePayment[]
+  expenses        Expense[]               // relation paidByMemberId
+  createdExpenses Expense[]               @relation("createdByMember")  // ← AJOUTER
   group           Group                   @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user            User?                   @relation(fields: [userId], references: [id])
 
@@ -68,24 +77,41 @@ model GroupMember {
 }
 
 model Expense {
-  id              String         @id @default(cuid())
-  groupId         String
-  description     String
-  totalAmount     Float
-  currency        String         @default("CHF")
-  paidByMemberId  String
-  splitType       SplitType      @default(EQUAL)
-  receiptImageUrl String?
-  receiptImageKey String?
-  ocrConfidence   Float?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  items           ExpenseItem[]
-  splits          ExpenseSplit[]
-  group           Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  group_members   GroupMember    @relation(fields: [paidByMemberId], references: [id])
+  id                String           @id @default(cuid())
+  groupId           String
+  description       String
+  totalAmount       Float
+  currency          String           @default("CHF")
+  paidByMemberId    String
+  splitType         SplitType        @default(EQUAL)
+  receiptImageUrl   String?
+  receiptImageKey   String?
+  ocrConfidence     Float?
+  note              String?
+  isComplete        Boolean          @default(false)
+  createdByMemberId String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  items             ExpenseItem[]
+  splits            ExpenseSplit[]
+  payments          ExpensePayment[]
+  group             Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group_members     GroupMember      @relation(fields: [paidByMemberId], references: [id])
+  createdBy         GroupMember?     @relation("createdByMember", fields: [createdByMemberId], references: [id], onDelete: SetNull)
 
   @@map("expenses")
+}
+
+model ExpensePayment {
+  id        String      @id @default(cuid())
+  expenseId String
+  memberId  String
+  amount    Float
+  expense   Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  member    GroupMember @relation(fields: [memberId], references: [id])
+
+  @@unique([expenseId, memberId])
+  @@map("expense_payments")
 }
 
 model ExpenseItem {
