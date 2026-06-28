@@ -172,23 +172,27 @@ export default function SettingsScreen() {
     refetchInterval: 60_000,
   });
 
-  // ── Init notifications state — FIX : utilise registerForPushNotifications ──
-  // (au lieu d'appeler getExpoPushTokenAsync directement sans gestion d'erreur)
+  // REMPLACE uniquement le useEffect d'init notifications dans settings.tsx
+// (cherche "── Init notifications state" et remplace tout le bloc useEffect)
+
+  // ── Init notifications state ──────────────────────────────────────────
+  // Lit notifExpense/notifReminder depuis user (chargé via userApi.getMe au démarrage)
+  // ET restaure le pushToken si la permission est déjà accordée
   useEffect(() => {
+    // 1. Restaurer les prefs depuis le user store (déjà chargé par authStore.initialize)
+    if (user?.notifExpense !== undefined) setNotifExpense(user.notifExpense);
+    if (user?.notifReminder !== undefined) setNotifReminder(user.notifReminder);
+    if (user?.pushToken) setPushToken(user.pushToken);
+
+    // 2. Si permission déjà accordée mais token absent, en obtenir un nouveau
     (async () => {
-      const stored = await Notifications.getPermissionsAsync();
-      if (stored.status === 'granted') {
-        // Réutilise la même fonction que lors du toggle → même logique de projectId
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === 'granted' && !user?.pushToken) {
         const token = await registerForPushNotifications();
-        if (token) {
-          setPushToken(token);
-          const prefs = user as any;
-          setNotifExpense(prefs?.notifExpense ?? false);
-          setNotifReminder(prefs?.notifReminder ?? false);
-        }
+        if (token) setPushToken(token);
       }
     })();
-  }, []);
+  }, [user?.id]); // dépend de user.id pour se relancer si l'user change
 
   // ── Toggle notification ───────────────────────────────────────────────
   const handleNotifToggle = useCallback(async (type: 'expense' | 'reminder', value: boolean) => {

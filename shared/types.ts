@@ -6,6 +6,13 @@ export interface User {
   username: string;
   avatarColor: string;
   createdAt: string;
+  // Notifications
+  pushToken?: string | null;
+  notifExpense?: boolean;
+  notifReminder?: boolean;
+  // Préférences
+  preferredLanguage?: string;
+  preferredCurrency?: string;
 }
 
 export interface Group {
@@ -42,6 +49,8 @@ export interface Expense {
   description: string;
   totalAmount: number;
   currency: string;
+  note?: string;
+  isComplete?: boolean;
   /** @deprecated use payments[] — kept for backward compat */
   paidByMemberId: string;
   /** Who paid and how much — may have multiple entries */
