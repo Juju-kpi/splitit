@@ -24,7 +24,7 @@
       }
     },
     "android": {
-      "versionCode": 4,
+      "versionCode": 5,
       "package": "com.julien.splitit",
       "googleServicesFile": "./google-services.json",
       "permissions": [
