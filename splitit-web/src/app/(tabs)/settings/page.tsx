@@ -58,7 +58,7 @@ async function getWebPushSubscription(): Promise<string | null> {
     if (!vapidKey) return null
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as Uint8Array<ArrayBuffer>,
     })
     return JSON.stringify(sub)
   } catch { return null }
