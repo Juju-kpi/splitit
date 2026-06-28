@@ -1,13 +1,10 @@
 'use client'
 // src/app/(tabs)/settings/page.tsx
-// Port complet de app/app/(tabs)/settings.tsx :
-//   - Profil avec couleur avatar (picker)
-//   - Langue (FR/EN/DE/ES/IT)
-//   - Devise (CHF/EUR/USD/GBP)
-//   - Notifications web push (via Web Push API / VAPID)
-//     → Safari iOS 16.4+ PWA supporté ; texte explicatif si non supporté
-//   - OCR stats
-//   - Export, suppression compte, déconnexion
+// Port complet de app/app/(tabs)/settings.tsx mobile
+// Ajouts vs version précédente :
+//   - Section À propos : Version web + Conditions d'utilisation + Feedback (comme mobile)
+//   - Section Confidentialité : ajout Conditions d'utilisation
+//   - Notifications : badge "push activées" aligné sur mobile
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -18,6 +15,9 @@ import { Avatar, GlassCard, SectionLabel, Button, Input, Notice } from '@/compon
 import { useLangStore } from '@/store/langStore'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+
+const APP_VERSION = '1.2.1'
+const PRIVACY_URL = 'https://juju-kpi.github.io/splitit/privacy-policy.md'
 
 const AVATAR_COLORS = ['#4F46E5','#7C3AED','#DB2777','#DC2626','#EA580C','#CA8A04','#16A34A','#0891B2','#2563EB','#475569']
 
@@ -42,9 +42,9 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = window.atob(base64)
   const buffer = new ArrayBuffer(rawData.length)
-const outputArray = new Uint8Array(buffer)
-for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i)
-return outputArray
+  const outputArray = new Uint8Array(buffer)
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i)
+  return outputArray
 }
 
 async function getWebPushSubscription(): Promise<string | null> {
@@ -53,7 +53,6 @@ async function getWebPushSubscription(): Promise<string | null> {
     const reg = await navigator.serviceWorker.ready
     const existing = await reg.pushManager.getSubscription()
     if (existing) return JSON.stringify(existing)
-
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
     if (!vapidKey) return null
     const sub = await reg.pushManager.subscribe({
@@ -75,7 +74,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
     <button
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
-      className={`relative w-12 h-6 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-surface3'} ${disabled ? 'opacity-40' : ''}`}
+      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-accent' : 'bg-surface3'} ${disabled ? 'opacity-40' : ''}`}
       aria-checked={checked} role="switch"
     >
       <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-6' : ''}`} />
@@ -127,16 +126,12 @@ export default function SettingsPage() {
   const setUser = useAuthStore(s => s.setUser)
   const logout = useAuthStore(s => s.logout)
 
-  // Modals
   const [colorModal, setColorModal] = useState(false)
   const [langModal, setLangModal] = useState(false)
   const [currencyModal, setCurrencyModal] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
 
-  // Color picker
   const [selectedColor, setSelectedColor] = useState(user?.avatarColor || AVATAR_COLORS[0])
-
-  // Langue & devise
   const [selectedLang, setSelectedLang] = useState((user as any)?.preferredLanguage ?? 'fr')
   const [selectedCurrency, setSelectedCurrency] = useState((user as any)?.preferredCurrency ?? 'CHF')
 
@@ -164,14 +159,11 @@ export default function SettingsPage() {
   const total = ocrStats?.totalCorrections || 0
   const untrained = ocrStats?.untrainedCount || 0
 
-  // ── Web Push init ────────────────────────────────────────────────────
   useEffect(() => {
     const supported = isWebPushSupported()
     setNotifSupported(supported)
     if (!supported) return
-
     setNotifPermission(Notification.permission)
-
     navigator.serviceWorker.ready.then(() => setSwReady(true)).catch(() => {})
   }, [])
 
@@ -183,15 +175,12 @@ export default function SettingsPage() {
     setSelectedColor(user?.avatarColor || AVATAR_COLORS[0])
   }, [user?.id])
 
-  // ── Notification toggle ──────────────────────────────────────────────
   const handleNotifToggle = useCallback(async (type: 'expense' | 'reminder', value: boolean) => {
     if (!notifSupported) return
     setNotifLoading(true)
     try {
       let token: string | null = null
-
       if (value) {
-        // Demande permission si nécessaire
         if (Notification.permission !== 'granted') {
           const perm = await Notification.requestPermission()
           setNotifPermission(perm)
@@ -202,11 +191,10 @@ export default function SettingsPage() {
         }
         token = await getWebPushSubscription()
         if (!token) {
-          alert('Impossible d\'obtenir le token de notification.')
+          alert("Impossible d'obtenir le token de notification.")
           setNotifLoading(false); return
         }
       }
-
       const updated = await userApi.updateNotificationPrefs({
         pushToken: token,
         notifExpense: type === 'expense' ? value : notifExpense,
@@ -222,7 +210,6 @@ export default function SettingsPage() {
     }
   }, [notifSupported, notifExpense, notifReminder])
 
-  // ── Mutations ────────────────────────────────────────────────────────
   const colorMutation = useMutation({
     mutationFn: (color: string) => userApi.updateProfile({ avatarColor: color }),
     onSuccess: (data) => { setUser(data); setColorModal(false) },
@@ -256,7 +243,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="px-5 pb-28">
-        {/* Profil */}
+        {/* Profil hero */}
         <div className="glass-card rounded-2xl p-5 mt-4 mb-3 relative overflow-hidden">
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
           <div className="flex items-center gap-4">
@@ -306,7 +293,7 @@ export default function SettingsPage() {
           <SettingRow icon="📅" label="Membre depuis" value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'} />
           <RowSep />
           <SettingRow icon="🎨" label="Couleur de profil" onClick={() => setColorModal(true)}
-            right={<div className="w-6 h-6 rounded-full border-2 border-border" style={{ backgroundColor: user?.avatarColor || '#7C6EFA' }} />}
+            right={<div className="w-6 h-6 rounded-full border-2 border-border flex-shrink-0" style={{ backgroundColor: user?.avatarColor || '#7C6EFA' }} />}
           />
         </div>
 
@@ -321,13 +308,14 @@ export default function SettingsPage() {
 
         {/* Notifications */}
         <SectionLabel label="Notifications" />
-        {!notifSupported ? (
+        {notifSupported && notifPermission === 'granted' && (
+          <Notice text="Les notifications push sont activées sur cet appareil." variant="accent" />
+        )}
+        {notifSupported && notifPermission === 'denied' && (
+          <Notice variant="amber" text="Notifications bloquées. Autorise-les dans les réglages de ton navigateur." />
+        )}
+        {!notifSupported && (
           <Notice variant="amber" text="Les notifications push ne sont pas disponibles dans ce navigateur. Sur iPhone, installe l'app sur l'écran d'accueil (Safari → Partager → Sur l'écran d'accueil) et réessaie." />
-        ) : (
-          <>
-            {notifPermission === 'granted' && <Notice text="Les notifications push sont activées." variant="accent" />}
-            {notifPermission === 'denied' && <Notice variant="amber" text="Notifications bloquées. Autorise-les dans les réglages de ton navigateur." />}
-          </>
         )}
         <div className={`glass-card rounded-2xl overflow-hidden p-0 mb-3 ${!notifSupported ? 'opacity-50' : ''}`}>
           <SettingRow icon="🔔" label="Nouvelle dépense dans un groupe"
@@ -345,28 +333,34 @@ export default function SettingsPage() {
           <SettingRow icon="📦" label="Exporter mes données" onClick={async () => {
             setExportLoading(true)
             try { await userApi.requestDataExport(); setExportSent(true) } catch {} finally { setExportLoading(false) }
-          }} value={exportSent ? '✓ Email envoyé' : undefined} />
+          }} value={exportSent ? '✓ Email envoyé' : exportLoading ? '…' : undefined} />
           <RowSep />
-          <SettingRow icon="🔒" label="Politique de confidentialité" onClick={() => window.open('https://juju-kpi.github.io/splitit/privacy-policy.md', '_blank')} />
+          <SettingRow icon="🔒" label="Politique de confidentialité" onClick={() => window.open(PRIVACY_URL, '_blank')} />
+          <RowSep />
+          <SettingRow icon="📋" label="Conditions d'utilisation" onClick={() => window.open(PRIVACY_URL, '_blank')} />
         </div>
 
         {/* À propos */}
         <SectionLabel label="À propos" />
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-          <SettingRow icon="🌐" label="Version web" value="1.2.1" />
+          <SettingRow icon="🌐" label="Version web" value={APP_VERSION} />
           <RowSep />
           <SettingRow icon="💬" label="Envoyer un feedback" onClick={() => window.open('mailto:ares88775@gmail.com?subject=Feedback SplitIt', '_blank')} />
         </div>
 
-        {/* Danger */}
+        {/* Zone de danger */}
         <SectionLabel label="Zone de danger" />
         <div className="glass-card rounded-2xl overflow-hidden p-0">
-          <SettingRow icon="👋" label="Se déconnecter" onClick={async () => { if (confirm('Te déconnecter ?')) { await logout(); router.replace('/auth/login') } }} />
+          <SettingRow icon="👋" label="Se déconnecter" onClick={async () => {
+            if (confirm('Te déconnecter ?')) { await logout(); router.replace('/auth/login') }
+          }} />
           <RowSep />
-          <SettingRow icon="🗑" label="Supprimer mon compte" destructive onClick={() => { setDeleteModal(true); setDeleteStep('confirm'); setDeleteConfirm(''); setDeletePassword(''); setDeleteError('') }} />
+          <SettingRow icon="🗑" label="Supprimer mon compte" destructive onClick={() => {
+            setDeleteModal(true); setDeleteStep('confirm'); setDeleteConfirm(''); setDeletePassword(''); setDeleteError('')
+          }} />
         </div>
 
-        <p className="text-center text-[11px] text-text3 mt-8 mb-4">SplitIt Web · Fait avec ❤️</p>
+        <p className="text-center text-[11px] text-text3 mt-8 mb-4">SplitIt {APP_VERSION} · Fait avec ❤️</p>
       </div>
 
       {/* ── Color picker modal ── */}
@@ -424,10 +418,8 @@ export default function SettingsPage() {
           <>
             <div className="bg-red/5 border border-red/20 rounded-xl p-4 mb-5">
               <p className="text-sm font-bold text-red mb-2">⚠️ Action irréversible</p>
-              <p className="text-sm text-text2 leading-relaxed">
-                • Suppression définitive de ton profil{'\n'}
-                • Déconnexion de tous tes groupes{'\n'}
-                • Toutes tes sessions seront invalidées
+              <p className="text-sm text-text2 leading-relaxed whitespace-pre-line">
+                {'• Suppression définitive de ton profil\n• Déconnexion de tous tes groupes\n• Toutes tes sessions seront invalidées\n\nLes dépenses partagées restent visibles pour les autres membres.'}
               </p>
             </div>
             <p className="text-sm text-text2 mb-2">Tape <span className="text-red font-bold">supprimer</span> pour confirmer</p>
@@ -438,7 +430,10 @@ export default function SettingsPage() {
           </>
         ) : (
           <>
-            <p className="text-sm text-text2 mb-3">Entre ton mot de passe pour finaliser.</p>
+            <div className="bg-red/5 border border-red/20 rounded-xl p-4 mb-5">
+              <p className="text-sm font-bold text-red mb-1">🔑 Confirme ton mot de passe</p>
+              <p className="text-sm text-text2">Entre ton mot de passe pour finaliser la suppression.</p>
+            </div>
             <Input label="Mot de passe" type="password" value={deletePassword} onChange={setDeletePassword} />
             {deleteError && <p className="text-red text-xs mb-2">{deleteError}</p>}
             <Button label={deleteMutation.isPending ? 'Suppression…' : 'Supprimer définitivement'} variant="danger"
