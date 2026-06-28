@@ -31,6 +31,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" className="dark">
       <body className="bg-bg text-text antialiased">
         <Providers>{children}</Providers>
+        {/* Enregistrement du service worker pour les notifications push web */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                console.warn('[SW] Registration failed:', err);
+              });
+            });
+          }
+        `}} />
       </body>
     </html>
   )

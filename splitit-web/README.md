@@ -1,6 +1,6 @@
 # Splitit Web (PWA pour iPhone)
 
-Version web Next.js de l'app Splitit, conçue pour être ajoutée à l'écran d'accueil sur iPhone (PWA), avec le **même backend** que l'app mobile (`https://splitit-9x32.onrender.com`).
+Version web Next.js de l'app Splitit, conçue pour être ajoutée à l'écran d'accueil sur iPhone (PWA), avec le **même backend** que l'app mobile 
 
 ## Stack
 - Next.js 15 (App Router) + React 19 + TypeScript
@@ -18,7 +18,7 @@ npm run dev
 ## Déployer sur Vercel
 1. Pousser ce dossier sur un repo GitHub
 2. Importer le repo sur vercel.com
-3. Ajouter la variable d'env `NEXT_PUBLIC_API_URL` = `https://splitit-9x32.onrender.com` (ou ton backend)
+3. Ajouter la variable d'env `NEXT_PUBLIC_API_URL` =  (ou ton backend)
 4. Deploy
 
 Une fois en ligne, sur iPhone : ouvrir le lien dans Safari → bouton Partager → **Sur l'écran d'accueil**. L'app s'ouvre alors en plein écran, sans barre Safari, avec l'icône Splitit (`manifest.json` + `apple-touch-icon.png` déjà configurés).
