@@ -4,6 +4,7 @@
 //   2. POST /:id/duplicate — isComplete recalculé après création (plus hardcodé à false)
 //   3. PUT /:id — splits supprimés/recréés UNIQUEMENT si splitMemberIds ou customSplits fournis
 //      (sinon on écrasait les splits existants avec un tableau vide)
+//   4. POST / — notification push envoyée à tous les membres du groupe (notifExpense=true)
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
@@ -11,6 +12,49 @@ import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
+// ── Helper : notification push "nouvelle dépense" ────────────────────────
+async function sendNewExpenseNotification(opts: {
+  groupId: string;
+  description: string;
+  totalAmount: number;
+  currency: string;
+  creatorUserId: string; // ne pas notifier la personne qui crée
+}): Promise<void> {
+  try {
+    const members = await prisma.groupMember.findMany({
+      where: { groupId: opts.groupId, userId: { not: null } },
+      include: { user: true },
+    });
+
+    const tokens = members
+      .filter(m =>
+        m.user?.pushToken &&
+        m.user?.notifExpense &&
+        m.userId !== opts.creatorUserId // pas de notif à soi-même
+      )
+      .map(m => m.user!.pushToken as string);
+
+    if (tokens.length === 0) return;
+
+    const messages = tokens.map(token => ({
+      to: token,
+      title: 'SplitIt — Nouvelle dépense',
+      body: `${opts.description} · ${opts.totalAmount.toFixed(2)} ${opts.currency}`,
+      data: { type: 'new_expense' },
+    }));
+
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(messages),
+    });
+  } catch (e) {
+    // Ne pas faire échouer la requête si la notification plante
+    console.error('[Push] sendNewExpenseNotification failed:', e);
+  }
+}
+
 
 // ── Schemas ───────────────────────────────────────────────────────────────
 const itemSchema = z.object({
@@ -154,6 +198,15 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       items: { include: { assignedTo: { include: { member: true } } } },
       splits: { include: { member: true } },
     },
+  });
+
+  // ── Notification push aux autres membres du groupe ──────────────────
+  sendNewExpenseNotification({
+    groupId: d.groupId,
+    description: d.description,
+    totalAmount: d.totalAmount,
+    currency: d.currency,
+    creatorUserId: req.userId!,
   });
 
   res.status(201).json({ data: expense });
