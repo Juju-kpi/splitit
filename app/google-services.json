@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "498921169326",
+    "project_id": "splitit-b5690",
+    "storage_bucket": "splitit-b5690.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:498921169326:android:c9c1e8e0b84fe1bde7a83f",
+        "android_client_info": {
+          "package_name": "com.julien.splitit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrui7_D6AsWBQXeQ3n0-n8galbaIpe6XM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
