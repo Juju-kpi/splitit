@@ -11,7 +11,29 @@ import {
 } from '../types/preferences';
 type CreateExpenseInput = any;
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
+const BACKENDS = [
+  process.env.EXPO_PUBLIC_API_URL_PRIMARY || 'https://splitit-9x32.onrender.com',
+  process.env.EXPO_PUBLIC_API_URL_FALLBACK || 'https://splitit-13dz.onrender.com',
+]
+
+let activeIndex = 0
+let lastFailedAt: number | null = null
+const RETRY_AFTER_MS = 5 * 60 * 10000
+
+async function resolveBaseUrl(): Promise<string> {
+  if (activeIndex > 0 && lastFailedAt) {
+    if (Date.now() - lastFailedAt > RETRY_AFTER_MS) {
+      try {
+        await fetch(`${BACKENDS[0]}/api/health`, { signal: AbortSignal.timeout(3000) })
+        activeIndex = 0
+        lastFailedAt = null
+      } catch {
+        lastFailedAt = Date.now()
+      }
+    }
+  }
+  return BACKENDS[activeIndex]
+}
 const KEYS = { accessToken: 'splitit_access_token', refreshToken: 'splitit_refresh_token' };
 
 export async function saveTokens(access: string, refresh: string) {
@@ -27,12 +49,12 @@ export async function getAccessToken() {
 }
 
 const api: AxiosInstance = axios.create({
-  baseURL: `${BASE_URL}/api`,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  config.baseURL = `${await resolveBaseUrl()}/api`;
   const token = await SecureStore.getItemAsync(KEYS.accessToken);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -44,8 +66,21 @@ let refreshQueue: Array<(token: string) => void> = [];
 api.interceptors.response.use(
   res => res,
   async error => {
+    const status = error.response?.status;
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+
+    // Fallback backend
+    const isDown = status === 503 || status === 429 || !status;
+    if (isDown && activeIndex < BACKENDS.length - 1 && !original._fallback) {
+      original._fallback = true;
+      activeIndex++;
+      lastFailedAt = Date.now();
+      original.baseURL = `${BACKENDS[activeIndex]}/api`;
+      return api(original);
+    }
+
+    // Refresh token
+    if (status === 401 && !original._retry) {
       original._retry = true;
       if (isRefreshing) {
         return new Promise(resolve => {
@@ -59,7 +94,8 @@ api.interceptors.response.use(
       try {
         const refreshToken = await SecureStore.getItemAsync(KEYS.refreshToken);
         if (!refreshToken) throw new Error('No refresh token');
-        const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
+        const activeUrl = await resolveBaseUrl();
+        const { data } = await axios.post(`${activeUrl}/api/auth/refresh`, { refreshToken });
         const { accessToken: newAccess, refreshToken: newRefresh } = data.data;
         await saveTokens(newAccess, newRefresh);
         refreshQueue.forEach(cb => cb(newAccess));
@@ -73,6 +109,7 @@ api.interceptors.response.use(
         isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );
