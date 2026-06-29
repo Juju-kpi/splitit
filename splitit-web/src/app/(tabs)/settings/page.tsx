@@ -341,12 +341,14 @@ export default function SettingsPage() {
         </div>
 
         {/* À propos */}
-        <SectionLabel label="À propos" />
-        <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-          <SettingRow icon="🌐" label="Version web" value={APP_VERSION} />
-          <RowSep />
-          <SettingRow icon="💬" label="Envoyer un feedback" onClick={() => window.open('mailto:ares88775@gmail.com?subject=Feedback SplitIt', '_blank')} />
-        </div>
+<SectionLabel label="À propos" />
+<div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
+  <SettingRow icon="🌐" label="Version web" value={APP_VERSION} />
+  <RowSep />
+  <SettingRow icon="⭐️" label="Télécharger l'app mobile" onClick={() => window.open('https://play.google.com/store/apps/details?id=com.julien.splitit', '_blank')} />
+  <RowSep />
+  <SettingRow icon="💬" label="Envoyer un feedback" onClick={() => window.open('mailto:ares88775@gmail.com?subject=Feedback SplitIt', '_blank')} />
+</div>
 
         {/* Zone de danger */}
         <SectionLabel label="Zone de danger" />
