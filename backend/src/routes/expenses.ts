@@ -10,6 +10,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth';
+import { sendPushNotification } from '../services/notifications';
 
 const router = Router();
 
@@ -37,17 +38,10 @@ async function sendNewExpenseNotification(opts: {
 
     if (tokens.length === 0) return;
 
-    const messages = tokens.map(token => ({
-      to: token,
+    await sendPushNotification(tokens, {
       title: 'SplitIt — Nouvelle dépense',
       body: `${opts.description} · ${opts.totalAmount.toFixed(2)} ${opts.currency}`,
       data: { type: 'new_expense' },
-    }));
-
-    await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(messages),
     });
   } catch (e) {
     // Ne pas faire échouer la requête si la notification plante

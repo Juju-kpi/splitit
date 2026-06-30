@@ -15,6 +15,7 @@ import ocrRouter from './routes/ocr';
 import usersRouter from './routes/users';
 import { authenticate } from './middleware/auth';
 import { runTrainingPipeline } from './services/trainingPipeline';
+import { sendPushNotification } from './services/notifications';
 import dns from 'dns';
 dns.setDefaultResultOrder('ipv4first');
 
@@ -92,18 +93,10 @@ cron.schedule('0 9 * * *', async () => {
 
     if (tokensToNotify.size === 0) return;
 
-    // Expo Push API
-    const messages = Array.from(tokensToNotify).map(token => ({
-      to: token,
+    await sendPushNotification(Array.from(tokensToNotify), {
       title: 'SplitIt — Dépenses à compléter',
       body: `Tu as des dépenses en attente. Complète-les pour équilibrer les comptes.`,
       data: { type: 'reminder' },
-    }));
-
-    await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(messages),
     });
 
     console.log(`[Cron] Sent reminders to ${tokensToNotify.size} users`);
