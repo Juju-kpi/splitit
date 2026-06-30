@@ -29,12 +29,8 @@ async function sendNewExpenseNotification(opts: {
     });
 
     const tokens = members
-      .filter(m =>
-        m.user?.pushToken &&
-        m.user?.notifExpense &&
-        m.userId !== opts.creatorUserId // pas de notif à soi-même
-      )
-      .map(m => m.user!.pushToken as string);
+      .filter(m => (m.user?.pushToken || m.user?.webPushToken) && m.user?.notifExpense && m.userId !== opts.creatorUserId)
+      .flatMap(m => [m.user!.pushToken, m.user!.webPushToken].filter(Boolean) as string[]);
 
     if (tokens.length === 0) return;
 

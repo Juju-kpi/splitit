@@ -8,6 +8,7 @@ export interface User {
   createdAt: string;
   // Notifications
   pushToken?: string | null;
+  webPushToken?: string | null;
   notifExpense?: boolean;
   notifReminder?: boolean;
   // Préférences

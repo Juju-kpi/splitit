@@ -39,6 +39,10 @@ function isWebSubscription(token: string): boolean {
   return token.trim().startsWith('{');
 }
 
+// Sépare une liste mixte mobile+web en deux files (basé sur le format du
+// token, indépendant de la colonne d'origine — robuste même si d'anciennes
+// données mal classées traînent encore en base).
+
 // ── Envoi vers les tokens mobiles (Expo) ────────────────────────────────────
 async function sendExpoPush(tokens: string[], payload: PushPayload): Promise<void> {
   if (tokens.length === 0) return;

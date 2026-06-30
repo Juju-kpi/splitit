@@ -18,7 +18,10 @@ model User {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   // Notifications
+  // pushToken      : token Expo mobile (ExponentPushToken[...])
+  // webPushToken   : abonnement Web Push (JSON stringifié, navigateur)
   pushToken          String?
+  webPushToken       String?
   notifExpense       Boolean       @default(false)
   notifReminder      Boolean       @default(false)
   // Préférences

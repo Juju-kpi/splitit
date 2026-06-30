@@ -118,7 +118,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
     where: { id: req.userId },
     select: {
       id: true, email: true, username: true, avatarColor: true,
-      pushToken: true, notifExpense: true, notifReminder: true,
+      pushToken: true, webPushToken: true, notifExpense: true, notifReminder: true,
       preferredLanguage: true, preferredCurrency: true, createdAt: true,
     },
   });

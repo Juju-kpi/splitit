@@ -196,7 +196,7 @@ export default function SettingsPage() {
         }
       }
       const updated = await userApi.updateNotificationPrefs({
-        pushToken: token,
+        webPushToken: token,
         notifExpense: type === 'expense' ? value : notifExpense,
         notifReminder: type === 'reminder' ? value : notifReminder,
       })

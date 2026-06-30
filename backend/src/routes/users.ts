@@ -75,25 +75,33 @@ router.patch('/profile', async (req: AuthRequest, res: Response) => {
 });
 
 // ── PATCH /api/users/notification-prefs ──────────────────────────────────
+// pushToken et webPushToken sont indépendants : un client mobile n'envoie
+// que pushToken, un client web n'envoie que webPushToken. On ne met à jour
+// que le champ explicitement fourni, pour ne jamais écraser le token de
+// l'autre plateforme quand le même compte est utilisé des deux côtés.
 router.patch('/notification-prefs', async (req: AuthRequest, res: Response) => {
   const schema = z.object({
-    pushToken: z.string().nullable(),
+    pushToken: z.string().nullable().optional(),
+    webPushToken: z.string().nullable().optional(),
     notifExpense: z.boolean(),
     notifReminder: z.boolean(),
   });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
 
+  const data: any = {
+    notifExpense: parsed.data.notifExpense,
+    notifReminder: parsed.data.notifReminder,
+  };
+  if (parsed.data.pushToken !== undefined) data.pushToken = parsed.data.pushToken;
+  if (parsed.data.webPushToken !== undefined) data.webPushToken = parsed.data.webPushToken;
+
   const user = await prisma.user.update({
     where: { id: req.userId },
-    data: {
-      pushToken: parsed.data.pushToken,
-      notifExpense: parsed.data.notifExpense,
-      notifReminder: parsed.data.notifReminder,
-    },
+    data,
     select: {
       id: true, email: true, username: true, avatarColor: true,
-      pushToken: true, notifExpense: true, notifReminder: true, createdAt: true,
+      pushToken: true, webPushToken: true, notifExpense: true, notifReminder: true, createdAt: true,
     },
   });
 
@@ -129,7 +137,7 @@ router.get('/me', async (req: AuthRequest, res: Response) => {
     where: { id: req.userId },
     select: {
       id: true, email: true, username: true, avatarColor: true,
-      pushToken: true, notifExpense: true, notifReminder: true,
+      pushToken: true, webPushToken: true, notifExpense: true, notifReminder: true,
       preferredLanguage: true, preferredCurrency: true, createdAt: true,
     },
   });

@@ -85,8 +85,9 @@ cron.schedule('0 9 * * *', async () => {
     const tokensToNotify = new Set<string>();
     incompleteExpenses.forEach(exp => {
       exp.group.members.forEach(m => {
-        if (m.user?.pushToken && m.user?.notifReminder) {
-          tokensToNotify.add(m.user.pushToken);
+        if (m.user?.notifReminder) {
+          if (m.user.pushToken) tokensToNotify.add(m.user.pushToken);
+          if (m.user.webPushToken) tokensToNotify.add(m.user.webPushToken);
         }
       });
     });
