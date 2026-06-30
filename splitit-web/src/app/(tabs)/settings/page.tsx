@@ -51,10 +51,18 @@ async function getWebPushSubscription(): Promise<string | null> {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null
     const reg = await navigator.serviceWorker.ready
-    const existing = await reg.pushManager.getSubscription()
-    if (existing) return JSON.stringify(existing)
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
     if (!vapidKey) return null
+
+    // On ne réutilise jamais aveuglément un abonnement existant : le push
+    // service (FCM) peut l'avoir révoqué côté serveur (410 Gone) sans que le
+    // navigateur le sache localement. On désabonne d'abord pour forcer un
+    // abonnement frais, garanti valide, à chaque activation du toggle.
+    const existing = await reg.pushManager.getSubscription()
+    if (existing) {
+      try { await existing.unsubscribe() } catch {}
+    }
+
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as Uint8Array<ArrayBuffer>,
@@ -164,7 +172,21 @@ export default function SettingsPage() {
     setNotifSupported(supported)
     if (!supported) return
     setNotifPermission(Notification.permission)
-    navigator.serviceWorker.ready.then(() => setSwReady(true)).catch(() => {})
+    navigator.serviceWorker.ready.then(async (reg) => {
+      setSwReady(true)
+      // notifExpense/notifReminder sont des colonnes partagées avec le mobile :
+      // elles peuvent être à `true` alors qu'aucun abonnement push navigateur
+      // n'existe encore sur CET appareil/navigateur (ex: notifs activées sur
+      // mobile uniquement). On reflète donc l'état RÉEL de l'abonnement web
+      // dans les toggles, pas le simple booléen serveur.
+      try {
+        const existing = await reg.pushManager.getSubscription()
+        if (!existing) {
+          setNotifExpense(false)
+          setNotifReminder(false)
+        }
+      } catch {}
+    }).catch(() => {})
   }, [])
 
   useEffect(() => {

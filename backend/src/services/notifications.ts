@@ -11,6 +11,8 @@
 //
 // Ce service détecte le type de token et route vers le bon transport.
 
+import { prisma } from '../db';
+
 import webpush from 'web-push';
 
 const VAPID_PUBLIC_KEY = (process.env.VAPID_PUBLIC_KEY || '').trim();
@@ -107,6 +109,19 @@ async function sendWebPush(subscriptionsJson: string[], payload: PushPayload): P
           e?.statusCode || e?.message || e,
           e?.body ? `body: ${e.body}` : ''
         );
+        if (e?.statusCode === 404 || e?.statusCode === 410) {
+          // Abonnement mort : on le retire en base pour qu'il ne soit plus
+          // jamais réutilisé tel quel (que ce soit dans pushToken ou
+          // webPushToken, selon où l'ancienne valeur traînait).
+          try {
+            await prisma.user.updateMany({
+              where: { OR: [{ pushToken: raw }, { webPushToken: raw }] },
+              data: { pushToken: null, webPushToken: null },
+            });
+          } catch (cleanupErr) {
+            console.error('[Push][Web] Échec nettoyage token expiré:', cleanupErr);
+          }
+        }
       }
     })
   );
