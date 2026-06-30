@@ -13,7 +13,7 @@
 
 import webpush from 'web-push';
 
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
+const VAPID_PUBLIC_KEY = (process.env.VAPID_PUBLIC_KEY || '').trim();
 const VAPID_PRIVATE_KEY = (process.env.VAPID_PRIVATE_KEY || '').trim();
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:contact@splitit.app';
 
@@ -100,9 +100,13 @@ async function sendWebPush(subscriptionsJson: string[], payload: PushPayload): P
         );
       } catch (e: any) {
         // 410 / 404 = abonnement expiré ou révoqué par le navigateur.
-        // On log juste ; le nettoyage des tokens invalides peut être fait
-        // séparément si besoin (suppression en DB).
-        console.error('[Push][Web] Échec d\'envoi:', e?.statusCode || e?.message || e);
+        // 401 / 403 = mismatch entre la clé VAPID publique utilisée côté client
+        // au moment du subscribe et la clé privée utilisée côté serveur pour signer.
+        console.error(
+          '[Push][Web] Échec d\'envoi:',
+          e?.statusCode || e?.message || e,
+          e?.body ? `body: ${e.body}` : ''
+        );
       }
     })
   );
