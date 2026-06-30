@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/backend/src/index.js",
+    "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/seed.ts"
-  },
+},
   "dependencies": {
     "@prisma/client": "^5.13.0",
     "@supabase/supabase-js": "^2.43.0",
