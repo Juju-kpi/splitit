@@ -201,8 +201,15 @@ export default function SettingsPage() {
     if (!notifSupported) return
     setNotifLoading(true)
     try {
+      // État final des deux toggles APRÈS ce changement (avant: bug où on se
+      // basait sur le seul toggle cliqué, ignorant l'état de l'autre).
+      const nextExpense = type === 'expense' ? value : notifExpense
+      const nextReminder = type === 'reminder' ? value : notifReminder
+      const anyEnabled = nextExpense || nextReminder
+
       let token: string | null = null
-      if (value) {
+
+      if (anyEnabled) {
         if (Notification.permission !== 'granted') {
           const perm = await Notification.requestPermission()
           setNotifPermission(perm)
@@ -211,12 +218,29 @@ export default function SettingsPage() {
             setNotifLoading(false); return
           }
         }
-        token = await getWebPushSubscription()
-        if (!token) {
-          alert("Impossible d'obtenir le token de notification.")
-          setNotifLoading(false); return
+        // On ne touche au token que si on est en train d'ACTIVER un toggle
+        // (sinon, si on désactive un toggle alors que l'autre reste actif,
+        // on garde l'abonnement existant tel quel, sans le recréer).
+        if (value) {
+          token = await getWebPushSubscription()
+          if (!token) {
+            alert("Impossible d'obtenir le token de notification.")
+            setNotifLoading(false); return
+          }
+        } else {
+          token = user?.webPushToken ?? null
         }
+      } else {
+        // Les deux toggles sont désormais désactivés : on désabonne
+        // proprement le navigateur et on efface le token côté serveur.
+        try {
+          const reg = await navigator.serviceWorker.ready
+          const existing = await reg.pushManager.getSubscription()
+          if (existing) await existing.unsubscribe()
+        } catch {}
+        token = null
       }
+
       const updated = await userApi.updateNotificationPrefs({
         webPushToken: token,
         notifExpense: type === 'expense' ? value : notifExpense,
