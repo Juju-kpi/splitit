@@ -15,3 +15,9 @@ Thumbs.db
 
 # Logs
 *.log
+# backend/ml — sorties générées par le pipeline d'entraînement OCR
+backend/ml/data/
+backend/ml/out/
+backend/ml/*.onnx
+backend/ml/__pycache__/
+backend/ml/*.pyc

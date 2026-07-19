@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupsApi, expensesApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { useFormatMoney, useCurrency } from '../../store/langStore';
 import { Avatar, Card, SectionLabel, Divider, Button } from '../../components/ui';
 import { colors, spacing, shadows, radius } from '../../theme';
 import { Expense, Balance } from '../../../../shared/types';
@@ -46,6 +47,8 @@ export default function GroupDetailScreen() {
   const qc = useQueryClient();
   const user = useAuthStore(s => s.user);
   const insets = useSafeAreaInsets();
+  const fmt = useFormatMoney();
+  const cur = useCurrency();
 
   const [expandedBalance, setExpandedBalance] = useState<string | null>(null);
   const [showLog, setShowLog] = useState(false);
@@ -196,13 +199,13 @@ export default function GroupDetailScreen() {
               <View style={styles.summaryRow}>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNum}>{totalSpent.toFixed(2)}</Text>
-                  <Text style={styles.summaryCurrency}>CHF</Text>
+                  <Text style={styles.summaryCurrency}>{cur}</Text>
                   <Text style={styles.summaryLabel}>Total groupe</Text>
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryItem}>
                   <Text style={[styles.summaryNum, { color: colors.accent2 }]}>{myShare.toFixed(2)}</Text>
-                  <Text style={[styles.summaryCurrency, { color: colors.accent2 }]}>CHF</Text>
+                  <Text style={[styles.summaryCurrency, { color: colors.accent2 }]}>{cur}</Text>
                   <Text style={styles.summaryLabel}>Ma part</Text>
                 </View>
                 <View style={styles.summaryDivider} />
@@ -270,7 +273,7 @@ export default function GroupDetailScreen() {
                         </View>
                       </View>
                       <Text style={[styles.balanceAmt, isMe && styles.balanceAmtMe]}>
-                        {b.amount.toFixed(2)} CHF
+                        {fmt(b.amount)}
                       </Text>
                     </TouchableOpacity>
 
@@ -282,7 +285,7 @@ export default function GroupDetailScreen() {
                               {line.settled ? '✓ ' : '• '}{line.expenseDesc}
                             </Text>
                             <Text style={[styles.detailAmt, line.settled && { color: colors.green }]}>
-                              {line.amount.toFixed(2)} CHF
+                              {fmt(line.amount)}
                             </Text>
                           </View>
                         ))}
@@ -292,7 +295,7 @@ export default function GroupDetailScreen() {
                             onPress={() => {
                               Alert.alert(
                                 'Marquer comme réglé ?',
-                                `Confirmer le remboursement de ${b.amount.toFixed(2)} CHF à ${b.toMember.displayName} ?`,
+                                `Confirmer le remboursement de ${fmt(b.amount)} à ${b.toMember.displayName} ?`,
                                 [
                                   { text: 'Annuler', style: 'cancel' },
                                   {
@@ -311,7 +314,7 @@ export default function GroupDetailScreen() {
                             }}
                           >
                             <Text style={styles.settleBtnText}>
-                              💸 J'ai remboursé {b.amount.toFixed(2)} CHF
+                              💸 J'ai remboursé {fmt(b.amount)}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -370,7 +373,7 @@ export default function GroupDetailScreen() {
                   )}
                 </View>
                 <View style={styles.expRight}>
-                  <Text style={styles.expAmt}>{exp.totalAmount.toFixed(2)} CHF</Text>
+                  <Text style={styles.expAmt}>{fmt(exp.totalAmount)}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -416,10 +419,10 @@ export default function GroupDetailScreen() {
                     </Text>
                     <View>
                       <Text style={[styles.logEntryTotal, remaining < 0.01 && { color: colors.green }]}>
-                        {remaining < 0.01 ? '✓ Réglé' : `${remaining.toFixed(2)} CHF restant`}
+                        {remaining < 0.01 ? '✓ Réglé' : `${fmt(remaining)} restant`}
                       </Text>
                       {entry.settled > 0 && (
-                        <Text style={styles.logEntrySettled}>{entry.settled.toFixed(2)} CHF réglé</Text>
+                        <Text style={styles.logEntrySettled}>{fmt(entry.settled)} réglé</Text>
                       )}
                     </View>
                   </View>
@@ -429,7 +432,7 @@ export default function GroupDetailScreen() {
                         {line.settled ? '✓' : '•'} {line.expenseDesc}
                       </Text>
                       <Text style={[styles.logLineAmt, line.settled && { color: colors.text3 }]}>
-                        {line.amount.toFixed(2)} CHF
+                        {fmt(line.amount)}
                       </Text>
                     </View>
                   ))}

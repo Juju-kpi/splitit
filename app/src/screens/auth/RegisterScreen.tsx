@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
+import { useT } from '../../store/langStore';
 import { Button, Input } from '../../components/ui';
 import { colors, spacing, radius, shadows } from '../../theme';
 
@@ -13,6 +14,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const register = useAuthStore(s => s.register);
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -21,15 +23,15 @@ export default function RegisterScreen() {
   const [error, setError] = useState('');
 
   async function handleRegister() {
-    if (!email || !username || !password) { setError('Remplis tous les champs.'); return; }
-    if (password.length < 8) { setError('Mot de passe : 8 caractères minimum.'); return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError("Nom d'utilisateur : lettres, chiffres et _ uniquement."); return; }
+    if (!email || !username || !password) { setError(t('auth.fill_all')); return; }
+    if (password.length < 8) { setError(t('auth.password_too_short')); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError(t('auth.username_rule')); return; }
     setLoading(true); setError('');
     try {
       await register(email.toLowerCase().trim(), username.trim(), password);
       router.replace('/(tabs)');
     } catch (e: any) {
-      setError(e?.response?.data?.error || 'Inscription impossible.');
+      setError(e?.response?.data?.error || t('auth.register_impossible'));
     } finally { setLoading(false); }
   }
 
@@ -47,29 +49,29 @@ export default function RegisterScreen() {
             <Text style={styles.logoMarkText}>S</Text>
           </View>
           <Text style={styles.logo}>Split<Text style={{ color: colors.accent }}>it</Text></Text>
-          <Text style={styles.tagline}>Créer un compte</Text>
+          <Text style={styles.tagline}>{t('auth.register')}</Text>
         </View>
 
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Inscription</Text>
+          <Text style={styles.formTitle}>{t('auth.register_screen_title')}</Text>
           <Input
-            label="Email"
-            placeholder="toi@exemple.com"
+            label={t('auth.email')}
+            placeholder={t('auth.email_ph')}
             value={email}
             onChangeText={t => { setEmail(t); setError(''); }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
           <Input
-            label="Nom d'utilisateur"
-            placeholder="alicia42"
+            label={t('auth.username')}
+            placeholder={t('auth.username_ph')}
             value={username}
             onChangeText={t => { setUsername(t); setError(''); }}
             autoCapitalize="none"
           />
           <Input
-            label="Mot de passe"
-            placeholder="8 caractères minimum"
+            label={t('auth.password')}
+            placeholder={t('auth.password_min')}
             value={password}
             onChangeText={t => { setPassword(t); setError(''); }}
             secureTextEntry
@@ -80,7 +82,7 @@ export default function RegisterScreen() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
-          <Button label="Créer mon compte" onPress={handleRegister} loading={loading} />
+          <Button label={t('auth.create_account_btn')} onPress={handleRegister} loading={loading} />
         </View>
 
         <TouchableOpacity
@@ -90,7 +92,7 @@ export default function RegisterScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={styles.backBtnText}>
-            Déjà un compte ? <Text style={{ color: colors.accent2 }}>Se connecter</Text>
+            {t('auth.already_account')} <Text style={{ color: colors.accent2 }}>{t('auth.sign_in')}</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>

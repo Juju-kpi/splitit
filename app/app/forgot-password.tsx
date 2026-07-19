@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '../src/store/langStore';
 import { Button, Input, Notice } from '../src/components/ui';
 import { colors, spacing, radius } from '../src/theme';
 import { authApi } from '../src/services/api';
@@ -16,6 +17,7 @@ import { authApi } from '../src/services/api';
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const { token } = useLocalSearchParams<{ token?: string }>();
 
   // Request-reset state
@@ -30,7 +32,7 @@ export default function ForgotPasswordScreen() {
   const [resetDone, setResetDone] = useState(false);
 
   async function handleSend() {
-    if (!email.trim()) { setError('Entre ton adresse email.'); return; }
+    if (!email.trim()) { setError(t('auth.enter_email')); return; }
     setLoading(true);
     setError('');
     try {
@@ -44,15 +46,15 @@ export default function ForgotPasswordScreen() {
   }
 
   async function handleReset() {
-    if (password.length < 8) { setError('Le mot de passe doit faire au moins 8 caractères.'); return; }
-    if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return; }
+    if (password.length < 8) { setError(t('auth.password_too_short')); return; }
+    if (password !== confirm) { setError(t('auth.passwords_mismatch')); return; }
     setLoading(true);
     setError('');
     try {
       await authApi.resetPassword(token!, password);
       setResetDone(true);
     } catch (e: any) {
-      setError(e?.response?.data?.error || 'Lien invalide ou expiré. Refais une demande.');
+      setError(e?.response?.data?.error || t('auth.reset_link_invalid'));
     } finally {
       setLoading(false);
     }
@@ -76,17 +78,17 @@ export default function ForgotPasswordScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.backText}>← Retour</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
 
         {token ? (
           resetDone ? (
             <>
               <View style={styles.titleBlock}>
-                <Text style={styles.title}>Mot de passe mis à jour ✓</Text>
-                <Text style={styles.sub}>Tu peux maintenant te connecter avec ton nouveau mot de passe.</Text>
+                <Text style={styles.title}>{t('auth.password_updated')}</Text>
+                <Text style={styles.sub}>{t('auth.password_updated_sub')}</Text>
               </View>
-              <Button label="Se connecter" onPress={() => router.replace('/(auth)/login')} />
+              <Button label={t('auth.sign_in')} onPress={() => router.replace('/(auth)/login')} />
             </>
           ) : (
             <>
@@ -94,35 +96,35 @@ export default function ForgotPasswordScreen() {
                 <Text style={styles.title}>Nouveau mot de passe</Text>
                 <Text style={styles.sub}>Choisis un mot de passe d'au moins 8 caractères.</Text>
               </View>
-              <Input label="Nouveau mot de passe" placeholder="••••••••" value={password}
+              <Input label={t('auth.new_password')} placeholder="••••••••" value={password}
                 onChangeText={v => { setPassword(v); setError(''); }} secureTextEntry autoFocus />
-              <Input label="Confirmer" placeholder="••••••••" value={confirm}
+              <Input label={t('auth.confirm_short')} placeholder="••••••••" value={confirm}
                 onChangeText={v => { setConfirm(v); setError(''); }} secureTextEntry />
               {error ? <Text style={styles.error}>{error}</Text> : null}
-              <Button label="Enregistrer" onPress={handleReset} loading={loading} />
+              <Button label={t('auth.save_password')} onPress={handleReset} loading={loading} />
             </>
           )
         ) : (
           <>
             <View style={styles.titleBlock}>
-              <Text style={styles.title}>Mot de passe oublié</Text>
+              <Text style={styles.title}>{t('auth.forgot_title')}</Text>
               <Text style={styles.sub}>
-                Entre ton adresse email. Si un compte existe, tu recevras un lien de réinitialisation.
+                {t('auth.forgot_sub_long')}
               </Text>
             </View>
             {sent ? (
               <>
                 <Notice variant="green"
-                  text="Si un compte existe pour cet email, un lien a été envoyé. Vérifie ta boîte mail (et tes spams)." />
-                <Button label="Retour à la connexion" onPress={() => router.replace('/(auth)/login')} />
+                  text={t('auth.link_sent_long')} />
+                <Button label={t('auth.back_to_login')} onPress={() => router.replace('/(auth)/login')} />
               </>
             ) : (
               <>
-                <Input label="Email" placeholder="toi@exemple.com" value={email}
+                <Input label={t('auth.email')} placeholder={t('auth.email_ph')} value={email}
                   onChangeText={t => { setEmail(t); setError(''); }}
                   keyboardType="email-address" autoCapitalize="none" autoFocus />
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <Button label="Envoyer le lien" onPress={handleSend} loading={loading} />
+                <Button label={t('auth.send_link')} onPress={handleSend} loading={loading} />
               </>
             )}
           </>

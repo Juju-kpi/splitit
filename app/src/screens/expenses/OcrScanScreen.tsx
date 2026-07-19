@@ -11,6 +11,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ocrApi } from '../../services/api';
 import { Button, Chip, Notice, Avatar, Divider } from '../../components/ui';
 import { colors, spacing, radius } from '../../theme';
+import { useFormatMoney } from '../../store/langStore';
 import { OcrItem, GroupMember } from '../../../../shared/types';
 
 interface LocalItem extends OcrItem {
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export default function OcrScanScreen({ members, onComplete }: Props) {
+  const fmt = useFormatMoney();
   const [phase, setPhase] = useState<'pick' | 'scanning' | 'review'>('pick');
   const [scanStatus, setScanStatus] = useState('Initialisation…');
   const [items, setItems] = useState<LocalItem[]>([]);
@@ -197,7 +199,7 @@ export default function OcrScanScreen({ members, onComplete }: Props) {
       {/* Totals */}
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Articles cochés</Text>
-        <Text style={styles.totalAmt}>{totalChecked.toFixed(2)} / {totalAll.toFixed(2)} CHF</Text>
+        <Text style={styles.totalAmt}>{fmt(totalChecked)} / {fmt(totalAll)}</Text>
       </View>
 
       <Button label="Calculer les parts →" onPress={handleConfirm} style={{ marginTop: 16 }} />

@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '../../store/authStore';
+import { useT } from '../../store/langStore';
 import { Button, Input } from '../../components/ui';
 import { colors, spacing, radius, shadows } from '../../theme';
 
@@ -17,6 +18,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore(s => s.login);
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +31,7 @@ export default function LoginScreen() {
   }, []);
 
   async function handleLogin() {
-    if (!email.trim() || !password) { setError('Remplis tous les champs.'); return; }
+    if (!email.trim() || !password) { setError(t('auth.fill_all')); return; }
     setLoading(true); setError('');
     try {
       await login(email.toLowerCase().trim(), password);
@@ -39,8 +41,8 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (e: any) {
       const msg = e?.response?.data?.error;
-      if (msg === 'Invalid email or password') setError('Email ou mot de passe incorrect.');
-      else setError(msg || 'Connexion impossible. Vérifie ta connexion.');
+      if (msg === 'Invalid email or password') setError(t('auth.invalid_credentials'));
+      else setError(msg || t('auth.login_failed'));
     } finally { setLoading(false); }
   }
 
@@ -64,16 +66,16 @@ export default function LoginScreen() {
           <Text style={styles.logo}>
             Split<Text style={{ color: colors.accent }}>it</Text>
           </Text>
-          <Text style={styles.tagline}>Partagez sans prise de tête</Text>
+          <Text style={styles.tagline}>{t('auth.tagline')}</Text>
         </View>
 
         {/* Form card */}
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Connexion</Text>
+          <Text style={styles.formTitle}>{t('auth.login')}</Text>
 
           <Input
-            label="Email"
-            placeholder="toi@exemple.com"
+            label={t('auth.email')}
+            placeholder={t('auth.email_ph')}
             value={email}
             onChangeText={t => { setEmail(t); setError(''); }}
             keyboardType="email-address"
@@ -81,7 +83,7 @@ export default function LoginScreen() {
             autoComplete="email"
           />
           <Input
-            label="Mot de passe"
+            label={t('auth.password')}
             placeholder="••••••••"
             value={password}
             onChangeText={t => { setPassword(t); setError(''); }}
@@ -99,7 +101,7 @@ export default function LoginScreen() {
               <View style={[styles.checkbox, rememberMe && styles.checkboxOn]}>
                 {rememberMe && <Text style={styles.checkmark}>✓</Text>}
               </View>
-              <Text style={styles.rememberText}>Rester connecté</Text>
+              <Text style={styles.rememberText}>{t('auth.remember_me')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -107,7 +109,7 @@ export default function LoginScreen() {
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+              <Text style={styles.forgotText}>{t('auth.forgot_password')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -118,13 +120,13 @@ export default function LoginScreen() {
             </View>
           ) : null}
 
-          <Button label="Se connecter" onPress={handleLogin} loading={loading} />
+          <Button label={t('auth.sign_in')} onPress={handleLogin} loading={loading} />
         </View>
 
         {/* Switch */}
         <View style={styles.switchWrap}>
           <View style={styles.switchLine} />
-          <Text style={styles.switchOr}>ou</Text>
+          <Text style={styles.switchOr}>{t('auth.or')}</Text>
           <View style={styles.switchLine} />
         </View>
 
@@ -133,7 +135,7 @@ export default function LoginScreen() {
           style={styles.registerBtn}
           activeOpacity={0.8}
         >
-          <Text style={styles.registerBtnText}>Créer un compte</Text>
+          <Text style={styles.registerBtnText}>{t('auth.register')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

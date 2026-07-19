@@ -17,6 +17,7 @@ import { colors, spacing, radius } from '../../src/theme';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuthStore } from '../../src/store/authStore';
+import { useFormatMoney } from '../../src/store/langStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ExpenseDetailScreen() {
@@ -25,6 +26,7 @@ export default function ExpenseDetailScreen() {
   const qc = useQueryClient();
   const user = useAuthStore(s => s.user);
   const insets = useSafeAreaInsets();
+  const fmt = useFormatMoney();
 
   const [editing, setEditing] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
@@ -91,10 +93,16 @@ export default function ExpenseDetailScreen() {
       qc.invalidateQueries({ queryKey: ['group', expense?.groupId] });
       Alert.alert(
         '✓ Dépense dupliquée',
-        'Une copie a été créée dans ce groupe.',
+        'Une copie a été créée. Tu peux la modifier maintenant.',
         [
-          { text: 'Voir la copie', onPress: () => router.replace(`/expense/${newExpense.id}`) },
-          { text: 'Rester ici', style: 'cancel' },
+          {
+            text: 'Modifier la copie',
+            onPress: () =>
+              router.replace(
+                `/expense/add?groupId=${expense?.groupId}&expenseId=${newExpense.id}&isEdit=true`
+              ),
+          },
+          { text: 'Plus tard', style: 'cancel' },
         ]
       );
     },
@@ -259,7 +267,7 @@ export default function ExpenseDetailScreen() {
                   <Text style={styles.metaValue}>{p.member.displayName}</Text>
                   {expense.payments.length > 1 && (
                     <Text style={{ fontSize: 11, color: colors.text3, fontFamily: 'monospace' }}>
-                      {' '}({p.amount.toFixed(2)} CHF)
+                      {' '}({fmt(p.amount)})
                     </Text>
                   )}
                 </View>
@@ -270,7 +278,7 @@ export default function ExpenseDetailScreen() {
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Total</Text>
             <Text style={[styles.metaValue, { fontFamily: 'monospace', fontSize: 20 }]}>
-              {expense.totalAmount.toFixed(2)} CHF
+              {fmt(expense.totalAmount)}
             </Text>
           </View>
           {mySplit && (
@@ -279,7 +287,7 @@ export default function ExpenseDetailScreen() {
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Ma part</Text>
                 <Text style={[styles.metaValue, { fontFamily: 'monospace', fontSize: 16, color: colors.accent2 }]}>
-                  {mySplit.amount.toFixed(2)} CHF{mySplit.settled ? '  ✓ réglé' : ''}
+                  {fmt(mySplit.amount)}{mySplit.settled ? '  ✓ réglé' : ''}
                 </Text>
               </View>
             </>
@@ -343,7 +351,7 @@ export default function ExpenseDetailScreen() {
                         </Text>
                       )}
                     </View>
-                    <Text style={styles.itemPrice}>{item.price.toFixed(2)} CHF</Text>
+                    <Text style={styles.itemPrice}>{fmt(item.price)}</Text>
                   </View>
                   {i < expense.items.length - 1 && <Divider />}
                 </React.Fragment>
@@ -362,7 +370,7 @@ export default function ExpenseDetailScreen() {
                 <Text style={styles.splitName}>{split.member.displayName}</Text>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={[styles.splitAmt, split.settled && { color: colors.green }]}>
-                    {split.amount.toFixed(2)} CHF
+                    {fmt(split.amount)}
                   </Text>
                   {split.settled && <Text style={styles.settledTag}>✓ réglé</Text>}
                 </View>

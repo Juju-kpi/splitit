@@ -5,12 +5,15 @@
 // then set MISTRAL_API_KEY in your .env
 
 import { OcrResult, OcrItem } from '../../../shared/types';
+import { buildFewShotBlock } from './ocr/correctionEngine';
+import { correctItems } from './ocr/postCorrect';
 
 // ─── Mistral Pixtral ───────────────────────────────────────────────────────
 // Free at console.mistral.ai — very accurate on receipts, handles FR/DE/IT/EN
 async function runMistralPixtral(
   imageBuffer: Buffer,
-  mimeType = 'image/jpeg'
+  mimeType = 'image/jpeg',
+  fewShot = '',
 ): Promise<OcrResult | null> {
   if (!process.env.MISTRAL_API_KEY) return null;
 
@@ -43,7 +46,7 @@ Rules:
 - If quantity like "x2", "2x" or "×2": expand into SEPARATE items with unit price. E.g. "Café ×2  8.00" → [{"name":"Café","price":4.00},{"name":"Café","price":4.00}]
 - Translate product names to French
 - Clean up obvious OCR errors in the name
-- Keep the original language of the receipt (FR/DE/IT/EN)`,
+- Keep the original language of the receipt (FR/DE/IT/EN)${fewShot ? `\n\n${fewShot}` : ''}`,
               },
             ],
           },
@@ -150,19 +153,41 @@ export async function processReceiptImage(
   imageBuffer: Buffer,
   mimeType = 'image/jpeg'
 ): Promise<OcrResult> {
+  // Learned few-shot examples (empty until the first ruleset is promoted).
+  let fewShot = '';
+  try { fewShot = await buildFewShotBlock(); } catch { /* non-fatal */ }
+
+  let result: OcrResult | null = null;
+
   // 1. Try Mistral Pixtral — free, best quality
   if (process.env.MISTRAL_API_KEY) {
-    const result = await runMistralPixtral(imageBuffer, mimeType);
-    if (result && result.items.length > 0) return result;
-    console.warn('[OCR] Pixtral returned no items, falling back to Tesseract');
+    result = await runMistralPixtral(imageBuffer, mimeType, fewShot);
+    if (!result || result.items.length === 0) {
+      console.warn('[OCR] Pixtral returned no items, falling back to Tesseract');
+      result = null;
+    }
   } else {
     console.log('[OCR] MISTRAL_API_KEY not set — using Tesseract directly');
     console.log('[OCR] Get a free key at https://console.mistral.ai');
   }
 
   // 2. Tesseract.js — always available, no key needed
-  console.log('[OCR] Running Tesseract.js (takes ~5s)...');
-  const tessResult = await runTesseract(imageBuffer);
-  console.log('[OCR] Tesseract: %d items at %.0f%% confidence', tessResult.items.length, tessResult.confidence * 100);
-  return tessResult;
+  if (!result) {
+    console.log('[OCR] Running Tesseract.js (takes ~5s)...');
+    result = await runTesseract(imageBuffer);
+    console.log('[OCR] Tesseract: %d items at %.0f%% confidence', result.items.length, result.confidence * 100);
+  }
+
+  // 3. Post-correction: fine-tuned model if promoted, else deterministic rules.
+  try {
+    const corrected = await correctItems(result.items, result.vendor);
+    if (corrected.appliedCount > 0) {
+      console.log('[OCR] Applied %d corrections via %s (v%d)', corrected.appliedCount, corrected.engine, corrected.version);
+    }
+    result.items = corrected.items;
+  } catch (e) {
+    console.warn('[OCR] Post-correction skipped:', e);
+  }
+
+  return result;
 }

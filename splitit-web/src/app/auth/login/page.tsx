@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Input } from '@/components/ui'
+import { useT } from '@/store/langStore'
 
 const LAST_EMAIL_KEY = 'splitit_last_email'
 
 export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore(s => s.login)
+  const t = useT()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -25,7 +27,7 @@ export default function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim() || !password) { setError('Remplis tous les champs.'); return }
+    if (!email.trim() || !password) { setError(t('auth.fill_all')); return }
     setLoading(true); setError('')
     try {
       await login(email.toLowerCase().trim(), password)
@@ -33,7 +35,7 @@ export default function LoginPage() {
       router.replace('/home')
     } catch (e: any) {
       const msg = e?.response?.data?.error
-      setError(msg === 'Invalid email or password' ? 'Email ou mot de passe incorrect.' : (msg || 'Connexion impossible. Vérifie ta connexion.'))
+      setError(msg === 'Invalid email or password' ? t('auth.invalid_credentials') : (msg || t('auth.login_failed')))
     } finally {
       setLoading(false)
     }
@@ -47,23 +49,23 @@ export default function LoginPage() {
             <span className="text-3xl font-extrabold text-accent">S</span>
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-text">Split<span className="text-accent">it</span></h1>
-          <p className="text-xs text-text3 mt-1.5 font-medium">Partagez sans prise de tête</p>
+          <p className="text-xs text-text3 mt-1.5 font-medium">{t('auth.tagline')}</p>
         </div>
 
         <div className="glass rounded-2xl p-5 mb-5">
-          <h2 className="text-xl font-bold text-text mb-5 tracking-tight">Connexion</h2>
-          <Input label="Email" placeholder="toi@exemple.com" value={email} onChange={v => { setEmail(v); setError('') }} type="email" />
-          <Input label="Mot de passe" placeholder="••••••••" value={password} onChange={v => { setPassword(v); setError('') }} type="password" />
+          <h2 className="text-xl font-bold text-text mb-5 tracking-tight">{t('auth.login')}</h2>
+          <Input label={t('auth.email')} placeholder={t('auth.email_ph')} value={email} onChange={v => { setEmail(v); setError('') }} type="email" />
+          <Input label={t('auth.password')} placeholder="••••••••" value={password} onChange={v => { setPassword(v); setError('') }} type="password" />
 
           <div className="flex items-center justify-between mt-1 mb-4">
             <button type="button" onClick={() => setRememberMe(r => !r)} className="flex items-center gap-2 min-h-[44px]">
               <div className={`w-[22px] h-[22px] rounded-md border-[1.5px] flex items-center justify-center ${rememberMe ? 'bg-accent border-accent' : 'border-border2'}`}>
                 {rememberMe && <span className="text-white text-xs font-extrabold">✓</span>}
               </div>
-              <span className="text-[13px] text-text2 font-medium">Rester connecté</span>
+              <span className="text-[13px] text-text2 font-medium">{t('auth.remember_me')}</span>
             </button>
             <Link href="/auth/forgot-password" className="text-[13px] text-accent2 font-semibold min-h-[44px] flex items-center">
-              Mot de passe oublié ?
+              {t('auth.forgot_password')}
             </Link>
           </div>
 
@@ -74,18 +76,18 @@ export default function LoginPage() {
             </div>
           )}
 
-          <Button label="Se connecter" type="submit" loading={loading} />
+          <Button label={t('auth.sign_in')} type="submit" loading={loading} />
         </div>
 
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-white/5" />
-          <span className="text-xs text-text3 font-medium">ou</span>
+          <span className="text-xs text-text3 font-medium">{t('auth.or')}</span>
           <div className="flex-1 h-px bg-white/5" />
         </div>
 
         <Link href="/auth/register">
           <button type="button" className="w-full bg-surface2 border border-border rounded-xl py-[15px] text-[15px] font-semibold text-text2 min-h-[52px]">
-            Créer un compte
+            {t('auth.register')}
           </button>
         </Link>
       </form>

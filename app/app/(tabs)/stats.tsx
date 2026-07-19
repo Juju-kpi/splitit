@@ -14,6 +14,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { Card, GlassCard, SectionLabel, ScreenHeader } from '../../src/components/ui';
 import { colors, spacing, radius, shadows } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFormatMoney, useCurrency } from '../../src/store/langStore';
 
 function MiniBar({ value, max, color = colors.accent }: { value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.min(value / max, 1) : 0;
@@ -50,6 +51,8 @@ export default function StatsScreen() {
   const router = useRouter();
   const user = useAuthStore(s => s.user);
   const insets = useSafeAreaInsets();
+  const fmt = useFormatMoney();
+  const cur = useCurrency();
 
   const { data: groups, isLoading, refetch } = useQuery({ queryKey: ['groups'], queryFn: groupsApi.list });
   const groupIds: string[] = (groups || []).map((g: any) => g.id);
@@ -175,7 +178,7 @@ export default function StatsScreen() {
             <Text style={styles.heroLabel}>Solde net total</Text>
             <Text style={[styles.heroAmount, { color: netBalance >= 0 ? colors.green : colors.red }]}>
               {netBalance >= 0 ? '+' : ''}{netBalance.toFixed(2)}
-              <Text style={styles.heroCurrency}> CHF</Text>
+              <Text style={styles.heroCurrency}> {cur}</Text>
             </Text>
             <Text style={styles.heroSub}>
               {netBalance >= 0 ? '✓ On te doit de l\'argent' : '⚡ Tu dois de l\'argent'}
@@ -191,18 +194,18 @@ export default function StatsScreen() {
             <View style={styles.statDivider} />
             <StatBox value={totalExpenses} label="Dépenses" color={colors.green} />
             <View style={styles.statDivider} />
-            <StatBox value={`${myTotalShare.toFixed(0)}`} label="Ma part totale" sub="CHF" color={colors.amber} />
+            <StatBox value={`${myTotalShare.toFixed(0)}`} label="Ma part totale" sub={cur} color={colors.amber} />
           </View>
           {myTotalPaid > 0 && (
             <>
               <View style={styles.globalSeparator} />
               <View style={styles.statRow}>
-                <StatBox value={`${myTotalPaid.toFixed(0)}`} label="J'ai avancé" sub="CHF" color={colors.text2} />
+                <StatBox value={`${myTotalPaid.toFixed(0)}`} label="J'ai avancé" sub={cur} color={colors.text2} />
                 <View style={styles.statDivider} />
                 <StatBox
                   value={`${netBalance.toFixed(0)}`}
                   label={netBalance >= 0 ? 'On me doit' : 'Je dois'}
-                  sub="CHF"
+                  sub={cur}
                   color={netBalance >= 0 ? colors.green : colors.red}
                 />
                 <View style={styles.statDivider} />
@@ -233,15 +236,15 @@ export default function StatsScreen() {
                 <View style={styles.statDivider} />
                 <StatBox
                   value={thisMonthTotal.toFixed(0)}
-                  label="Ma part CHF"
-                  sub="CHF"
+                  label={`Ma part ${cur}`}
+                  sub={cur}
                   color={colors.amber}
                 />
                 <View style={styles.statDivider} />
                 <StatBox
                   value={avgExpense.toFixed(0)}
                   label="Moy. dépense"
-                  sub="CHF"
+                  sub={cur}
                   color={colors.text2}
                 />
               </View>
@@ -260,7 +263,7 @@ export default function StatsScreen() {
                   {owedList.map((d, i) => (
                     <View key={i} style={styles.debtRow}>
                       <Text style={styles.debtName}>{d.name}</Text>
-                      <Text style={[styles.debtAmt, { color: colors.green }]}>+{d.amount.toFixed(2)} CHF</Text>
+                      <Text style={[styles.debtAmt, { color: colors.green }]}>+{fmt(d.amount)}</Text>
                     </View>
                   ))}
                 </>
@@ -272,7 +275,7 @@ export default function StatsScreen() {
                   {oweList.map((d, i) => (
                     <View key={i} style={styles.debtRow}>
                       <Text style={styles.debtName}>{d.name}</Text>
-                      <Text style={[styles.debtAmt, { color: colors.red }]}>−{d.amount.toFixed(2)} CHF</Text>
+                      <Text style={[styles.debtAmt, { color: colors.red }]}>−{fmt(d.amount)}</Text>
                     </View>
                   ))}
                 </>
@@ -290,7 +293,7 @@ export default function StatsScreen() {
                 <View key={i} style={styles.topPayerRow}>
                   <Text style={styles.topPayerRank}>{['🥇', '🥈', '🥉'][i]}</Text>
                   <Text style={styles.topPayerName}>{p.name}</Text>
-                  <Text style={styles.topPayerAmt}>{p.total.toFixed(2)} CHF</Text>
+                  <Text style={styles.topPayerAmt}>{fmt(p.total)}</Text>
                 </View>
               ))}
               <MiniBar value={topPayers[0]?.total || 0} max={topPayers[0]?.total || 1} color={colors.amber} />
@@ -319,7 +322,7 @@ export default function StatsScreen() {
                     <Text style={styles.activityDesc} numberOfLines={1}>{exp.description}</Text>
                     <Text style={styles.activityGroup}>{exp.groupEmoji} {exp.groupName}</Text>
                   </View>
-                  <Text style={styles.activityAmt}>{exp.totalAmount.toFixed(2)} CHF</Text>
+                  <Text style={styles.activityAmt}>{fmt(exp.totalAmount)}</Text>
                 </TouchableOpacity>
               ))}
             </Card>
@@ -349,14 +352,14 @@ export default function StatsScreen() {
                         <Text style={[styles.groupStatNum, { color: colors.text2 }]}>
                           {total !== null ? `${total.toFixed(0)}` : '—'}
                         </Text>
-                        <Text style={styles.groupStatLabel}>total CHF</Text>
+                        <Text style={styles.groupStatLabel}>total {cur}</Text>
                       </View>
                       <View style={styles.groupStatDivider} />
                       <View style={styles.groupStat}>
                         <Text style={[styles.groupStatNum, { color: colors.accent2 }]}>
                           {myShare !== null ? `${myShare.toFixed(0)}` : '—'}
                         </Text>
-                        <Text style={styles.groupStatLabel}>ma part CHF</Text>
+                        <Text style={styles.groupStatLabel}>ma part {cur}</Text>
                       </View>
                     </View>
 
@@ -391,7 +394,7 @@ export default function StatsScreen() {
                         borderColor: myBalance > 0 ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)',
                       }]}>
                         <Text style={[styles.balanceBadgeText, { color: myBalance > 0 ? colors.green : colors.red }]}>
-                          {myBalance > 0 ? `✓ On me doit ${myBalance.toFixed(2)} CHF` : `⚡ Je dois ${Math.abs(myBalance).toFixed(2)} CHF`}
+                          {myBalance > 0 ? `✓ On me doit ${fmt(myBalance)}` : `⚡ Je dois ${fmt(Math.abs(myBalance))}`}
                         </Text>
                       </View>
                     )}

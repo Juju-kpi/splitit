@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing, shadows } from '../theme';
+import { useLangStore } from '../store/langStore';
 
 // ── Button ──────────────────────────────────────────────────────────────────
 interface ButtonProps {
@@ -225,8 +226,10 @@ export function Chip({ label, selected, onPress, avatar }: ChipProps) {
 
 // ── AmountInput ──────────────────────────────────────────────────────────────
 interface AmountInputProps { value: string; onChangeText: (v: string) => void; currency?: string; }
-export function AmountInput({ value, onChangeText, currency = 'CHF' }: AmountInputProps) {
+export function AmountInput({ value, onChangeText, currency }: AmountInputProps) {
   const [focused, setFocused] = useState(false);
+  const selectedCurrency = useLangStore(s => s.currency);
+  const shown = currency ?? selectedCurrency ?? 'CHF';
   return (
     <View style={[styles.amountWrap, focused && styles.amountWrapFocused]}>
       <Text style={styles.amountSymbol}>—</Text>
@@ -240,7 +243,7 @@ export function AmountInput({ value, onChangeText, currency = 'CHF' }: AmountInp
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
       />
-      <Text style={styles.amountCurrency}>{currency}</Text>
+      <Text style={styles.amountCurrency}>{shown}</Text>
     </View>
   );
 }

@@ -51,7 +51,7 @@ app.get('/health', (_, res) => res.json({ ok: true, ts: new Date() }));
 cron.schedule('0 2 * * *', async () => {
   console.log('[Cron] Starting nightly OCR training pipeline...');
   try {
-    await runTrainingPipeline();
+    await runTrainingPipeline({ trigger: 'cron' });
   } catch (e) {
     console.error('[Cron] Training pipeline failed:', e);
   }

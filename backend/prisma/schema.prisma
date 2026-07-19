@@ -175,18 +175,53 @@ model OcrCorrection {
   trainingRunId  String?
   createdAt      DateTime @default(now())
 
+  @@index([trained])
   @@map("ocr_corrections")
 }
 
 model OcrTrainingRun {
   id              String   @id @default(cuid())
-  correctionCount Int
-  exportedAt      DateTime @default(now())
-  status          String   @default("pending")
-  datasetUrl      String?
+  version         Int      @default(0)          // monotically increasing artifact version
+  active          Boolean  @default(false)      // exactly one active run = what inference uses
+  kind            String   @default("rules")    // "rules" | "model"
+  correctionCount Int                            // corrections seen when this run was built
+  ruleCount       Int      @default(0)           // rules produced (kind=rules)
+  modelRepo       String?                        // HF Hub repo (kind=model), e.g. "you/splitit-ocr"
+  modelRevision   String?                        // model revision/tag (kind=model), e.g. "v3"
+  status          String   @default("pending")  // pending|evaluated|promoted|skipped|failed
+  trigger         String   @default("cron")     // cron|manual|api|ci
+  precisionName   Float?                         // holdout accuracy on item names [0..1]
+  precisionPrice  Float?                         // holdout accuracy on prices [0..1]
+  metrics         Json?                          // full metrics blob
+  datasetUrl      String?                        // optional JSONL export path
   notes           String?
+  exportedAt      DateTime @default(now())
 
+  rules           OcrCorrectionRule[]
+
+  @@index([active])
   @@map("ocr_training_runs")
+}
+
+// Aggregated, deterministic correction rule learned from user feedback.
+// Applied at inference time by the correction engine (free, no external model).
+model OcrCorrectionRule {
+  id            String   @id @default(cuid())
+  runId         String
+  version       Int                              // == OcrTrainingRun.version, for fast active lookup
+  keyNorm       String                           // normalized OCR raw text (the lookup key)
+  vendorNorm    String   @default("")            // normalized vendor hint, "" = vendor-agnostic
+  correctedName String                           // majority-vote corrected name
+  priceHint     Float?                           // stable modal price, if any (low-priority fallback)
+  support       Int                              // number of corrections backing this rule
+  confidence    Float                            // agreement ratio [0..1]
+  createdAt     DateTime @default(now())
+
+  run           OcrTrainingRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([version, keyNorm, vendorNorm])
+  @@index([version])
+  @@map("ocr_correction_rules")
 }
 
 enum SplitType {

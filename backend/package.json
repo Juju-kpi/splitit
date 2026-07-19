@@ -9,7 +9,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/seed.ts"
-},
+  },
   "dependencies": {
     "@prisma/client": "^5.13.0",
     "@supabase/supabase-js": "^2.43.0",
@@ -37,7 +37,8 @@
     "typescript": "^5.5.0",
     "uuid": "^9.0.1",
     "web-push": "^3.6.7",
-    "zod": "^3.23.6"
+    "zod": "^3.23.6",
+    "@huggingface/transformers": "^3.0.0"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.1",

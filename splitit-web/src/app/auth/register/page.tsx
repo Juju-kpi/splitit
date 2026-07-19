@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Input } from '@/components/ui'
+import { useT } from '@/store/langStore'
 
 export default function RegisterPage() {
   const router = useRouter()
   const register = useAuthStore(s => s.register)
+  const t = useT()
 
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
@@ -18,15 +20,15 @@ export default function RegisterPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    if (!email || !username || !password) { setError('Remplis tous les champs.'); return }
-    if (password.length < 8) { setError('Mot de passe : 8 caractères minimum.'); return }
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError("Nom d'utilisateur : lettres, chiffres et _ uniquement."); return }
+    if (!email || !username || !password) { setError(t('auth.fill_all')); return }
+    if (password.length < 8) { setError(t('auth.password_too_short')); return }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError(t('auth.username_rule')); return }
     setLoading(true); setError('')
     try {
       await register(email.toLowerCase().trim(), username.trim(), password)
       router.replace('/home')
     } catch (e: any) {
-      setError(e?.response?.data?.error || 'Inscription impossible.')
+      setError(e?.response?.data?.error || t('auth.register_impossible'))
     } finally {
       setLoading(false)
     }
@@ -40,14 +42,14 @@ export default function RegisterPage() {
             <span className="text-3xl font-extrabold text-accent">S</span>
           </div>
           <h1 className="text-[34px] font-extrabold tracking-tight text-text">Split<span className="text-accent">it</span></h1>
-          <p className="text-xs text-text3 mt-1.5 font-medium">Créer un compte</p>
+          <p className="text-xs text-text3 mt-1.5 font-medium">{t('auth.register')}</p>
         </div>
 
         <div className="glass rounded-2xl p-5 mb-5">
-          <h2 className="text-xl font-bold text-text mb-5 tracking-tight">Inscription</h2>
-          <Input label="Email" placeholder="toi@exemple.com" value={email} onChange={v => { setEmail(v); setError('') }} type="email" />
-          <Input label="Nom d'utilisateur" placeholder="alicia42" value={username} onChange={v => { setUsername(v); setError('') }} />
-          <Input label="Mot de passe" placeholder="8 caractères minimum" value={password} onChange={v => { setPassword(v); setError('') }} type="password" />
+          <h2 className="text-xl font-bold text-text mb-5 tracking-tight">{t('auth.register_screen_title')}</h2>
+          <Input label={t('auth.email')} placeholder={t('auth.email_ph')} value={email} onChange={v => { setEmail(v); setError('') }} type="email" />
+          <Input label={t('auth.username')} placeholder={t('auth.username_ph')} value={username} onChange={v => { setUsername(v); setError('') }} />
+          <Input label={t('auth.password')} placeholder={t('auth.password_min')} value={password} onChange={v => { setPassword(v); setError('') }} type="password" />
 
           {error && (
             <div className="flex items-center gap-2 bg-red/10 border border-red/20 rounded-lg p-3 mb-3 text-sm">
@@ -56,11 +58,11 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <Button label="Créer mon compte" type="submit" loading={loading} />
+          <Button label={t('auth.create_account_btn')} type="submit" loading={loading} />
         </div>
 
         <Link href="/auth/login" className="flex justify-center py-4 min-h-[52px] items-center">
-          <span className="text-sm text-text3 font-medium">Déjà un compte ? <span className="text-accent2">Se connecter</span></span>
+          <span className="text-sm text-text3 font-medium">{t('auth.already_account')} <span className="text-accent2">{t('auth.sign_in')}</span></span>
         </Link>
       </form>
     </div>

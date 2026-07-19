@@ -22,6 +22,7 @@ import OcrScanScreen from './OcrScanScreen';
 import { colors, spacing, radius } from '../../theme';
 import { GroupMember } from '../../../../shared/types';
 import { useAuthStore } from '../../store/authStore';
+import { useFormatMoney, useCurrency } from '../../store/langStore';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,8 @@ export default function AddExpenseScreen() {
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const user = useAuthStore(s => s.user);
+  const fmt = useFormatMoney();
+  const cur = useCurrency();
 
   const [step, setStep] = useState<Step>(editMode ? 'ocr' : 'select');
   const [initialized, setInitialized] = useState(false);
@@ -281,12 +284,13 @@ export default function AddExpenseScreen() {
         return;
       }
     } else {
-      if (!description.trim()) { Alert.alert('Description manquante'); return; }
+      // NOTE: la description n'est plus validée ici (pas ergonomique).
+      // Elle est saisie/vérifiée au step "summary", après les payeurs — comme en mode OCR.
       if (totalAmount <= 0) { Alert.alert('Montant invalide'); return; }
       if (!isCustomBalanced) {
         Alert.alert(
           'Répartition incorrecte',
-          `Total des parts (${customTotal.toFixed(2)}) ≠ montant (${totalAmount.toFixed(2)} CHF).`
+          `Total des parts (${customTotal.toFixed(2)}) ≠ montant (${fmt(totalAmount)}).`
         );
         return;
       }
@@ -309,8 +313,14 @@ export default function AddExpenseScreen() {
     if (!isPayerBalanced) {
       Alert.alert(
         'Montant incorrect',
-        `Total payeurs (${payerTotal.toFixed(2)}) ≠ total dépense (${totalAmount.toFixed(2)} CHF).`
+        `Total payeurs (${payerTotal.toFixed(2)}) ≠ total dépense (${fmt(totalAmount)}).`
       );
+      return;
+    }
+    // En mode manuel la description est obligatoire — vérifiée ICI (au résumé),
+    // plus au moment de passer aux payeurs.
+    if (ocrItems.length === 0 && !description.trim()) {
+      Alert.alert('Description manquante', 'Ajoute une courte description avant de confirmer.');
       return;
     }
 
@@ -452,7 +462,7 @@ export default function AddExpenseScreen() {
               <View key={item.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>{item.price.toFixed(2)} CHF</Text>
+                  <Text style={styles.itemPrice}>{fmt(item.price)}</Text>
                 </View>
                 <Text style={styles.itemLabel}>Qui a pris cet article ?</Text>
                 <View style={styles.chipWrap}>
@@ -583,7 +593,7 @@ export default function AddExpenseScreen() {
                   <View key={memberId} style={styles.splitRow}>
                     <Avatar initials={m.avatarInitials} color={m.avatarColor} size={24} />
                     <Text style={styles.splitName}>{m.displayName}</Text>
-                    <Text style={styles.splitAmt}>{amt.toFixed(2)} CHF</Text>
+                    <Text style={styles.splitAmt}>{fmt(amt)}</Text>
                   </View>
                 );
               })}
@@ -608,7 +618,7 @@ export default function AddExpenseScreen() {
                       onChangeText={v => setCustomAmounts(prev => ({ ...prev, [mid]: v }))}
                       keyboardType="decimal-pad"
                     />
-                    <Text style={styles.customCurrency}>CHF</Text>
+                    <Text style={styles.customCurrency}>{cur}</Text>
                   </View>
                 );
               })}
@@ -618,7 +628,7 @@ export default function AddExpenseScreen() {
                   styles.customTotalAmt,
                   totalAmount > 0 && !isCustomBalanced ? { color: colors.red } : { color: colors.green },
                 ]}>
-                  {customTotal.toFixed(2)} / {totalAmount.toFixed(2)} CHF
+                  {fmt(customTotal)} / {fmt(totalAmount)}
                   {isCustomBalanced && totalAmount > 0 ? ' ✓' : ''}
                 </Text>
               </View>
@@ -655,7 +665,7 @@ export default function AddExpenseScreen() {
               {ocrItems.length > 0 ? 'Ticket scanné' : description}
             </Text>
             <Text style={styles.contextTotal}>
-              Total : {totalAmount.toFixed(2)} CHF
+              Total : {fmt(totalAmount)}
             </Text>
             {ocrItems.length === 0 && splitMode === 'custom' && (
               <Text style={styles.contextSub}>Répartition personnalisée</Text>
@@ -720,7 +730,7 @@ export default function AddExpenseScreen() {
                     onChangeText={v => setPayerAmount(idx, v)}
                     keyboardType="decimal-pad"
                   />
-                  <Text style={styles.payerAmountCurrency}>CHF</Text>
+                  <Text style={styles.payerAmountCurrency}>{cur}</Text>
                   {payers.length > 1 && (
                     <TouchableOpacity onPress={() => removePayer(idx)} style={styles.removePayerBtn}>
                       <Text style={styles.removePayerText}>✕ Retirer</Text>
@@ -734,7 +744,7 @@ export default function AddExpenseScreen() {
                     onPress={() => setPayerAmount(idx, reste.toFixed(2))}
                   >
                     <Text style={styles.shortcutText}>
-                      Payer le reste ({reste.toFixed(2)} CHF)
+                      Payer le reste ({fmt(reste)})
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -745,8 +755,8 @@ export default function AddExpenseScreen() {
           <View style={[styles.balanceBar, isPayerBalanced ? styles.balanceBarOk : styles.balanceBarWarn]}>
             <Text style={[styles.balanceBarText, { color: isPayerBalanced ? colors.green : colors.amber }]}>
               {isPayerBalanced
-                ? `✓ Équilibré — ${payerTotal.toFixed(2)} CHF`
-                : `${payerTotal.toFixed(2)} / ${totalAmount.toFixed(2)} CHF`}
+                ? `✓ Équilibré — ${fmt(payerTotal)}`
+                : `${fmt(payerTotal)} / ${fmt(totalAmount)}`}
             </Text>
           </View>
 
@@ -760,7 +770,7 @@ export default function AddExpenseScreen() {
               if (!isPayerBalanced) {
                 Alert.alert(
                   'Montant incorrect',
-                  `Total payeurs (${payerTotal.toFixed(2)}) ≠ total dépense (${totalAmount.toFixed(2)} CHF).`
+                  `Total payeurs (${payerTotal.toFixed(2)}) ≠ total dépense (${fmt(totalAmount)}).`
                 );
                 return;
               }
@@ -801,7 +811,7 @@ export default function AddExpenseScreen() {
               <View key={p.memberId} style={styles.splitRow}>
                 <Avatar initials={m.avatarInitials} color={m.avatarColor} size={24} />
                 <Text style={styles.splitName}>{m.displayName}</Text>
-                <Text style={[styles.splitAmt, { color: colors.accent2 }]}>{p.amount.toFixed(2)} CHF</Text>
+                <Text style={[styles.splitAmt, { color: colors.accent2 }]}>{fmt(p.amount)}</Text>
               </View>
             );
           })}
@@ -818,7 +828,7 @@ export default function AddExpenseScreen() {
                 <View key={mid} style={styles.splitRow}>
                   <Avatar initials={m.avatarInitials} color={m.avatarColor} size={24} />
                   <Text style={styles.splitName}>{m.displayName}</Text>
-                  <Text style={styles.splitAmt}>{(amt as number).toFixed(2)} CHF</Text>
+                  <Text style={styles.splitAmt}>{fmt(amt as number)}</Text>
                 </View>
               );
             })}
@@ -831,7 +841,7 @@ export default function AddExpenseScreen() {
             )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total scanné</Text>
-              <Text style={styles.totalAmt}>{totalAmount.toFixed(2)} CHF</Text>
+              <Text style={styles.totalAmt}>{fmt(totalAmount)}</Text>
             </View>
           </Card>
         )}
@@ -849,13 +859,13 @@ export default function AddExpenseScreen() {
                 <View key={memberId} style={styles.splitRow}>
                   <Avatar initials={m.avatarInitials} color={m.avatarColor} size={24} />
                   <Text style={styles.splitName}>{m.displayName}</Text>
-                  <Text style={styles.splitAmt}>{amt.toFixed(2)} CHF</Text>
+                  <Text style={styles.splitAmt}>{fmt(amt)}</Text>
                 </View>
               );
             })}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalAmt}>{totalAmount.toFixed(2)} CHF</Text>
+              <Text style={styles.totalAmt}>{fmt(totalAmount)}</Text>
             </View>
           </Card>
         )}

@@ -1,0 +1,98 @@
+name: OCR retrain
+
+# Free retraining of the OCR post-corrector on GitHub-hosted runners (CPU).
+# Runs weekly and on manual dispatch. For larger datasets, run the same
+# scripts on Google Colab (free GPU) instead — see backend/ml/README.md.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'      # every Monday 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      base_model:
+        description: 'Base model (google/byt5-small or t5-small)'
+        default: 't5-small'
+      force:
+        description: 'Promote even without the minimum new corrections'
+        default: 'false'
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    defaults:
+      run:
+        working-directory: backend/ml
+    env:
+      API_BASE: ${{ secrets.API_BASE }}
+      ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_REPO: ${{ secrets.HF_REPO }}          # e.g. your-user/splitit-ocr
+      BASE_MODEL: ${{ github.event.inputs.base_model || 't5-small' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Export corrections
+        id: export
+        continue-on-error: true
+        run: python export_corrections.py
+
+      - name: Stop if no data
+        if: steps.export.outcome != 'success'
+        run: |
+          echo "No corrections to train on yet — skipping."
+          exit 0
+
+      - name: Fine-tune
+        if: steps.export.outcome == 'success'
+        run: python train.py
+
+      - name: Export to ONNX (quantized)
+        if: steps.export.outcome == 'success'
+        run: python export_onnx.py
+
+      - name: Publish model to HuggingFace Hub
+        if: steps.export.outcome == 'success'
+        id: publish
+        run: |
+          REV="v${{ github.run_number }}"
+          echo "revision=$REV" >> "$GITHUB_OUTPUT"
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          repo = os.environ["HF_REPO"]; rev = f"v{os.environ['GITHUB_RUN_NUMBER']}"
+          api.create_repo(repo, private=True, exist_ok=True)
+          api.create_branch(repo, branch=rev, exist_ok=True)
+          api.upload_folder(folder_path="out/onnx-model", repo_id=repo, revision=rev)
+          print(f"Published {repo}@{rev}")
+          PY
+
+      - name: Promote if no regression
+        if: steps.export.outcome == 'success'
+        run: |
+          python - <<'PY'
+          import json, os, requests
+          m = json.load(open("out/metrics.json"))
+          r = requests.post(
+            f'{os.environ["API_BASE"]}/api/ocr/promote-model',
+            headers={"x-admin-key": os.environ["ADMIN_API_KEY"]},
+            json={
+              "modelRepo": os.environ["HF_REPO"],
+              "modelRevision": f'v{os.environ["GITHUB_RUN_NUMBER"]}',
+              "precisionName": m["precisionName"],
+              "precisionPrice": m["precisionPrice"],
+              "correctionCount": m["trainSize"] + m["holdoutSize"],
+              "metrics": m,
+            }, timeout=60)
+          r.raise_for_status()
+          print("Promotion:", r.json())
+          PY

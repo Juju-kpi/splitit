@@ -4,8 +4,10 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button, Input, Notice } from '@/components/ui'
 import { authApi } from '@/lib/api'
+import { useT } from '@/store/langStore'
 
 function ForgotPasswordInner() {
+  const t = useT()
   const router = useRouter()
   const params = useSearchParams()
   const token = params.get('token') || undefined
@@ -21,7 +23,7 @@ function ForgotPasswordInner() {
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) { setError('Entre ton adresse email.'); return }
+    if (!email.trim()) { setError(t('auth.enter_email')); return }
     setLoading(true); setError('')
     try { await authApi.forgotPassword(email.toLowerCase().trim()) } catch {}
     finally { setSent(true); setLoading(false) }
@@ -29,14 +31,14 @@ function ForgotPasswordInner() {
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
-    if (password.length < 8) { setError('Le mot de passe doit faire au moins 8 caractères.'); return }
-    if (password !== confirm) { setError('Les mots de passe ne correspondent pas.'); return }
+    if (password.length < 8) { setError(t('auth.password_too_short')); return }
+    if (password !== confirm) { setError(t('auth.passwords_mismatch')); return }
     setLoading(true); setError('')
     try {
       await authApi.resetPassword(token!, password)
       setResetDone(true)
     } catch (e: any) {
-      setError(e?.response?.data?.error || 'Lien invalide ou expiré. Refais une demande.')
+      setError(e?.response?.data?.error || t('auth.reset_link_invalid'))
     } finally {
       setLoading(false)
     }
@@ -45,48 +47,48 @@ function ForgotPasswordInner() {
   return (
     <div className="min-h-screen px-5 py-6 max-w-sm mx-auto">
       <button onClick={() => router.back()} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2 mb-8">
-        ← Retour
+        {t('common.back')}
       </button>
 
       {token ? (
         resetDone ? (
           <>
             <div className="mb-7">
-              <h1 className="text-[26px] font-bold text-text mb-2">Mot de passe mis à jour ✓</h1>
-              <p className="text-sm text-text3 leading-relaxed">Tu peux maintenant te connecter avec ton nouveau mot de passe.</p>
+              <h1 className="text-[26px] font-bold text-text mb-2">{t('auth.password_updated')}</h1>
+              <p className="text-sm text-text3 leading-relaxed">{t('auth.password_updated_sub')}</p>
             </div>
-            <Button label="Se connecter" onClick={() => router.replace('/auth/login')} />
+            <Button label={t('auth.sign_in')} onClick={() => router.replace('/auth/login')} />
           </>
         ) : (
           <form onSubmit={handleReset}>
             <div className="mb-7">
-              <h1 className="text-[26px] font-bold text-text mb-2">Nouveau mot de passe</h1>
-              <p className="text-sm text-text3 leading-relaxed">Choisis un mot de passe d'au moins 8 caractères.</p>
+              <h1 className="text-[26px] font-bold text-text mb-2">{t('auth.new_password')}</h1>
+              <p className="text-sm text-text3 leading-relaxed">{t('auth.choose_password')}</p>
             </div>
-            <Input label="Nouveau mot de passe" placeholder="••••••••" value={password} onChange={v => { setPassword(v); setError('') }} type="password" autoFocus />
-            <Input label="Confirmer" placeholder="••••••••" value={confirm} onChange={v => { setConfirm(v); setError('') }} type="password" />
+            <Input label={t('auth.new_password')} placeholder="••••••••" value={password} onChange={v => { setPassword(v); setError('') }} type="password" autoFocus />
+            <Input label={t('auth.confirm_short')} placeholder="••••••••" value={confirm} onChange={v => { setConfirm(v); setError('') }} type="password" />
             {error && <p className="text-red text-[13px] mb-2">{error}</p>}
-            <Button label="Enregistrer" type="submit" loading={loading} />
+            <Button label={t('auth.save_password')} type="submit" loading={loading} />
           </form>
         )
       ) : (
         <>
           <div className="mb-7">
-            <h1 className="text-[26px] font-bold text-text mb-2">Mot de passe oublié</h1>
+            <h1 className="text-[26px] font-bold text-text mb-2">{t('auth.forgot_title')}</h1>
             <p className="text-sm text-text3 leading-relaxed">
-              Entre ton adresse email. Si un compte existe, tu recevras un lien de réinitialisation.
+              {t('auth.forgot_sub_long')}
             </p>
           </div>
           {sent ? (
             <>
-              <Notice variant="green" text="Si un compte existe pour cet email, un lien a été envoyé. Vérifie ta boîte mail (et tes spams)." />
-              <Button label="Retour à la connexion" onClick={() => router.replace('/auth/login')} />
+              <Notice variant="green" text={t('auth.link_sent_long')} />
+              <Button label={t('auth.back_to_login')} onClick={() => router.replace('/auth/login')} />
             </>
           ) : (
             <form onSubmit={handleSend}>
-              <Input label="Email" placeholder="toi@exemple.com" value={email} onChange={v => { setEmail(v); setError('') }} type="email" autoFocus />
+              <Input label={t('auth.email')} placeholder={t('auth.email_ph')} value={email} onChange={v => { setEmail(v); setError('') }} type="email" autoFocus />
               {error && <p className="text-red text-[13px] mb-2">{error}</p>}
-              <Button label="Envoyer le lien" type="submit" loading={loading} />
+              <Button label={t('auth.send_link')} type="submit" loading={loading} />
             </form>
           )}
         </>
