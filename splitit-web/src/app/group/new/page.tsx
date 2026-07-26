@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { groupsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Input } from '@/components/ui'
+import { useT } from '@/store/langStore'
 
 const EMOJIS = ['🏠', '✈️', '🍽️', '🎉', '🚗', '🏖️', '🛒', '💼', '🎓', '⚽️', '🎬', '💸']
 
 export default function NewGroupPage() {
   const router = useRouter()
+  const t = useT()
   const user = useAuthStore(s => s.user)
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🏠')
@@ -19,26 +21,26 @@ export default function NewGroupPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) { setError('Donne un nom à ton groupe.'); return }
+    if (!name.trim()) { setError(t('groups.give_name')); return }
     setLoading(true); setError('')
     try {
       const group = await groupsApi.create(name.trim(), emoji, displayName.trim() || user?.username || 'Moi')
       router.replace(`/group/${group.id}`)
     } catch (e: any) {
-      setError(e?.response?.data?.error || 'Impossible de créer le groupe.')
+      setError(e?.response?.data?.error || t('groups.create_error'))
     } finally { setLoading(false) }
   }
 
   return (
     <div className="min-h-screen px-5 py-6 max-w-sm mx-auto">
       <button onClick={() => router.back()} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2 mb-8">
-        ← Retour
+        {t('common.back')}
       </button>
-      <h1 className="text-[26px] font-bold text-text mb-1">Nouveau groupe</h1>
-      <p className="text-sm text-text3 mb-7">Choisis un nom et une icône pour ton groupe.</p>
+      <h1 className="text-[26px] font-bold text-text mb-1">{t('groups.new_title')}</h1>
+      <p className="text-sm text-text3 mb-7">{t('groups.new_sub')}</p>
 
       <form onSubmit={handleCreate}>
-        <label className="block text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Icône</label>
+        <label className="block text-xs font-semibold text-text3 uppercase tracking-widest mb-2">{t('groups.emoji_label')}</label>
         <div className="flex flex-wrap gap-2 mb-5">
           {EMOJIS.map(e => (
             <button key={e} type="button" onClick={() => setEmoji(e)}
@@ -47,10 +49,10 @@ export default function NewGroupPage() {
             </button>
           ))}
         </div>
-        <Input label="Nom du groupe" placeholder="Colocation, Voyage Rome…" value={name} onChange={v => { setName(v); setError('') }} autoFocus />
-        <Input label="Ton nom dans ce groupe" placeholder="Comme tu veux être affiché" value={displayName} onChange={setDisplayName} />
+        <Input label={t('groups.group_name')} placeholder={t('groups.group_name_ph')} value={name} onChange={v => { setName(v); setError('') }} autoFocus />
+        <Input label={t('groups.your_name_in_group')} placeholder={t('groups.your_name_ph')} value={displayName} onChange={setDisplayName} />
         {error && <p className="text-red text-[13px] mb-2">{error}</p>}
-        <Button label="Créer le groupe" type="submit" loading={loading} />
+        <Button label={t('groups.create_group_btn')} type="submit" loading={loading} />
       </form>
     </div>
   )

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, shadows } from '../../src/theme';
+import { useT } from '../../src/store/langStore';
 
 const TABS = [
   { name: 'index',    emoji: '⬡',  emojiActive: '⬡',  label: 'Accueil' },
@@ -19,14 +20,15 @@ const TAB_ICONS: Record<string, string> = {
   settings: '⚙️',
 };
 
-function TabIcon({ name, label, focused }: { name: string; label: string; focused: boolean }) {
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  const t = useT();
   return (
     <View style={styles.tabItem}>
       {focused && <View style={styles.tabActiveGlow} />}
       <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
         <Text style={styles.tabEmoji}>{TAB_ICONS[name]}</Text>
       </View>
-      <Text style={[styles.tabLabel, focused && styles.tabLabelOn]}>{label}</Text>
+      <Text style={[styles.tabLabel, focused && styles.tabLabelOn]}>{t(`tabs.${name === 'index' ? 'home' : name}`)}</Text>
     </View>
   );
 }
@@ -57,25 +59,25 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="index" label="Accueil" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="index" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="groups"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="groups" label="Groupes" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="groups" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="stats"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="stats" label="Stats" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="stats" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="settings" label="Réglages" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="settings" focused={focused} />,
         }}
       />
     </Tabs>

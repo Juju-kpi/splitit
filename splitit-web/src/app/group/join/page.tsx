@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { groupsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Input, Notice, Avatar } from '@/components/ui'
+import { useT } from '@/store/langStore'
 
 export default function JoinGroupPage() {
   const router = useRouter()
+  const t = useT()
   const user = useAuthStore(s => s.user)
   const [code, setCode] = useState('')
   const [preview, setPreview] = useState<any>(null)
@@ -24,7 +26,7 @@ export default function JoinGroupPage() {
       const data = await groupsApi.joinPreview(code.trim())
       setPreview(data)
     } catch (e: any) {
-      setError(e?.response?.data?.error || "Code invalide. Vérifie et réessaie.")
+      setError(e?.response?.data?.error || t('groups.code_invalid_web'))
     } finally { setLoading(false) }
   }
 
@@ -34,30 +36,30 @@ export default function JoinGroupPage() {
       const group = await groupsApi.join(code.trim(), displayName.trim() || user?.username || 'Moi', claimMemberId)
       router.replace(`/group/${group.id}`)
     } catch (e: any) {
-      setError(e?.response?.data?.error || "Impossible de rejoindre ce groupe.")
+      setError(e?.response?.data?.error || t('groups.join_error_web'))
     } finally { setLoading(false) }
   }
 
   return (
     <div className="min-h-screen px-5 py-6 max-w-sm mx-auto">
       <button onClick={() => router.back()} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2 mb-8">
-        ← Retour
+        {t('common.back')}
       </button>
-      <h1 className="text-[26px] font-bold text-text mb-1">Rejoindre un groupe</h1>
-      <p className="text-sm text-text3 mb-7">Entre le code d'invitation partagé par un membre.</p>
+      <h1 className="text-[26px] font-bold text-text mb-1">{t('groups.join')}</h1>
+      <p className="text-sm text-text3 mb-7">{t('groups.join_sub')}</p>
 
       {!preview ? (
         <form onSubmit={handlePreview}>
-          <Input label="Code d'invitation" placeholder="Ex. AB12CD" value={code}
+          <Input label={t('groups.invite_code')} placeholder={t('groups.code_ph')} value={code}
             onChange={v => { setCode(v.toUpperCase()); setError('') }} autoFocus />
           {error && <p className="text-red text-[13px] mb-2">{error}</p>}
-          <Button label="Vérifier le code" type="submit" loading={loading} />
+          <Button label={t('groups.verify_code')} type="submit" loading={loading} />
         </form>
       ) : (
         <div>
           <div className="glass-card rounded-2xl p-5 mb-5">
             <h2 className="text-lg font-bold text-text mb-1">{preview.emoji} {preview.name}</h2>
-            <p className="text-xs text-text3 mb-3">{preview.members?.length || 0} membre(s)</p>
+            <p className="text-xs text-text3 mb-3">{t('groups.member_count', { n: preview.members?.length || 0 })}</p>
             <div className="flex flex-wrap gap-2">
               {preview.members?.map((m: any) => (
                 <button key={m.id} type="button"
@@ -69,10 +71,10 @@ export default function JoinGroupPage() {
               ))}
             </div>
           </div>
-          <Notice variant="accent" text="Si tu apparais déjà dans la liste (ex : on a ajouté tes dépenses avant que tu rejoignes), sélectionne ton nom ci-dessus pour récupérer ton historique." />
-          <Input label="Ton nom dans ce groupe" placeholder="Comme tu veux être affiché" value={displayName} onChange={setDisplayName} />
+          <Notice variant="accent" text={t('groups.join_claim_notice')} />
+          <Input label={t('groups.your_name_in_group')} placeholder={t('groups.your_name_ph')} value={displayName} onChange={setDisplayName} />
           {error && <p className="text-red text-[13px] mb-2">{error}</p>}
-          <Button label="Rejoindre le groupe" onClick={handleJoin} loading={loading} />
+          <Button label={t('groups.join_group_btn')} onClick={handleJoin} loading={loading} />
         </div>
       )}
     </div>

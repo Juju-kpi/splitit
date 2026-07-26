@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { groupsApi } from '@/lib/api'
 import { Avatar, Button, Input } from '@/components/ui'
+import { useT } from '@/store/langStore'
 
 function MembersInner() {
   const router = useRouter()
+  const t = useT()
   const params = useSearchParams()
   const groupId = params.get('groupId') || ''
   const qc = useQueryClient()
@@ -28,9 +30,9 @@ function MembersInner() {
   return (
     <div className="min-h-screen px-5 py-6 max-w-sm mx-auto">
       <button onClick={() => router.back()} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2 mb-8">
-        ← Retour
+        {t('common.back')}
       </button>
-      <h1 className="text-[26px] font-bold text-text mb-1">Membres</h1>
+      <h1 className="text-[26px] font-bold text-text mb-1">{t('groups.members')}</h1>
       <p className="text-sm text-text3 mb-6">{group?.name}</p>
 
       <div className="space-y-2 mb-6">
@@ -39,18 +41,16 @@ function MembersInner() {
             <Avatar initials={m.avatarInitials} color={m.avatarColor} size={36} />
             <div>
               <p className="text-sm font-semibold text-text">{m.displayName}</p>
-              {!m.userId && <p className="text-[11px] text-text3">N'a pas encore rejoint</p>}
+              {!m.userId && <p className="text-[11px] text-text3">{t('groups.not_joined')}</p>}
             </div>
           </div>
         ))}
       </div>
 
-      <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Ajouter un membre fantôme</p>
-      <p className="text-xs text-text3 mb-3 leading-relaxed">
-        Tu peux ajouter quelqu'un qui n'a pas encore de compte — il pourra rejoindre plus tard avec le code d'invitation et récupérer ses dépenses.
-      </p>
-      <Input label="Nom" placeholder="Ex. Léo" value={name} onChange={setName} />
-      <Button label="Ajouter" onClick={() => addMutation.mutate()} loading={addMutation.isPending} disabled={!name.trim()} />
+      <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">{t('groups.add_ghost_member')}</p>
+      <p className="text-xs text-text3 mb-3 leading-relaxed">{t('groups.ghost_hint')}</p>
+      <Input label={t('groups.name_label')} placeholder={t('groups.add_member_name_ph')} value={name} onChange={setName} />
+      <Button label={t('groups.add')} onClick={() => addMutation.mutate()} loading={addMutation.isPending} disabled={!name.trim()} />
     </div>
   )
 }

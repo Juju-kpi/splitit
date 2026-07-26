@@ -9,7 +9,7 @@ For a lighter/faster model on CPU-only CI, set BASE_MODEL=t5-small.
 
 Env:
   BASE_MODEL   default google/byt5-small  (alt: t5-small)
-  EPOCHS       default 8
+  EPOCHS       default 10
   LR           default 5e-4
   BATCH        default 8
   OUT_DIR      default out/model

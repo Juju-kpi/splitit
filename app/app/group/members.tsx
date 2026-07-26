@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Avatar, Card, Notice } from '../../src/components/ui';
 import { colors, spacing, radius } from '../../src/theme';
+import { useT } from '../../src/store/langStore';
 
 export default function GroupMembersScreen() {
   const { groupId, mode } = useLocalSearchParams<{ groupId: string; mode?: string }>();
@@ -20,6 +21,7 @@ export default function GroupMembersScreen() {
 
   const router = useRouter();
   const qc = useQueryClient();
+  const t = useT();
 
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
@@ -38,14 +40,14 @@ export default function GroupMembersScreen() {
       setNewName('');
       setAdding(false);
       if (!isIdentify) {
-        Alert.alert('Membre ajouté', `${newName} a été ajouté au groupe.`);
+        Alert.alert(t('groups.member_added_title'), t('groups.member_added_msg', { name: newName }));
       }
     },
-    onError: (e: any) => Alert.alert('Erreur', e?.response?.data?.error || 'Impossible d\'ajouter le membre'),
+    onError: (e: any) => Alert.alert(t('common.error'), e?.response?.data?.error || t('groups.add_member_error')),
   });
 
   function handleAdd() {
-    if (!newName.trim()) { Alert.alert('Prénom manquant'); return; }
+    if (!newName.trim()) { Alert.alert(t('groups.name_missing_title')); return; }
     addMutation.mutate(newName.trim());
   }
 
@@ -57,10 +59,10 @@ export default function GroupMembersScreen() {
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Retour</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
         <Text style={styles.title}>
-          {isIdentify ? 'Qui es-tu ?' : 'Membres du groupe'}
+          {isIdentify ? t('groups.who_are_you') : t('groups.group_members')}
         </Text>
         <View style={{ width: 70 }} />
       </View>
@@ -71,10 +73,10 @@ export default function GroupMembersScreen() {
           /* Identify mode: pick your name or add new */
           <>
             <Notice
-              text="Sélectionne ton prénom dans la liste ou entre le tien si tu n'es pas encore là."
+              text={t('groups.identify_notice')}
               variant="accent"
             />
-            <Text style={styles.sectionLabel}>MEMBRES EXISTANTS</Text>
+            <Text style={styles.sectionLabel}>{t('groups.existing_members')}</Text>
             {members.map((m: any) => (
               <TouchableOpacity
                 key={m.id}
@@ -83,9 +85,9 @@ export default function GroupMembersScreen() {
                   // In real app: link this account to the guest member
                   // For now: navigate back and set preference
                   Alert.alert(
-                    `Tu es ${m.displayName} ?`,
-                    'Cette fonctionnalité de liaison de compte sera disponible prochainement.',
-                    [{ text: 'OK' }]
+                    t('groups.are_you', { name: m.displayName }),
+                    t('groups.linking_soon'),
+                    [{ text: t('common.ok') }]
                   );
                 }}
                 activeOpacity={0.75}
@@ -93,23 +95,23 @@ export default function GroupMembersScreen() {
                 <Avatar initials={m.avatarInitials} color={m.avatarColor} size={36} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.memberName}>{m.displayName}</Text>
-                  {m.userId && <Text style={styles.memberSub}>Compte lié</Text>}
+                  {m.userId && <Text style={styles.memberSub}>{t('groups.account_linked')}</Text>}
                 </View>
                 <Text style={styles.selectArrow}>→</Text>
               </TouchableOpacity>
             ))}
 
-            <Text style={styles.sectionLabel}>MON PRÉNOM N'EST PAS DANS LA LISTE</Text>
+            <Text style={styles.sectionLabel}>{t('groups.name_not_in_list')}</Text>
             <Card>
               <Input
-                label="Ton prénom"
-                placeholder="Entre ton prénom"
+                label={t('groups.your_first_name')}
+                placeholder={t('groups.your_first_name_ph')}
                 value={newName}
                 onChangeText={setNewName}
                 autoCapitalize="words"
               />
               <Button
-                label="Ajouter et rejoindre →"
+                label={`${t('groups.add_and_join')} →`}
                 onPress={handleAdd}
                 loading={addMutation.isPending}
               />
@@ -119,35 +121,35 @@ export default function GroupMembersScreen() {
           /* Manage mode: see members + add guests */
           <>
             <Notice
-              text="Ajoute les personnes du groupe même si elles n'ont pas de compte. Elles pourront se lier plus tard."
+              text={t('groups.manage_notice')}
               variant="accent"
             />
 
-            <Text style={styles.sectionLabel}>MEMBRES ACTUELS ({members.length})</Text>
+            <Text style={styles.sectionLabel}>{t('groups.current_members', { n: members.length })}</Text>
             {members.map((m: any) => (
               <View key={m.id} style={styles.memberRow}>
                 <Avatar initials={m.avatarInitials} color={m.avatarColor} size={36} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.memberName}>{m.displayName}</Text>
                   {m.userId
-                    ? <Text style={styles.memberSub}>✓ Compte lié</Text>
-                    : <Text style={[styles.memberSub, { color: colors.amber }]}>Sans compte</Text>
+                    ? <Text style={styles.memberSub}>{t('groups.account_linked')}</Text>
+                    : <Text style={[styles.memberSub, { color: colors.amber }]}>{t('groups.no_account_short')}</Text>
                   }
                 </View>
               </View>
             ))}
 
             {/* Add new member */}
-            <Text style={styles.sectionLabel}>AJOUTER UN MEMBRE</Text>
+            <Text style={styles.sectionLabel}>{t('groups.add_member_section')}</Text>
             {!adding ? (
               <TouchableOpacity style={styles.addBtn} onPress={() => setAdding(true)}>
-                <Text style={styles.addBtnText}>+ Ajouter une personne</Text>
+                <Text style={styles.addBtnText}>{t('groups.add_person')}</Text>
               </TouchableOpacity>
             ) : (
               <Card>
                 <Input
-                  label="Prénom"
-                  placeholder="Ex: Michel"
+                  label={t('groups.first_name')}
+                  placeholder={t('groups.add_member_ph')}
                   value={newName}
                   onChangeText={setNewName}
                   autoCapitalize="words"
@@ -155,13 +157,13 @@ export default function GroupMembersScreen() {
                 />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Button
-                    label="Annuler"
+                    label={t('common.cancel')}
                     onPress={() => { setAdding(false); setNewName(''); }}
                     variant="ghost"
                     style={{ flex: 1 }}
                   />
                   <Button
-                    label="Ajouter →"
+                    label={`${t('groups.add')} →`}
                     onPress={handleAdd}
                     loading={addMutation.isPending}
                     style={{ flex: 1 }}
@@ -172,7 +174,7 @@ export default function GroupMembersScreen() {
 
             <Notice
               variant="amber"
-              text="Pour inviter quelqu'un avec un compte, partage le code du groupe depuis l'écran principal."
+              text={t('groups.invite_notice')}
             />
           </>
         )}

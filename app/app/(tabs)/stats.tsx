@@ -14,7 +14,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { Card, GlassCard, SectionLabel, ScreenHeader } from '../../src/components/ui';
 import { colors, spacing, radius, shadows } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFormatMoney, useCurrency } from '../../src/store/langStore';
+import { useFormatMoney, useCurrency, useT } from '../../src/store/langStore';
 
 function MiniBar({ value, max, color = colors.accent }: { value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.min(value / max, 1) : 0;
@@ -53,6 +53,7 @@ export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const fmt = useFormatMoney();
   const cur = useCurrency();
+  const t = useT();
 
   const { data: groups, isLoading, refetch } = useQuery({ queryKey: ['groups'], queryFn: groupsApi.list });
   const groupIds: string[] = (groups || []).map((g: any) => g.id);
@@ -166,7 +167,7 @@ export default function StatsScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Statistiques" subtitle="Vue d'ensemble de tes dépenses" />
+      <ScreenHeader title={t('stats.title')} subtitle={t('stats.subtitle')} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
@@ -175,48 +176,48 @@ export default function StatsScreen() {
         {/* Hero balance card */}
         {myTotalPaid > 0 && (
           <GlassCard glow style={styles.heroCard}>
-            <Text style={styles.heroLabel}>Solde net total</Text>
+            <Text style={styles.heroLabel}>{t('stats.net_balance')}</Text>
             <Text style={[styles.heroAmount, { color: netBalance >= 0 ? colors.green : colors.red }]}>
               {netBalance >= 0 ? '+' : ''}{netBalance.toFixed(2)}
               <Text style={styles.heroCurrency}> {cur}</Text>
             </Text>
             <Text style={styles.heroSub}>
-              {netBalance >= 0 ? '✓ On te doit de l\'argent' : '⚡ Tu dois de l\'argent'}
+              {netBalance >= 0 ? t('stats.owed_you_money') : t('stats.you_owe_money')}
             </Text>
           </GlassCard>
         )}
 
         {/* Global summary */}
-        <SectionLabel label="Résumé global" />
+        <SectionLabel label={t('stats.global_summary')} />
         <Card>
           <View style={styles.statRow}>
-            <StatBox value={totalGroups} label="Groupes" color={colors.accent2} />
+            <StatBox value={totalGroups} label={t('stats.total_groups')} color={colors.accent2} />
             <View style={styles.statDivider} />
-            <StatBox value={totalExpenses} label="Dépenses" color={colors.green} />
+            <StatBox value={totalExpenses} label={t('stats.total_expenses')} color={colors.green} />
             <View style={styles.statDivider} />
-            <StatBox value={`${myTotalShare.toFixed(0)}`} label="Ma part totale" sub={cur} color={colors.amber} />
+            <StatBox value={`${myTotalShare.toFixed(0)}`} label={t('stats.my_share')} sub={cur} color={colors.amber} />
           </View>
           {myTotalPaid > 0 && (
             <>
               <View style={styles.globalSeparator} />
               <View style={styles.statRow}>
-                <StatBox value={`${myTotalPaid.toFixed(0)}`} label="J'ai avancé" sub={cur} color={colors.text2} />
+                <StatBox value={`${myTotalPaid.toFixed(0)}`} label={t('stats.i_advanced')} sub={cur} color={colors.text2} />
                 <View style={styles.statDivider} />
                 <StatBox
                   value={`${netBalance.toFixed(0)}`}
-                  label={netBalance >= 0 ? 'On me doit' : 'Je dois'}
+                  label={netBalance >= 0 ? t('stats.owed_to_me') : t('stats.i_owe')}
                   sub={cur}
                   color={netBalance >= 0 ? colors.green : colors.red}
                 />
                 <View style={styles.statDivider} />
-                <StatBox value={ocrStats?.totalReceipts ?? 0} label="Tickets OCR" color={colors.text2} />
+                <StatBox value={ocrStats?.totalReceipts ?? 0} label={t('stats.ocr_receipts')} color={colors.text2} />
               </View>
             </>
           )}
           {totalIncomplete > 0 && (
             <View style={styles.incompleteAlert}>
               <Text style={styles.incompleteAlertText}>
-                ⏳ {totalIncomplete} dépense{totalIncomplete > 1 ? 's' : ''} à compléter dans tes groupes
+                {t(totalIncomplete > 1 ? 'stats.incomplete_alert_other' : 'stats.incomplete_alert_one', { n: totalIncomplete })}
               </Text>
             </View>
           )}
@@ -225,25 +226,25 @@ export default function StatsScreen() {
         {/* Ce mois-ci */}
         {allExpenses.length > 0 && (
           <>
-            <SectionLabel label="Ce mois-ci" />
+            <SectionLabel label={t('stats.this_month')} />
             <Card>
               <View style={styles.statRow}>
                 <StatBox
                   value={thisMonthExps.length}
-                  label="Dépenses"
+                  label={t('stats.total_expenses')}
                   color={colors.accent2}
                 />
                 <View style={styles.statDivider} />
                 <StatBox
                   value={thisMonthTotal.toFixed(0)}
-                  label={`Ma part ${cur}`}
+                  label={`${t('stats.my_share_short')} ${cur}`}
                   sub={cur}
                   color={colors.amber}
                 />
                 <View style={styles.statDivider} />
                 <StatBox
                   value={avgExpense.toFixed(0)}
-                  label="Moy. dépense"
+                  label={t('stats.avg_expense')}
                   sub={cur}
                   color={colors.text2}
                 />
@@ -255,11 +256,11 @@ export default function StatsScreen() {
         {/* Soldes globaux */}
         {(oweList.length > 0 || owedList.length > 0) && (
           <>
-            <SectionLabel label="Mes soldes globaux" />
+            <SectionLabel label={t('stats.balances')} />
             <Card>
               {owedList.length > 0 && (
                 <>
-                  <Text style={styles.debtHeader}>✓ On me doit</Text>
+                  <Text style={styles.debtHeader}>✓ {t('stats.owed_to_me')}</Text>
                   {owedList.map((d, i) => (
                     <View key={i} style={styles.debtRow}>
                       <Text style={styles.debtName}>{d.name}</Text>
@@ -271,7 +272,7 @@ export default function StatsScreen() {
               {owedList.length > 0 && oweList.length > 0 && <View style={styles.debtSeparator} />}
               {oweList.length > 0 && (
                 <>
-                  <Text style={styles.debtHeader}>⚡ Je dois</Text>
+                  <Text style={styles.debtHeader}>⚡ {t('stats.i_owe')}</Text>
                   {oweList.map((d, i) => (
                     <View key={i} style={styles.debtRow}>
                       <Text style={styles.debtName}>{d.name}</Text>
@@ -287,7 +288,7 @@ export default function StatsScreen() {
         {/* Top payeurs */}
         {topPayers.length > 0 && (
           <>
-            <SectionLabel label="Top payeurs (tous groupes)" />
+            <SectionLabel label={t('stats.top_payers_all')} />
             <Card>
               {topPayers.map((p, i) => (
                 <View key={i} style={styles.topPayerRow}>
@@ -304,7 +305,7 @@ export default function StatsScreen() {
         {/* Activité récente */}
         {allExpenses.length > 0 && (
           <>
-            <SectionLabel label="Activité récente" />
+            <SectionLabel label={t('stats.recent')} />
             <Card style={{ padding: 0, overflow: 'hidden' }}>
               {allExpenses.slice(0, 6).map((exp, i) => (
                 <TouchableOpacity
@@ -332,7 +333,7 @@ export default function StatsScreen() {
         {/* Per-group breakdown */}
         {totalGroups > 0 && (
           <>
-            <SectionLabel label="Par groupe" />
+            <SectionLabel label={t('stats.per_group')} />
             {groupStats.map(({ group: g, myShare, myPaid, myBalance, total, memberCount, incomplete, completionRate }) => (
               <TouchableOpacity key={g.id} activeOpacity={0.78} onPress={() => router.push(`/group/${g.id}`)}>
                 <View style={styles.groupCard}>
@@ -340,26 +341,26 @@ export default function StatsScreen() {
                   <View style={styles.groupCardInner}>
                     <View style={styles.groupHeader}>
                       <Text style={styles.groupName}>{g.emoji} {g.name}</Text>
-                      <Text style={styles.groupMeta}>{memberCount} membres</Text>
+                      <Text style={styles.groupMeta}>{t('stats.members_count', { n: memberCount })}</Text>
                     </View>
                     <View style={styles.groupStatRow}>
                       <View style={styles.groupStat}>
                         <Text style={styles.groupStatNum}>{g.expenseCount}</Text>
-                        <Text style={styles.groupStatLabel}>dépenses</Text>
+                        <Text style={styles.groupStatLabel}>{t('stats.expenses_lc')}</Text>
                       </View>
                       <View style={styles.groupStatDivider} />
                       <View style={styles.groupStat}>
                         <Text style={[styles.groupStatNum, { color: colors.text2 }]}>
                           {total !== null ? `${total.toFixed(0)}` : '—'}
                         </Text>
-                        <Text style={styles.groupStatLabel}>total {cur}</Text>
+                        <Text style={styles.groupStatLabel}>{t('stats.total_cur', { cur })}</Text>
                       </View>
                       <View style={styles.groupStatDivider} />
                       <View style={styles.groupStat}>
                         <Text style={[styles.groupStatNum, { color: colors.accent2 }]}>
                           {myShare !== null ? `${myShare.toFixed(0)}` : '—'}
                         </Text>
-                        <Text style={styles.groupStatLabel}>ma part {cur}</Text>
+                        <Text style={styles.groupStatLabel}>{t('stats.my_share_cur', { cur })}</Text>
                       </View>
                     </View>
 
@@ -367,7 +368,7 @@ export default function StatsScreen() {
                       <View style={{ marginTop: 10 }}>
                         <MiniBar value={myShare} max={total} color={colors.accent} />
                         <Text style={styles.barLabel}>
-                          Ma part : {((myShare / total) * 100).toFixed(0)}% du total
+                          {t('stats.my_share_pct', { pct: ((myShare / total) * 100).toFixed(0) })}
                         </Text>
                       </View>
                     )}
@@ -382,8 +383,8 @@ export default function StatsScreen() {
                         />
                         <Text style={styles.barLabel}>
                           {completionRate === 100
-                            ? '✓ Toutes les dépenses sont complètes'
-                            : `${(completionRate ?? 0).toFixed(0)}% complet — ${incomplete} à remplir`}
+                            ? t('stats.all_complete')
+                            : t('stats.pct_complete', { pct: (completionRate ?? 0).toFixed(0), n: incomplete })}
                         </Text>
                       </View>
                     )}
@@ -394,7 +395,7 @@ export default function StatsScreen() {
                         borderColor: myBalance > 0 ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)',
                       }]}>
                         <Text style={[styles.balanceBadgeText, { color: myBalance > 0 ? colors.green : colors.red }]}>
-                          {myBalance > 0 ? `✓ On me doit ${fmt(myBalance)}` : `⚡ Je dois ${fmt(Math.abs(myBalance))}`}
+                          {myBalance > 0 ? t('stats.owed_amount', { amount: fmt(myBalance) }) : t('stats.owe_amount', { amount: fmt(Math.abs(myBalance)) })}
                         </Text>
                       </View>
                     )}
@@ -408,21 +409,21 @@ export default function StatsScreen() {
         {/* OCR */}
         {ocrStats && (
           <>
-            <SectionLabel label="Modèle OCR" />
+            <SectionLabel label={t('stats.ocr_model_section')} />
             <Card>
               <View style={styles.ocrHeader}>
-                <Text style={styles.ocrTitle}>🧠 Entraînement</Text>
+                <Text style={styles.ocrTitle}>🧠 {t('stats.ocr_training')}</Text>
                 <Text style={styles.ocrVersion}>{ocrStats.modelVersion ?? 'v1.0'}</Text>
               </View>
               <View style={styles.statRow}>
-                <StatBox value={ocrStats.totalCorrections ?? 0} label="Corrections" />
+                <StatBox value={ocrStats.totalCorrections ?? 0} label={t('settings.ocr_corrections')} />
                 <View style={styles.statDivider} />
-                <StatBox value={ocrStats.totalReceipts ?? 0} label="Tickets" color={colors.green} />
+                <StatBox value={ocrStats.totalReceipts ?? 0} label={t('stats.receipts')} color={colors.green} />
                 <View style={styles.statDivider} />
-                <StatBox value={`${Math.round((ocrStats.progressToNextRun ?? 0) * 100)}%`} label="Prochain run" color={colors.amber} />
+                <StatBox value={`${Math.round((ocrStats.progressToNextRun ?? 0) * 100)}%`} label={t('stats.next_run')} color={colors.amber} />
               </View>
               <MiniBar value={ocrStats.progressToNextRun ?? 0} max={1} color={colors.amber} />
-              <Text style={styles.barLabel}>{ocrStats.untrainedCount ?? 0} / 100 corrections avant le prochain affinement</Text>
+              <Text style={styles.barLabel}>{t('stats.before_next_100', { n: ocrStats.untrainedCount ?? 0 })}</Text>
             </Card>
           </>
         )}
@@ -430,8 +431,8 @@ export default function StatsScreen() {
         {totalGroups === 0 && !isLoading && (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>📊</Text>
-            <Text style={styles.emptyTitle}>Pas encore de données</Text>
-            <Text style={styles.emptyText}>Crée ou rejoins un groupe pour voir tes statistiques ici.</Text>
+            <Text style={styles.emptyTitle}>{t('stats.no_data')}</Text>
+            <Text style={styles.emptyText}>{t('stats.no_data_sub')}</Text>
           </View>
         )}
       </ScrollView>

@@ -6,12 +6,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Card } from '../../src/components/ui';
 import { colors, spacing } from '../../src/theme';
+import { useT } from '../../src/store/langStore';
 
 const EMOJIS = ['💰','🍽️','🏔️','🏠','✈️','🎉','🏖️','🚗','🎮','🛒'];
 
 export default function NewGroupScreen() {
   const router = useRouter();
   const qc = useQueryClient();
+  const t = useT();
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('💰');
   const [displayName, setDisplayName] = useState('');
@@ -24,7 +26,7 @@ export default function NewGroupScreen() {
       qc.invalidateQueries({ queryKey: ['groups'] });
       router.replace(`/group/${group.id}`);
     },
-    onError: (e: any) => Alert.alert('Erreur', e?.response?.data?.error || 'Impossible de créer le groupe'),
+    onError: (e: any) => Alert.alert(t('common.error'), e?.response?.data?.error || t('groups.create_error')),
   });
 
   const joinMutation = useMutation({
@@ -33,7 +35,7 @@ export default function NewGroupScreen() {
       qc.invalidateQueries({ queryKey: ['groups'] });
       router.replace(`/group/${data.group.id}`);
     },
-    onError: (e: any) => Alert.alert('Erreur', e?.response?.data?.error || 'Code invalide'),
+    onError: (e: any) => Alert.alert(t('common.error'), e?.response?.data?.error || t('groups.invalid_code_title')),
   });
 
   return (
@@ -42,27 +44,27 @@ export default function NewGroupScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Nouveau groupe</Text>
+        <Text style={styles.title}>{t('groups.new_title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       {/* Tab toggle */}
       <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tabBtn, tab === 'create' && styles.tabBtnOn]} onPress={() => setTab('create')}>
-          <Text style={[styles.tabBtnText, tab === 'create' && styles.tabBtnTextOn]}>Créer</Text>
+          <Text style={[styles.tabBtnText, tab === 'create' && styles.tabBtnTextOn]}>{t('groups.create_tab')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tabBtn, tab === 'join' && styles.tabBtnOn]} onPress={() => setTab('join')}>
-          <Text style={[styles.tabBtnText, tab === 'join' && styles.tabBtnTextOn]}>Rejoindre</Text>
+          <Text style={[styles.tabBtnText, tab === 'join' && styles.tabBtnTextOn]}>{t('common.join')}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Input label="Ton prénom dans ce groupe" placeholder="Ex: Alicia" value={displayName} onChangeText={setDisplayName} />
+        <Input label={t('groups.your_name_in_group')} placeholder={t('groups.your_name_ph')} value={displayName} onChangeText={setDisplayName} />
 
         {tab === 'create' ? (
           <Card>
-            <Input label="Nom du groupe" placeholder="Dîner Zurich, Coloc, Week-end..." value={name} onChangeText={setName} />
-            <Text style={styles.emojiLabel}>EMOJI</Text>
+            <Input label={t('groups.group_name')} placeholder={t('groups.group_name_ph')} value={name} onChangeText={setName} />
+            <Text style={styles.emojiLabel}>{t('groups.emoji_label')}</Text>
             <View style={styles.emojiRow}>
               {EMOJIS.map(e => (
                 <TouchableOpacity
@@ -75,7 +77,7 @@ export default function NewGroupScreen() {
               ))}
             </View>
             <Button
-              label="Créer le groupe →"
+              label={`${t('groups.create_group_btn')} →`}
               onPress={() => createMutation.mutate()}
               loading={createMutation.isPending}
               style={{ marginTop: 8 }}
@@ -83,8 +85,8 @@ export default function NewGroupScreen() {
           </Card>
         ) : (
           <Card>
-            <Input label="Code d'invitation" placeholder="Colle le code ici" value={joinCode} onChangeText={setJoinCode} autoCapitalize="none" />
-            <Button label="Rejoindre →" onPress={() => joinMutation.mutate()} loading={joinMutation.isPending} style={{ marginTop: 8 }} />
+            <Input label={t('groups.invite_code')} placeholder={t('groups.code_ph')} value={joinCode} onChangeText={setJoinCode} autoCapitalize="none" />
+            <Button label={`${t('common.join')} →`} onPress={() => joinMutation.mutate()} loading={joinMutation.isPending} style={{ marginTop: 8 }} />
           </Card>
         )}
       </ScrollView>

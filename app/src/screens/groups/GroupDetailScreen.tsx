@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupsApi, expensesApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
-import { useFormatMoney, useCurrency } from '../../store/langStore';
+import { useFormatMoney, useCurrency, useT } from '../../store/langStore';
 import { Avatar, Card, SectionLabel, Divider, Button } from '../../components/ui';
 import { colors, spacing, shadows, radius } from '../../theme';
 import { Expense, Balance } from '../../../../shared/types';
@@ -49,6 +49,7 @@ export default function GroupDetailScreen() {
   const insets = useSafeAreaInsets();
   const fmt = useFormatMoney();
   const cur = useCurrency();
+  const t = useT();
 
   const [expandedBalance, setExpandedBalance] = useState<string | null>(null);
   const [showLog, setShowLog] = useState(false);
@@ -64,7 +65,7 @@ export default function GroupDetailScreen() {
       expensesApi.settle(expenseId, memberId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group', id] });
-      Alert.alert('✓ Réglé', 'Le remboursement a été enregistré.');
+      Alert.alert(t('balances.settled_title'), t('balances.settled_saved'));
     },
   });
 
@@ -88,10 +89,10 @@ export default function GroupDetailScreen() {
   async function handleShare() {
     try {
       await Share.share({
-        message: `Rejoins le groupe "${group.name}" sur Splitit !\nCode : ${group.inviteCode}`,
+        message: t('groups.share_message', { name: group.name, code: group.inviteCode }),
       });
     } catch {
-      Alert.alert('Erreur', 'Impossible de partager.');
+      Alert.alert(t('common.error'), t('groups.share_error'));
     }
   }
 
@@ -150,7 +151,7 @@ export default function GroupDetailScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={styles.backText}>← Retour</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>{group.emoji} {group.name}</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -160,7 +161,7 @@ export default function GroupDetailScreen() {
             activeOpacity={0.7}
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
           >
-            <Text style={styles.membersBtnText}>👥 Membres</Text>
+            <Text style={styles.membersBtnText}>👥 {t('groups.members')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.shareBtn}
@@ -168,7 +169,7 @@ export default function GroupDetailScreen() {
             activeOpacity={0.7}
             hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
           >
-            <Text style={styles.shareBtnText}>Inviter</Text>
+            <Text style={styles.shareBtnText}>{t('groups.invite')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -179,13 +180,13 @@ export default function GroupDetailScreen() {
       >
         {/* Members */}
         <Card>
-          <Text style={styles.cardTitle}>Membres ({group.members.length})</Text>
+          <Text style={styles.cardTitle}>{t('groups.members')} ({group.members.length})</Text>
           <View style={styles.memberRow}>
             {group.members.map((m: any) => (
               <View key={m.id} style={styles.memberItem}>
                 <Avatar initials={m.avatarInitials} color={m.avatarColor} size={40} />
                 <Text style={styles.memberName}>{m.displayName}</Text>
-                {m.id === myMember?.id && <Text style={styles.meTag}>moi</Text>}
+                {m.id === myMember?.id && <Text style={styles.meTag}>{t('groups.me')}</Text>}
               </View>
             ))}
           </View>
@@ -194,33 +195,31 @@ export default function GroupDetailScreen() {
         {/* Summary */}
         {group.expenses?.length > 0 && (
           <>
-            <SectionLabel label="Résumé du groupe" />
+            <SectionLabel label={t('groups.group_summary')} />
             <Card>
               <View style={styles.summaryRow}>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNum}>{totalSpent.toFixed(2)}</Text>
                   <Text style={styles.summaryCurrency}>{cur}</Text>
-                  <Text style={styles.summaryLabel}>Total groupe</Text>
+                  <Text style={styles.summaryLabel}>{t('groups.group_total')}</Text>
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryItem}>
                   <Text style={[styles.summaryNum, { color: colors.accent2 }]}>{myShare.toFixed(2)}</Text>
                   <Text style={[styles.summaryCurrency, { color: colors.accent2 }]}>{cur}</Text>
-                  <Text style={styles.summaryLabel}>Ma part</Text>
+                  <Text style={styles.summaryLabel}>{t('expenses.my_share')}</Text>
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryNum}>{group.expenses.length}</Text>
-                  <Text style={styles.summaryLabel}>Dépenses</Text>
+                  <Text style={styles.summaryLabel}>{t('expenses.title')}</Text>
                 </View>
               </View>
 
               {/* Badge dépenses à compléter */}
               {incompleteCount > 0 && (
                 <View style={styles.incompleteBanner}>
-                  <Text style={styles.incompleteBannerText}>
-                    ⏳ {incompleteCount} dépense{incompleteCount > 1 ? 's' : ''} à compléter
-                  </Text>
+                  <Text style={styles.incompleteBannerText}>{t(incompleteCount > 1 ? 'groups.incomplete_count_other' : 'groups.incomplete_count_one', { n: incompleteCount })}</Text>
                 </View>
               )}
             </Card>
@@ -231,18 +230,16 @@ export default function GroupDetailScreen() {
         {group.balances?.length > 0 && (
           <>
             <View style={styles.balancesHeader}>
-              <SectionLabel label="Remboursements" />
+              <SectionLabel label={t('balances.title')} />
               {Object.keys(netLog).length > 0 && (
                 <TouchableOpacity onPress={() => setShowLog(true)} style={styles.logBtn}>
-                  <Text style={styles.logBtnText}>📋 Détail</Text>
+                  <Text style={styles.logBtnText}>📋 {t('balances.detail')}</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             <Card>
-              <Text style={styles.balanceHint}>
-                Montants nets simplifiés — appuie pour marquer comme réglé
-              </Text>
+              <Text style={styles.balanceHint}>{t('balances.hint')}</Text>
               {group.balances.map((b: Balance, i: number) => {
                 const isMe = b.fromMember?.userId === user?.id || b.toMember?.userId === user?.id;
                 const isMeDebtor = b.fromMember?.userId === user?.id;
@@ -265,11 +262,9 @@ export default function GroupDetailScreen() {
                         <View style={styles.balanceNames}>
                           <Text style={[styles.balanceName, isMe && styles.balanceNameMe]}>
                             {b.fromMember.displayName}
-                            {isMeDebtor ? ' (moi)' : ''}
+                            {isMeDebtor ? ` (${t('groups.me')})` : ''}
                           </Text>
-                          <Text style={styles.balanceArrowLabel}>
-                            doit rembourser → {b.toMember.displayName}
-                          </Text>
+                          <Text style={styles.balanceArrowLabel}>{t('balances.owes')} → {b.toMember.displayName}</Text>
                         </View>
                       </View>
                       <Text style={[styles.balanceAmt, isMe && styles.balanceAmtMe]}>
@@ -294,12 +289,12 @@ export default function GroupDetailScreen() {
                             style={styles.settleBtn}
                             onPress={() => {
                               Alert.alert(
-                                'Marquer comme réglé ?',
-                                `Confirmer le remboursement de ${fmt(b.amount)} à ${b.toMember.displayName} ?`,
+                                t('balances.mark_settled_q'),
+                                t('balances.settled_confirm', { amount: fmt(b.amount), name: b.toMember.displayName }),
                                 [
-                                  { text: 'Annuler', style: 'cancel' },
+                                  { text: t('common.cancel'), style: 'cancel' },
                                   {
-                                    text: 'Confirmer',
+                                    text: t('common.confirm'),
                                     onPress: () => {
                                       (netLog[key]?.lines || [])
                                         .filter(l => !l.settled)
@@ -313,9 +308,7 @@ export default function GroupDetailScreen() {
                               );
                             }}
                           >
-                            <Text style={styles.settleBtnText}>
-                              💸 J'ai remboursé {fmt(b.amount)}
-                            </Text>
+                            <Text style={styles.settleBtnText}>💸 {t('balances.settled_btn', { amount: fmt(b.amount) })}</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -330,7 +323,7 @@ export default function GroupDetailScreen() {
         )}
 
         {/* Expenses list */}
-        <SectionLabel label="Dépenses" />
+        <SectionLabel label={t('expenses.title')} />
         {(group.expenses || []).map((exp: any) => {
           const payments = exp.payments || [];
           const payerLabel = payments.length > 1
@@ -363,13 +356,13 @@ export default function GroupDetailScreen() {
                     <Text style={styles.expName}>{exp.description}</Text>
                     {incomplete && (
                       <View style={styles.incompleteBadge}>
-                        <Text style={styles.incompleteBadgeText}>À compléter</Text>
+                        <Text style={styles.incompleteBadgeText}>{t('expenses.incomplete_badge')}</Text>
                       </View>
                     )}
                   </View>
-                  <Text style={styles.expSub}>payé par {payerLabel}</Text>
+                  <Text style={styles.expSub}>{t('expenses.paid_by_lc', { who: payerLabel })}</Text>
                   {incomplete && (
-                    <Text style={styles.expCompleteHint}>Appuie pour compléter →</Text>
+                    <Text style={styles.expCompleteHint}>{t('expenses.complete_hint')}</Text>
                   )}
                 </View>
                 <View style={styles.expRight}>
@@ -383,8 +376,8 @@ export default function GroupDetailScreen() {
         {group.expenses?.length === 0 && (
           <View style={styles.emptyExp}>
             <Text style={styles.emptyEmoji}>🧾</Text>
-            <Text style={styles.emptyText}>Aucune dépense encore</Text>
-            <Text style={styles.emptySubText}>Appuie sur + pour ajouter la première !</Text>
+            <Text style={styles.emptyText}>{t('expenses.none_yet')}</Text>
+            <Text style={styles.emptySubText}>{t('expenses.add_first')}</Text>
           </View>
         )}
       </ScrollView>
@@ -402,9 +395,9 @@ export default function GroupDetailScreen() {
       <Modal visible={showLog} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowLog(false)}>
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>📋 Détail des remboursements</Text>
+            <Text style={styles.modalTitle}>📋 {t('balances.detail_title')}</Text>
             <TouchableOpacity onPress={() => setShowLog(false)} style={styles.modalClose}>
-              <Text style={styles.modalCloseText}>Fermer</Text>
+              <Text style={styles.modalCloseText}>{t('common.close')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={{ padding: spacing.xl, paddingBottom: 60 }}>
@@ -419,10 +412,10 @@ export default function GroupDetailScreen() {
                     </Text>
                     <View>
                       <Text style={[styles.logEntryTotal, remaining < 0.01 && { color: colors.green }]}>
-                        {remaining < 0.01 ? '✓ Réglé' : `${fmt(remaining)} restant`}
+                        {remaining < 0.01 ? t('balances.settled_title') : t('balances.remaining', { amount: fmt(remaining) })}
                       </Text>
                       {entry.settled > 0 && (
-                        <Text style={styles.logEntrySettled}>{fmt(entry.settled)} réglé</Text>
+                        <Text style={styles.logEntrySettled}>{t('balances.amount_settled', { amount: fmt(entry.settled) })}</Text>
                       )}
                     </View>
                   </View>
@@ -440,9 +433,7 @@ export default function GroupDetailScreen() {
               );
             })}
             {Object.keys(netLog).length === 0 && (
-              <Text style={{ color: colors.text3, textAlign: 'center', marginTop: 40 }}>
-                Aucun remboursement calculé
-              </Text>
+              <Text style={{ color: colors.text3, textAlign: 'center', marginTop: 40 }}>{t('balances.none_calculated')}</Text>
             )}
           </ScrollView>
         </View>

@@ -5,21 +5,24 @@ import { useQuery } from '@tanstack/react-query'
 import { groupsApi } from '@/lib/api'
 import { AvatarRow, Pill, EmptyState, Button } from '@/components/ui'
 import { Group } from '@/types'
+import { useT, useLangStore } from '@/store/langStore'
 
-function timeAgo(dateStr: string) {
+function timeAgo(dateStr: string, t: (k: string, v?: any) => string, locale: string) {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "à l'instant"
-  if (mins < 60) return `il y a ${mins} min`
+  if (mins < 1) return t('groups.time_now')
+  if (mins < 60) return t('groups.time_min', { n: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `il y a ${hours} h`
+  if (hours < 24) return t('groups.time_hour', { n: hours })
   const days = Math.floor(hours / 24)
-  if (days < 30) return `il y a ${days} j`
-  return new Date(dateStr).toLocaleDateString('fr-FR')
+  if (days < 30) return t('groups.time_day', { n: days })
+  return new Date(dateStr).toLocaleDateString(locale)
 }
 
 export function GroupsList({ limit }: { limit?: number }) {
   const router = useRouter()
+  const t = useT()
+  const locale = useLangStore(s => s.locale)
   const { data: groups, isLoading } = useQuery<Group[]>({ queryKey: ['groups'], queryFn: groupsApi.list })
 
   const list = limit ? (groups || []).slice(0, limit) : (groups || [])
@@ -36,12 +39,12 @@ export function GroupsList({ limit }: { limit?: number }) {
     return (
       <EmptyState
         emoji="💸"
-        title="Aucun groupe encore"
-        subtitle="Crée ou rejoins un groupe pour commencer à partager"
+        title={t('groups.no_groups')}
+        subtitle={t('groups.no_groups_sub')}
         actions={
           <>
-            <Button label="✦ Créer un groupe" onClick={() => router.push('/group/new')} />
-            <Button label="Rejoindre avec un code" variant="ghost" onClick={() => router.push('/group/join')} />
+            <Button label={`✦ ${t('groups.create')}`} onClick={() => router.push('/group/new')} />
+            <Button label={t('groups.join_with_code')} variant="ghost" onClick={() => router.push('/group/join')} />
           </>
         }
       />
@@ -60,11 +63,11 @@ export function GroupsList({ limit }: { limit?: number }) {
           <div className="flex-1 p-4">
             <div className="flex justify-between items-start gap-2">
               <h3 className="text-[16px] font-semibold text-text flex-1">{item.emoji} {item.name}</h3>
-              <Pill label={`${item.expenseCount} dépense${item.expenseCount !== 1 ? 's' : ''}`} variant={item.expenseCount > 5 ? 'green' : 'accent'} />
+              <Pill label={t(item.expenseCount !== 1 ? 'groups.expense_count_other' : 'groups.expense_count_one', { n: item.expenseCount })} variant={item.expenseCount > 5 ? 'green' : 'accent'} />
             </div>
             <AvatarRow members={item.members} />
             <div className="flex justify-between items-center mt-2.5">
-              <span className="text-[11px] text-text3">{timeAgo(item.createdAt)}</span>
+              <span className="text-[11px] text-text3">{timeAgo(item.createdAt, t, locale)}</span>
               <span className="text-xl text-text3 font-light">›</span>
             </div>
           </div>

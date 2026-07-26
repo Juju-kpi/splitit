@@ -11,11 +11,13 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Group } from '../../../../shared/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '../../store/langStore';
 
 export default function GroupsListScreen() {
   const router = useRouter();
   const user = useAuthStore(s => s.user);
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const { data: groups, isLoading, refetch } = useQuery({
     queryKey: ['groups'],
@@ -32,7 +34,7 @@ export default function GroupsListScreen() {
           <View style={styles.groupCardTop}>
             <Text style={styles.groupName}>{item.emoji} {item.name}</Text>
             <Pill
-              label={`${item.expenseCount} dépense${item.expenseCount !== 1 ? 's' : ''}`}
+              label={t(item.expenseCount !== 1 ? 'groups.expense_count_other' : 'groups.expense_count_one', { n: item.expenseCount })}
               variant={item.expenseCount > 5 ? 'green' : 'accent'}
             />
           </View>
@@ -46,18 +48,18 @@ export default function GroupsListScreen() {
         </View>
       </View>
     </TouchableOpacity>
-  ), [router]);
+  ), [router, t]);
 
   return (
     <View style={styles.screen}>
       <ScreenHeader
         title="Splitit"
         accentWord="it"
-        subtitle={`Bonjour, ${user?.username} 👋`}
+        subtitle={t('home.greeting', { name: user?.username })}
         rightContent={
           <>
-            <ActionPill label="Rejoindre" icon="🔗" onPress={() => router.push('/group/join')} />
-            <ActionPill label="+ Nouveau" primary onPress={() => router.push('/group/new')} />
+            <ActionPill label={t('common.join')} icon="🔗" onPress={() => router.push('/group/join')} />
+            <ActionPill label={t('common.new')} primary onPress={() => router.push('/group/new')} />
           </>
         }
       />
@@ -70,21 +72,21 @@ export default function GroupsListScreen() {
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.accent} />
         }
-        ListHeaderComponent={<SectionLabel label="Groupes actifs" />}
+        ListHeaderComponent={<SectionLabel label={t('groups.active')} />}
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.empty}>
               <View style={styles.emptyIconWrap}>
                 <Text style={styles.emptyEmoji}>💸</Text>
               </View>
-              <Text style={styles.emptyTitle}>Aucun groupe encore</Text>
-              <Text style={styles.emptySubtitle}>Crée ou rejoins un groupe pour commencer à partager</Text>
+              <Text style={styles.emptyTitle}>{t('groups.no_groups')}</Text>
+              <Text style={styles.emptySubtitle}>{t('groups.no_groups_sub')}</Text>
               <View style={styles.emptyActions}>
                 <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/group/new')} activeOpacity={0.8}>
-                  <Text style={styles.emptyBtnText}>✦ Créer un groupe</Text>
+                  <Text style={styles.emptyBtnText}>✦ {t('groups.create')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.emptyBtnGhost} onPress={() => router.push('/group/join')} activeOpacity={0.8}>
-                  <Text style={styles.emptyBtnGhostText}>Rejoindre avec un code</Text>
+                  <Text style={styles.emptyBtnGhostText}>{t('groups.join_with_code')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

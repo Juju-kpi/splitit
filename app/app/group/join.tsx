@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Avatar, Card } from '../../src/components/ui';
 import { colors, spacing, radius } from '../../src/theme';
+import { useT } from '../../src/store/langStore';
 
 type GuestMember = {
   id: string;
@@ -40,11 +41,12 @@ export default function JoinGroupScreen() {
 
   const router = useRouter();
   const qc = useQueryClient();
+  const t = useT();
 
   // Étape 1 : récupère le preview du groupe après saisie du code
   async function handleCodeSubmit() {
     if (!inviteCode.trim()) {
-      Alert.alert('Code manquant', "Entre le code d'invitation.");
+      Alert.alert(t('groups.code_missing_title'), t('groups.code_missing_msg'));
       return;
     }
     setLoadingPreview(true);
@@ -58,9 +60,9 @@ export default function JoinGroupScreen() {
     } catch (e: any) {
       const msg = e?.response?.data?.error;
       if (msg === 'Invalid invite code') {
-        Alert.alert('Code invalide', 'Vérifie le code et réessaie.');
+        Alert.alert(t('groups.invalid_code_title'), t('groups.invalid_code_msg'));
       } else {
-        Alert.alert('Erreur', msg || 'Impossible de récupérer le groupe.');
+        Alert.alert(t('common.error'), msg || t('groups.fetch_group_error'));
       }
     } finally {
       setLoadingPreview(false);
@@ -83,11 +85,11 @@ export default function JoinGroupScreen() {
     onError: (e: any) => {
       const msg = e?.response?.data?.error;
       if (msg === 'Already a member') {
-        Alert.alert('Déjà membre', 'Tu fais déjà partie de ce groupe.');
+        Alert.alert(t('groups.already_member_title'), t('groups.already_member_msg'));
       } else if (msg === 'Invalid invite code') {
-        Alert.alert('Code invalide', 'Vérifie le code et réessaie.');
+        Alert.alert(t('groups.invalid_code_title'), t('groups.invalid_code_msg'));
       } else {
-        Alert.alert('Erreur', msg || 'Impossible de rejoindre le groupe.');
+        Alert.alert(t('common.error'), msg || t('groups.join_error'));
       }
     },
   });
@@ -99,7 +101,7 @@ export default function JoinGroupScreen() {
       return;
     }
     if (!displayName.trim()) {
-      Alert.alert('Prénom manquant', 'Entre ton prénom pour ce groupe.');
+      Alert.alert(t('groups.name_missing_title'), t('groups.name_missing_msg'));
       return;
     }
     joinMutation.mutate();
@@ -111,22 +113,22 @@ export default function JoinGroupScreen() {
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backText}>← Retour</Text>
+            <Text style={styles.backText}>{t('common.back')}</Text>
           </TouchableOpacity>
           <View style={styles.titleBlock}>
-            <Text style={styles.title}>Rejoindre un groupe</Text>
-            <Text style={styles.sub}>Entre le code d'invitation reçu.</Text>
+            <Text style={styles.title}>{t('groups.join')}</Text>
+            <Text style={styles.sub}>{t('groups.join_sub')}</Text>
           </View>
           <Input
-            label="Code d'invitation"
-            placeholder="Ex : clpx8f2a0000..."
+            label={t('groups.invite_code')}
+            placeholder={t('groups.code_ph')}
             value={inviteCode}
             onChangeText={setInviteCode}
             autoCapitalize="none"
             autoCorrect={false}
           />
           <Button
-            label="Continuer →"
+            label={`${t('common.continue')} →`}
             onPress={handleCodeSubmit}
             loading={loadingPreview}
             style={{ marginTop: 8 }}
@@ -142,7 +144,7 @@ export default function JoinGroupScreen() {
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <TouchableOpacity onPress={() => setStep('code')} style={styles.backBtn}>
-            <Text style={styles.backText}>← Retour</Text>
+            <Text style={styles.backText}>{t('common.back')}</Text>
           </TouchableOpacity>
 
           {groupPreview && (
@@ -152,11 +154,8 @@ export default function JoinGroupScreen() {
             </View>
           )}
 
-          <Text style={styles.title}>Es-tu déjà dans ce groupe ?</Text>
-          <Text style={styles.sub}>
-            Ces membres ont été ajoutés sans compte. Si tu es l'un d'eux, sélectionne ton nom
-            pour récupérer ton historique de dépenses.
-          </Text>
+          <Text style={styles.title}>{t('groups.claim_title')}</Text>
+          <Text style={styles.sub}>{t('groups.claim_sub_long')}</Text>
 
           <View style={styles.memberList}>
             {guestMembers.map(m => (
@@ -179,14 +178,12 @@ export default function JoinGroupScreen() {
 
           {selectedMemberId && (
             <View style={styles.claimNotice}>
-              <Text style={styles.claimNoticeText}>
-                ✓ Ton compte sera lié à ce membre. Toutes tes dépenses passées seront rattachées à toi.
-              </Text>
+              <Text style={styles.claimNoticeText}>{t('groups.claim_link_notice')}</Text>
             </View>
           )}
 
           <Button
-            label={selectedMemberId ? `Je suis ${guestMembers.find(m => m.id === selectedMemberId)?.displayName}` : 'Confirmer'}
+            label={selectedMemberId ? t('groups.claim_confirm', { name: guestMembers.find(m => m.id === selectedMemberId)?.displayName }) : t('common.confirm')}
             onPress={selectedMemberId ? handleJoin : undefined}
             loading={joinMutation.isPending}
             style={{ marginTop: 16 }}
@@ -197,9 +194,7 @@ export default function JoinGroupScreen() {
             style={styles.skipBtn}
             onPress={() => { setSelectedMemberId(null); setStep('name'); }}
           >
-            <Text style={styles.skipText}>
-              Je ne suis aucun de ces membres → Rejoindre avec mon nom
-            </Text>
+            <Text style={styles.skipText}>{t('groups.none_of_these')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -211,7 +206,7 @@ export default function JoinGroupScreen() {
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <TouchableOpacity onPress={() => setStep(guestMembers.length > 0 ? 'claim' : 'code')} style={styles.backBtn}>
-          <Text style={styles.backText}>← Retour</Text>
+          <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
 
         {groupPreview && (
@@ -221,12 +216,12 @@ export default function JoinGroupScreen() {
           </View>
         )}
 
-        <Text style={styles.title}>Ton prénom dans ce groupe</Text>
-        <Text style={styles.sub}>Ce prénom sera visible par tous les membres.</Text>
+        <Text style={styles.title}>{t('groups.your_name_in_group')}</Text>
+        <Text style={styles.sub}>{t('groups.name_step_sub')}</Text>
 
         <Input
-          label="Prénom"
-          placeholder="Ex : Sophie"
+          label={t('groups.first_name')}
+          placeholder={t('groups.first_name_ph')}
           value={displayName}
           onChangeText={setDisplayName}
           autoCapitalize="words"
@@ -234,13 +229,11 @@ export default function JoinGroupScreen() {
         />
 
         <View style={styles.notice}>
-          <Text style={styles.noticeText}>
-            💡 Tu peux utiliser un prénom différent de ton nom d'utilisateur.
-          </Text>
+          <Text style={styles.noticeText}>{t('groups.name_hint')}</Text>
         </View>
 
         <Button
-          label="Rejoindre le groupe"
+          label={t('groups.join_group_btn')}
           onPress={handleJoin}
           loading={joinMutation.isPending}
           style={{ marginTop: 8 }}
