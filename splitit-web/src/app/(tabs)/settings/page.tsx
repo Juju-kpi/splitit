@@ -12,7 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { userApi, authApi, ocrApi } from '@/lib/api'
 import { Avatar, GlassCard, SectionLabel, Button, Input, Notice } from '@/components/ui'
-import { useLangStore } from '@/store/langStore'
+import { useLangStore, useT } from '@/store/langStore'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -111,6 +111,7 @@ function RowSep() { return <div className="h-px bg-white/5 ml-[68px]" /> }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function Modal({ visible, onClose, title, children }: { visible: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+  const t = useT()
   if (!visible) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -118,7 +119,7 @@ function Modal({ visible, onClose, title, children }: { visible: boolean; onClos
       <div className="relative w-full max-w-sm bg-surface border border-border rounded-t-3xl sm:rounded-3xl p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-text">{title}</h2>
-          <button onClick={onClose} className="bg-surface2 border border-border px-3 py-1.5 rounded-full text-xs text-text2">Fermer</button>
+          <button onClick={onClose} className="bg-surface2 border border-border px-3 py-1.5 rounded-full text-xs text-text2">{t('common.close')}</button>
         </div>
         {children}
       </div>
@@ -133,6 +134,8 @@ export default function SettingsPage() {
   const user = useAuthStore(s => s.user)
   const setUser = useAuthStore(s => s.setUser)
   const logout = useAuthStore(s => s.logout)
+  const t = useT()
+  const deleteKeyword = t('settings.delete_keyword').toLowerCase()
 
   const [colorModal, setColorModal] = useState(false)
   const [langModal, setLangModal] = useState(false)
@@ -214,7 +217,7 @@ export default function SettingsPage() {
           const perm = await Notification.requestPermission()
           setNotifPermission(perm)
           if (perm !== 'granted') {
-            alert('Active les notifications dans les réglages de ton navigateur.')
+            alert(t('settings.perm_denied_msg_web'))
             setNotifLoading(false); return
           }
         }
@@ -224,7 +227,7 @@ export default function SettingsPage() {
         if (value) {
           token = await getWebPushSubscription()
           if (!token) {
-            alert("Impossible d'obtenir le token de notification.")
+            alert(t('settings.push_token_err'))
             setNotifLoading(false); return
           }
         } else {
@@ -274,7 +277,7 @@ export default function SettingsPage() {
   const deleteMutation = useMutation({
     mutationFn: (password: string) => authApi.deleteAccount(password),
     onSuccess: async () => { setDeleteModal(false); await logout(); router.replace('/auth/login') },
-    onError: (e: any) => setDeleteError(e?.response?.data?.error || 'Mot de passe incorrect.'),
+    onError: (e: any) => setDeleteError(e?.response?.data?.error || t('settings.wrong_password')),
   })
 
   const currentLang = LANGUAGES.find(l => l.code === selectedLang) ?? LANGUAGES[0]
@@ -284,8 +287,8 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-bg">
       {/* Header */}
       <div className="px-5 pt-[max(env(safe-area-inset-top),20px)] pb-4 sticky top-0 z-20 glass border-b border-white/5">
-        <h1 className="text-2xl font-extrabold tracking-tight text-text">Réglages</h1>
-        <p className="text-sm text-text3 mt-0.5">Compte et préférences</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-text">{t('settings.title')}</h1>
+        <p className="text-sm text-text3 mt-0.5">{t('settings.subtitle')}</p>
       </div>
 
       <div className="px-5 pb-28">
@@ -300,25 +303,25 @@ export default function SettingsPage() {
             <div>
               <p className="text-base font-bold text-text">{user?.username}</p>
               <p className="text-xs text-text3 mt-0.5">{user?.email}</p>
-              <span className="inline-block mt-2 text-[10px] font-bold text-accent2 bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full">✦ Membre actif</span>
+              <span className="inline-block mt-2 text-[10px] font-bold text-accent2 bg-accent/10 border border-accent/20 px-2.5 py-1 rounded-full">{t('settings.active_member')}</span>
             </div>
           </div>
         </div>
 
         {/* OCR stats */}
-        <SectionLabel label="Entraînement OCR" />
+        <SectionLabel label={t('settings.ocr_title')} />
         <div className="glass-card rounded-2xl p-4 mb-1">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-text">🧠 Modèle · v1.4</span>
+            <span className="text-sm font-bold text-text">🧠 {t('settings.ocr_model')} · v1.4</span>
             <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${accuracy >= 80 ? 'bg-green/10 text-green' : 'bg-amber/10 text-amber'}`}>
-              {accuracy.toFixed(0)}% précis
+              {t('settings.ocr_accurate', { v: accuracy.toFixed(0) })}
             </span>
           </div>
           <div className="grid grid-cols-3 divide-x divide-white/5 mb-3">
             {[
-              { num: total, label: 'Corrections', color: 'text-accent2' },
-              { num: `${accuracy.toFixed(0)}%`, label: 'Précision', color: 'text-green' },
-              { num: untrained, label: 'En attente', color: untrained > 0 ? 'text-amber' : 'text-text3' },
+              { num: total, label: t('settings.ocr_corrections'), color: 'text-accent2' },
+              { num: `${accuracy.toFixed(0)}%`, label: t('settings.ocr_precision'), color: 'text-green' },
+              { num: untrained, label: t('settings.ocr_pending'), color: untrained > 0 ? 'text-amber' : 'text-text3' },
             ].map(s => (
               <div key={s.label} className="flex flex-col items-center py-1">
                 <span className={`text-2xl font-light font-mono ${s.color}`}>{s.num}</span>
@@ -329,91 +332,91 @@ export default function SettingsPage() {
           <div className="h-1 bg-surface3 rounded-full overflow-hidden mb-1.5">
             <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${Math.min(accuracy, 100)}%` }} />
           </div>
-          <p className="text-[11px] text-text3">{untrained > 0 ? `${untrained} corrections avant le prochain affinement` : '✓ Modèle à jour'}</p>
+          <p className="text-[11px] text-text3">{untrained > 0 ? t('settings.ocr_before_next', { n: untrained }) : t('settings.ocr_uptodate')}</p>
         </div>
-        <Notice text="Chaque correction améliore l'OCR pour tout le monde. Les données sont anonymisées." variant="accent" />
+        <Notice text={t('settings.ocr_notice')} variant="accent" />
 
         {/* Mon compte */}
-        <SectionLabel label="Mon compte" />
+        <SectionLabel label={t('settings.account')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-          <SettingRow icon="📅" label="Membre depuis" value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'} />
+          <SettingRow icon="📅" label={t('settings.member_since')} value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'} />
           <RowSep />
-          <SettingRow icon="🎨" label="Couleur de profil" onClick={() => setColorModal(true)}
+          <SettingRow icon="🎨" label={t('settings.profile_color')} onClick={() => setColorModal(true)}
             right={<div className="w-6 h-6 rounded-full border-2 border-border flex-shrink-0" style={{ backgroundColor: user?.avatarColor || '#7C6EFA' }} />}
           />
         </div>
 
         {/* Langue & Devise */}
-        <SectionLabel label="Langue & Devise" />
+        <SectionLabel label={t('settings.language_currency')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-1">
-          <SettingRow icon="🌍" label="Langue" value={`${currentLang.flag} ${currentLang.label}`} onClick={() => setLangModal(true)} />
+          <SettingRow icon="🌍" label={t('settings.language')} value={`${currentLang.flag} ${currentLang.label}`} onClick={() => setLangModal(true)} />
           <RowSep />
-          <SettingRow icon="💱" label="Devise" value={`${currentCurrency.symbol} ${currentCurrency.code}`} onClick={() => setCurrencyModal(true)} />
+          <SettingRow icon="💱" label={t('settings.currency')} value={`${currentCurrency.symbol} ${currentCurrency.code}`} onClick={() => setCurrencyModal(true)} />
         </div>
-        <Notice text="La devise est utilisée pour l'affichage uniquement. Pas de conversion de taux." variant="amber" />
+        <Notice text={t('settings.currency_notice')} variant="amber" />
 
         {/* Notifications */}
-        <SectionLabel label="Notifications" />
+        <SectionLabel label={t('settings.notifications')} />
         {notifSupported && notifPermission === 'granted' && (
-          <Notice text="Les notifications push sont activées sur cet appareil." variant="accent" />
+          <Notice text={t('settings.notif_enabled_device')} variant="accent" />
         )}
         {notifSupported && notifPermission === 'denied' && (
-          <Notice variant="amber" text="Notifications bloquées. Autorise-les dans les réglages de ton navigateur." />
+          <Notice variant="amber" text={t('settings.notif_blocked')} />
         )}
         {!notifSupported && (
-          <Notice variant="amber" text="Les notifications push ne sont pas disponibles dans ce navigateur. Sur iPhone, installe l'app sur l'écran d'accueil (Safari → Partager → Sur l'écran d'accueil) et réessaie." />
+          <Notice variant="amber" text={t('settings.notif_unsupported')} />
         )}
         <div className={`glass-card rounded-2xl overflow-hidden p-0 mb-3 ${!notifSupported ? 'opacity-50' : ''}`}>
-          <SettingRow icon="🔔" label="Nouvelle dépense dans un groupe"
+          <SettingRow icon="🔔" label={t('settings.notif_expense')}
             right={<Toggle checked={notifExpense} onChange={v => handleNotifToggle('expense', v)} disabled={notifLoading || !notifSupported || !swReady} />}
           />
           <RowSep />
-          <SettingRow icon="⏰" label="Rappel dépenses à compléter"
+          <SettingRow icon="⏰" label={t('settings.notif_reminder')}
             right={<Toggle checked={notifReminder} onChange={v => handleNotifToggle('reminder', v)} disabled={notifLoading || !notifSupported || !swReady} />}
           />
         </div>
 
         {/* Confidentialité */}
-        <SectionLabel label="Confidentialité & données" />
+        <SectionLabel label={t('settings.privacy')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-          <SettingRow icon="📦" label="Exporter mes données" onClick={async () => {
+          <SettingRow icon="📦" label={t('settings.export_data')} onClick={async () => {
             setExportLoading(true)
             try { await userApi.requestDataExport(); setExportSent(true) } catch {} finally { setExportLoading(false) }
-          }} value={exportSent ? '✓ Email envoyé' : exportLoading ? '…' : undefined} />
+          }} value={exportSent ? t('settings.export_sent') : exportLoading ? '…' : undefined} />
           <RowSep />
-          <SettingRow icon="🔒" label="Politique de confidentialité" onClick={() => window.open(PRIVACY_URL, '_blank')} />
+          <SettingRow icon="🔒" label={t('settings.privacy_policy')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
           <RowSep />
-          <SettingRow icon="📋" label="Conditions d'utilisation" onClick={() => window.open(PRIVACY_URL, '_blank')} />
+          <SettingRow icon="📋" label={t('settings.terms')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
         </div>
 
         {/* À propos */}
-<SectionLabel label="À propos" />
+<SectionLabel label={t('settings.about')} />
 <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-  <SettingRow icon="🌐" label="Version web" value={APP_VERSION} />
+  <SettingRow icon="🌐" label={t('settings.web_version')} value={APP_VERSION} />
   <RowSep />
-  <SettingRow icon="⭐️" label="Télécharger l'app mobile" onClick={() => window.open('https://play.google.com/store/apps/details?id=com.julien.splitit', '_blank')} />
+  <SettingRow icon="⭐️" label={t('settings.download_mobile')} onClick={() => window.open('https://play.google.com/store/apps/details?id=com.julien.splitit', '_blank')} />
   <RowSep />
-  <SettingRow icon="💬" label="Envoyer un feedback" onClick={() => window.open('mailto:ares88775@gmail.com?subject=Feedback SplitIt', '_blank')} />
+  <SettingRow icon="💬" label={t('settings.feedback')} onClick={() => window.open('mailto:ares88775@gmail.com?subject=Feedback SplitIt', '_blank')} />
 </div>
 
         {/* Zone de danger */}
-        <SectionLabel label="Zone de danger" />
+        <SectionLabel label={t('settings.danger')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0">
-          <SettingRow icon="👋" label="Se déconnecter" onClick={async () => {
-            if (confirm('Te déconnecter ?')) { await logout(); router.replace('/auth/login') }
+          <SettingRow icon="👋" label={t('settings.logout_row')} onClick={async () => {
+            if (confirm(t('settings.logout_confirm_web'))) { await logout(); router.replace('/auth/login') }
           }} />
           <RowSep />
-          <SettingRow icon="🗑" label="Supprimer mon compte" destructive onClick={() => {
+          <SettingRow icon="🗑" label={t('settings.delete_account')} destructive onClick={() => {
             setDeleteModal(true); setDeleteStep('confirm'); setDeleteConfirm(''); setDeletePassword(''); setDeleteError('')
           }} />
         </div>
 
-        <p className="text-center text-[11px] text-text3 mt-8 mb-4">SplitIt {APP_VERSION} · Fait avec ❤️</p>
+        <p className="text-center text-[11px] text-text3 mt-8 mb-4">SplitIt {APP_VERSION} · {t('settings.made_with')}</p>
       </div>
 
       {/* ── Color picker modal ── */}
-      <Modal visible={colorModal} onClose={() => setColorModal(false)} title="Couleur de profil">
-        <p className="text-sm text-text3 mb-4">Choisis une couleur pour ton avatar</p>
+      <Modal visible={colorModal} onClose={() => setColorModal(false)} title={t('settings.profile_color')}>
+        <p className="text-sm text-text3 mb-4">{t('settings.color_pick_sub')}</p>
         <div className="grid grid-cols-5 gap-3 mb-6">
           {AVATAR_COLORS.map(color => (
             <button key={color} onClick={() => setSelectedColor(color)}
@@ -426,11 +429,11 @@ export default function SettingsPage() {
         <div className="flex justify-center mb-6">
           <Avatar initials={(user?.username ?? '??').slice(0, 2).toUpperCase()} color={selectedColor} size={72} ring />
         </div>
-        <Button label="Sauvegarder" onClick={() => colorMutation.mutate(selectedColor)} loading={colorMutation.isPending} />
+        <Button label={t('common.save')} onClick={() => colorMutation.mutate(selectedColor)} loading={colorMutation.isPending} />
       </Modal>
 
       {/* ── Langue modal ── */}
-      <Modal visible={langModal} onClose={() => setLangModal(false)} title="🌍 Langue">
+      <Modal visible={langModal} onClose={() => setLangModal(false)} title={`🌍 ${t('settings.language')}`}>
         <div className="space-y-1 mb-6">
           {LANGUAGES.map(lang => (
             <button key={lang.code} onClick={() => setSelectedLang(lang.code)}
@@ -441,52 +444,52 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
-        <Button label="Appliquer" onClick={() => langMutation.mutate(selectedLang)} loading={langMutation.isPending} />
+        <Button label={t('common.apply')} onClick={() => langMutation.mutate(selectedLang)} loading={langMutation.isPending} />
       </Modal>
 
       {/* ── Devise modal ── */}
-      <Modal visible={currencyModal} onClose={() => setCurrencyModal(false)} title="💱 Devise">
-        <Notice text="Affichage uniquement — aucune conversion de taux appliquée." variant="amber" />
+      <Modal visible={currencyModal} onClose={() => setCurrencyModal(false)} title={`💱 ${t('settings.currency')}`}>
+        <Notice text={t('settings.currency_notice_short')} variant="amber" />
         <div className="space-y-1 my-4">
           {CURRENCIES.map(currency => (
             <button key={currency.code} onClick={() => setSelectedCurrency(currency.code)}
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors ${selectedCurrency === currency.code ? 'bg-accent/10 border border-accent/25' : 'hover:bg-surface2'}`}>
               <span className="w-8 text-center font-semibold text-text">{currency.symbol}</span>
-              <span className={`flex-1 text-sm text-left ${selectedCurrency === currency.code ? 'text-accent2 font-bold' : 'text-text'}`}>{currency.label}</span>
+              <span className={`flex-1 text-sm text-left ${selectedCurrency === currency.code ? 'text-accent2 font-bold' : 'text-text'}`}>{t(`settings.currency_${currency.code.toLowerCase()}`)}</span>
               {selectedCurrency === currency.code && <span className="text-accent2 font-bold">✓</span>}
             </button>
           ))}
         </div>
-        <Button label="Appliquer" onClick={() => currencyMutation.mutate(selectedCurrency)} loading={currencyMutation.isPending} />
+        <Button label={t('common.apply')} onClick={() => currencyMutation.mutate(selectedCurrency)} loading={currencyMutation.isPending} />
       </Modal>
 
       {/* ── Delete modal ── */}
-      <Modal visible={deleteModal} onClose={() => setDeleteModal(false)} title="Supprimer mon compte">
+      <Modal visible={deleteModal} onClose={() => setDeleteModal(false)} title={t('settings.delete_account')}>
         {deleteStep === 'confirm' ? (
           <>
             <div className="bg-red/5 border border-red/20 rounded-xl p-4 mb-5">
-              <p className="text-sm font-bold text-red mb-2">⚠️ Action irréversible</p>
+              <p className="text-sm font-bold text-red mb-2">⚠️ {t('settings.delete_warning')}</p>
               <p className="text-sm text-text2 leading-relaxed whitespace-pre-line">
-                {'• Suppression définitive de ton profil\n• Déconnexion de tous tes groupes\n• Toutes tes sessions seront invalidées\n\nLes dépenses partagées restent visibles pour les autres membres.'}
+                {t('settings.delete_bullets')}
               </p>
             </div>
-            <p className="text-sm text-text2 mb-2">Tape <span className="text-red font-bold">supprimer</span> pour confirmer</p>
-            <Input label="" placeholder="supprimer" value={deleteConfirm} onChange={setDeleteConfirm} />
-            <Button label="Continuer →" variant="danger"
-              onClick={() => { if (deleteConfirm.toLowerCase() === 'supprimer') setDeleteStep('password') }}
-              disabled={deleteConfirm.toLowerCase() !== 'supprimer'} />
+            <p className="text-sm text-text2 mb-2">{t('settings.delete_type_before')} <span className="text-red font-bold">{t('settings.delete_keyword')}</span> {t('settings.delete_type_after')}</p>
+            <Input label="" placeholder={t('settings.delete_keyword')} value={deleteConfirm} onChange={setDeleteConfirm} />
+            <Button label={`${t('common.continue')} →`} variant="danger"
+              onClick={() => { if (deleteConfirm.trim().toLowerCase() === deleteKeyword) setDeleteStep('password') }}
+              disabled={deleteConfirm.trim().toLowerCase() !== deleteKeyword} />
           </>
         ) : (
           <>
             <div className="bg-red/5 border border-red/20 rounded-xl p-4 mb-5">
-              <p className="text-sm font-bold text-red mb-1">🔑 Confirme ton mot de passe</p>
-              <p className="text-sm text-text2">Entre ton mot de passe pour finaliser la suppression.</p>
+              <p className="text-sm font-bold text-red mb-1">🔑 {t('settings.delete_confirm_pw')}</p>
+              <p className="text-sm text-text2">{t('settings.delete_confirm_pw_sub')}</p>
             </div>
-            <Input label="Mot de passe" type="password" value={deletePassword} onChange={setDeletePassword} />
+            <Input label={t('auth.password')} type="password" value={deletePassword} onChange={setDeletePassword} />
             {deleteError && <p className="text-red text-xs mb-2">{deleteError}</p>}
-            <Button label={deleteMutation.isPending ? 'Suppression…' : 'Supprimer définitivement'} variant="danger"
+            <Button label={deleteMutation.isPending ? t('settings.deleting') : t('settings.delete_final')} variant="danger"
               onClick={() => deleteMutation.mutate(deletePassword)} loading={deleteMutation.isPending} />
-            <button onClick={() => setDeleteStep('confirm')} className="w-full text-xs text-text3 mt-3 py-2">← Retour</button>
+            <button onClick={() => setDeleteStep('confirm')} className="w-full text-xs text-text3 mt-3 py-2">{t('common.back')}</button>
           </>
         )}
       </Modal>

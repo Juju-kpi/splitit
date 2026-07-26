@@ -24,8 +24,8 @@ import { colors, spacing, radius } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import i18n, { t } from '../../src/i18n';
-import { useLangStore } from '../../src/store/langStore';
+import i18n from '../../src/i18n';
+import { useLangStore, useT } from '../../src/store/langStore';
 import {
   PreferredLanguage,
   PreferredCurrency,
@@ -139,6 +139,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const t = useT();
+  const deleteKeyword = t('settings.delete_keyword').toLowerCase();
 
   // Color picker modal
   const [colorModalVisible, setColorModalVisible] = useState(false);
@@ -204,11 +206,11 @@ export default function SettingsScreen() {
         token = await registerForPushNotifications();
         if (!token) {
           Alert.alert(
-            'Permission refusée',
-            'Active les notifications dans les réglages de ton téléphone.',
+            t('settings.perm_denied'),
+            t('settings.perm_denied_msg_mobile'),
             [
-              { text: 'Annuler', style: 'cancel' },
-              { text: 'Ouvrir les réglages', onPress: () => Linking.openSettings() },
+              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('common.open_settings'), onPress: () => Linking.openSettings() },
             ]
           );
           setNotifLoading(false);
@@ -230,7 +232,7 @@ export default function SettingsScreen() {
 
     } catch (e: any) {
       console.error('[Notif toggle error]', e?.response?.data || e?.message);
-      Alert.alert('Erreur', e?.response?.data?.error || 'Impossible de mettre à jour les préférences.');
+      Alert.alert(t('common.error'), e?.response?.data?.error || t('settings.notif_update_err'));
     } finally {
       setNotifLoading(false);
     }
@@ -243,7 +245,7 @@ export default function SettingsScreen() {
       setUser(data);
       setColorModalVisible(false);
     },
-    onError: () => Alert.alert('Erreur', 'Impossible de sauvegarder la couleur.'),
+    onError: () => Alert.alert(t('common.error'), t('settings.color_save_err')),
   });
 
   // ── Langue save ───────────────────────────────────────────────────────
@@ -273,22 +275,22 @@ export default function SettingsScreen() {
   // ── Export data ───────────────────────────────────────────────────────
   async function handleExportData() {
     Alert.alert(
-      'Exporter mes données',
-      `Un récapitulatif de tes dépenses sera envoyé à ${user?.email}.`,
+      t('settings.export_data'),
+      t('settings.export_confirm', { email: user?.email }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Envoyer',
+          text: t('common.send'),
           onPress: async () => {
             setExportLoading(true);
             try {
               await userApi.requestDataExport();
-              Alert.alert('✓ Email envoyé', `Vérifie ta boîte mail (${user?.email}).`);
+              Alert.alert(t('settings.export_sent'), t('settings.export_check', { email: user?.email }));
             } catch (e: any) {
               // FIX : afficher le vrai message d'erreur pour faciliter le debug
               const msg = e?.response?.data?.error || e?.message || 'Erreur inconnue';
               console.error('[Export error]', e?.response?.status, msg);
-              Alert.alert('Erreur export', msg);
+              Alert.alert(t('settings.export_err'), msg);
             } finally {
               setExportLoading(false);
             }
@@ -301,16 +303,16 @@ export default function SettingsScreen() {
   // ── Privacy policy ────────────────────────────────────────────────────
   function handlePrivacyPolicy() {
     Linking.openURL(PRIVACY_URL).catch(() =>
-      Alert.alert('Erreur', 'Impossible d\'ouvrir la politique de confidentialité.')
+      Alert.alert(t('common.error'), t('settings.privacy_open_err'))
     );
   }
 
   // ── Logout ────────────────────────────────────────────────────────────
   function handleLogout() {
-    Alert.alert('Déconnexion', 'Tu veux vraiment te déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('auth.logout'), t('auth.logout_confirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Déconnexion', style: 'destructive', onPress: async () => {
+        text: t('auth.logout'), style: 'destructive', onPress: async () => {
           await logout();
           router.replace('/(auth)/login');
         },
@@ -327,7 +329,7 @@ export default function SettingsScreen() {
       router.replace('/(auth)/login');
     },
     onError: (e: any) => {
-      Alert.alert('Erreur', e?.response?.data?.error || 'Mot de passe incorrect.');
+      Alert.alert(t('common.error'), e?.response?.data?.error || t('settings.wrong_password'));
     },
   });
 
@@ -347,7 +349,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Réglages" subtitle="Compte et préférences" />
+      <ScreenHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
@@ -370,66 +372,66 @@ export default function SettingsScreen() {
               <Text style={styles.profileName}>{user?.username}</Text>
               <Text style={styles.profileEmail}>{user?.email}</Text>
               <View style={styles.profileBadge}>
-                <Text style={styles.profileBadgeText}>✦ Membre actif</Text>
+                <Text style={styles.profileBadgeText}>{t('settings.active_member')}</Text>
               </View>
             </View>
           </View>
         </GlassCard>
 
         {/* OCR */}
-        <SectionLabel label="Entraînement OCR" />
+        <SectionLabel label={t('settings.ocr_title')} />
         <Card>
           <View style={styles.ocrHeader}>
-            <Text style={styles.ocrTitle}>🧠 Modèle · v1.4</Text>
+            <Text style={styles.ocrTitle}>🧠 {t('settings.ocr_model')} · v1.4</Text>
             <View style={[styles.ocrAccuracyBadge, {
               backgroundColor: accuracy >= 80 ? colors.greenBg : colors.amberBg,
             }]}>
               <Text style={[styles.ocrAccuracyText, {
                 color: accuracy >= 80 ? colors.green : colors.amber,
               }]}>
-                {accuracy.toFixed(0)}% précis
+                {t('settings.ocr_accurate', { v: accuracy.toFixed(0) })}
               </Text>
             </View>
           </View>
           <View style={styles.ocrStatsRow}>
             <View style={styles.ocrStat}>
               <Text style={[styles.ocrStatNum, { color: colors.accent2 }]}>{total}</Text>
-              <Text style={styles.ocrStatLabel}>Corrections</Text>
+              <Text style={styles.ocrStatLabel}>{t('settings.ocr_corrections')}</Text>
             </View>
             <View style={styles.ocrStatDivider} />
             <View style={styles.ocrStat}>
               <Text style={[styles.ocrStatNum, { color: colors.green }]}>{accuracy.toFixed(0)}%</Text>
-              <Text style={styles.ocrStatLabel}>Précision</Text>
+              <Text style={styles.ocrStatLabel}>{t('settings.ocr_precision')}</Text>
             </View>
             <View style={styles.ocrStatDivider} />
             <View style={styles.ocrStat}>
               <Text style={[styles.ocrStatNum, { color: untrained > 0 ? colors.amber : colors.text3 }]}>
                 {untrained}
               </Text>
-              <Text style={styles.ocrStatLabel}>En attente</Text>
+              <Text style={styles.ocrStatLabel}>{t('settings.ocr_pending')}</Text>
             </View>
           </View>
           <View style={styles.progBarTrack}>
             <View style={[styles.progBarFill, { width: `${Math.min(accuracy, 100)}%` as any }]} />
           </View>
           <Text style={styles.progLabel}>
-            {untrained > 0 ? `${untrained} corrections avant le prochain affinement` : '✓ Modèle à jour'}
+            {untrained > 0 ? t('settings.ocr_before_next', { n: untrained }) : t('settings.ocr_uptodate')}
           </Text>
         </Card>
-        <Notice text="Chaque correction améliore l'OCR pour tout le monde. Les données sont anonymisées." variant="accent" />
+        <Notice text={t('settings.ocr_notice')} variant="accent" />
 
         {/* Mon compte */}
-        <SectionLabel label="Mon compte" />
+        <SectionLabel label={t('settings.account')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
             icon="📅"
-            label="Membre depuis"
+            label={t('settings.member_since')}
             value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
             icon="🎨"
-            label="Couleur de profil"
+            label={t('settings.profile_color')}
             onPress={() => setColorModalVisible(true)}
             rightElement={
               <View style={[styles.colorDot, { backgroundColor: user?.avatarColor || colors.accent }]} />
@@ -438,33 +440,33 @@ export default function SettingsScreen() {
         </Card>
 
         {/* Langue & Devise */}
-        <SectionLabel label="Langue & Devise" />
+        <SectionLabel label={t('settings.language_currency')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
             icon="🌍"
-            label="Langue"
+            label={t('settings.language')}
             value={`${currentLang.flag} ${currentLang.label}`}
             onPress={() => setLangModalVisible(true)}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
             icon="💱"
-            label="Devise"
+            label={t('settings.currency')}
             value={`${currentCurrency.symbol} ${currentCurrency.code}`}
             onPress={() => setCurrencyModalVisible(true)}
           />
         </Card>
-        <Notice text="La devise est utilisée pour l'affichage uniquement. Pas de conversion de taux." variant="amber" />
+        <Notice text={t('settings.currency_notice')} variant="amber" />
 
         {/* Notifications */}
-        <SectionLabel label="Notifications" />
+        <SectionLabel label={t('settings.notifications')} />
         {pushToken && (
-          <Notice text="Les notifications push sont activées sur cet appareil." variant="accent" />
+          <Notice text={t('settings.notif_enabled_device')} variant="accent" />
         )}
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
             icon="🔔"
-            label="Nouvelle dépense dans un groupe"
+            label={t('settings.notif_expense')}
             rightElement={
               notifLoading ? (
                 <ActivityIndicator size="small" color={colors.accent} style={{ marginLeft: 'auto' }} />
@@ -482,7 +484,7 @@ export default function SettingsScreen() {
           <View style={styles.rowSeparator} />
           <SettingRow
             icon="⏰"
-            label="Rappel dépenses à compléter"
+            label={t('settings.notif_reminder')}
             rightElement={
               notifLoading ? (
                 <ActivityIndicator size="small" color={colors.accent} style={{ marginLeft: 'auto' }} />
@@ -500,36 +502,36 @@ export default function SettingsScreen() {
         </Card>
 
         {/* Confidentialité */}
-        <SectionLabel label="Confidentialité & données" />
+        <SectionLabel label={t('settings.privacy')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
             icon="📦"
-            label="Exporter mes données"
+            label={t('settings.export_data')}
             onPress={handleExportData}
             loading={exportLoading}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
             icon="🔒"
-            label="Politique de confidentialité"
+            label={t('settings.privacy_policy')}
             onPress={handlePrivacyPolicy}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
             icon="📋"
-            label="Conditions d'utilisation"
+            label={t('settings.terms')}
             onPress={() => Linking.openURL('https://juju-kpi.github.io/splitit/privacy-policy.md')}
           />
         </Card>
 
         {/* À propos */}
-        <SectionLabel label="À propos" />
+        <SectionLabel label={t('settings.about')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <SettingRow icon="📱" label="Version de l'app" value={APP_VERSION} />
+          <SettingRow icon="📱" label={t('settings.version')} value={APP_VERSION} />
           <View style={styles.rowSeparator} />
           <SettingRow
             icon="⭐️"
-            label="Noter l'app"
+            label={t('settings.rate')}
             onPress={() => Linking.openURL('market://details?id=com.julien.splitit').catch(() =>
               Linking.openURL('https://play.google.com/store/apps/details?id=com.julien.splitit')
             )}
@@ -537,20 +539,20 @@ export default function SettingsScreen() {
           <View style={styles.rowSeparator} />
           <SettingRow
             icon="💬"
-            label="Envoyer un feedback"
+            label={t('settings.feedback')}
             onPress={() => Linking.openURL('mailto:ares88775@gmail.com?subject=Feedback SplitIt')}
           />
         </Card>
 
         {/* Danger zone */}
-        <SectionLabel label="Zone de danger" />
+        <SectionLabel label={t('settings.danger')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <SettingRow icon="👋" label="Se déconnecter" onPress={handleLogout} />
+          <SettingRow icon="👋" label={t('settings.logout_row')} onPress={handleLogout} />
           <View style={styles.rowSeparator} />
-          <SettingRow icon="🗑" label="Supprimer mon compte" destructive onPress={openDeleteModal} />
+          <SettingRow icon="🗑" label={t('settings.delete_account')} destructive onPress={openDeleteModal} />
         </Card>
 
-        <Text style={styles.footer}>SplitIt {APP_VERSION} · Fait avec ❤️</Text>
+        <Text style={styles.footer}>SplitIt {APP_VERSION} · {t('settings.made_with')}</Text>
       </ScrollView>
 
       {/* ── Color picker modal ── */}
@@ -562,13 +564,13 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Couleur de profil</Text>
+            <Text style={styles.modalTitle}>{t('settings.profile_color')}</Text>
             <TouchableOpacity onPress={() => setColorModalVisible(false)} style={styles.modalClose}>
-              <Text style={styles.modalCloseText}>Annuler</Text>
+              <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.colorPickerContent}>
-            <Text style={styles.colorPickerSub}>Choisis une couleur pour ton avatar</Text>
+            <Text style={styles.colorPickerSub}>{t('settings.color_pick_sub')}</Text>
             <View style={styles.colorGrid}>
               {AVATAR_COLORS.map(color => (
                 <TouchableOpacity
@@ -604,7 +606,7 @@ export default function SettingsScreen() {
             >
               {colorMutation.isPending
                 ? <ActivityIndicator color={colors.white} />
-                : <Text style={styles.colorSaveBtnText}>Sauvegarder</Text>
+                : <Text style={styles.colorSaveBtnText}>{t('common.save')}</Text>
               }
             </TouchableOpacity>
           </ScrollView>
@@ -620,9 +622,9 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>🌍 Langue</Text>
+            <Text style={styles.modalTitle}>🌍 {t('settings.language')}</Text>
             <TouchableOpacity onPress={() => setLangModalVisible(false)} style={styles.modalClose}>
-              <Text style={styles.modalCloseText}>Annuler</Text>
+              <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.pickerContent}>
@@ -647,7 +649,7 @@ export default function SettingsScreen() {
             >
               {langMutation.isPending
                 ? <ActivityIndicator color={colors.white} />
-                : <Text style={styles.colorSaveBtnText}>Appliquer</Text>
+                : <Text style={styles.colorSaveBtnText}>{t('common.apply')}</Text>
               }
             </TouchableOpacity>
           </ScrollView>
@@ -663,13 +665,13 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>💱 Devise</Text>
+            <Text style={styles.modalTitle}>💱 {t('settings.currency')}</Text>
             <TouchableOpacity onPress={() => setCurrencyModalVisible(false)} style={styles.modalClose}>
-              <Text style={styles.modalCloseText}>Annuler</Text>
+              <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.pickerContent}>
-            <Notice text="Affichage uniquement — aucune conversion de taux appliquée." variant="amber" />
+            <Notice text={t('settings.currency_notice_short')} variant="amber" />
             {CURRENCIES.map(currency => (
               <TouchableOpacity
                 key={currency.code}
@@ -679,7 +681,7 @@ export default function SettingsScreen() {
               >
                 <Text style={styles.pickerSymbol}>{currency.symbol}</Text>
                 <Text style={[styles.pickerLabel, selectedCurrency === currency.code && { color: colors.accent2, fontWeight: '700' }]}>
-                  {currency.label}
+                  {t(`settings.currency_${currency.code.toLowerCase()}`)}
                 </Text>
                 {selectedCurrency === currency.code && <Text style={styles.pickerCheck}>✓</Text>}
               </TouchableOpacity>
@@ -691,7 +693,7 @@ export default function SettingsScreen() {
             >
               {currencyMutation.isPending
                 ? <ActivityIndicator color={colors.white} />
-                : <Text style={styles.colorSaveBtnText}>Appliquer</Text>
+                : <Text style={styles.colorSaveBtnText}>{t('common.apply')}</Text>
               }
             </TouchableOpacity>
           </ScrollView>
@@ -710,29 +712,24 @@ export default function SettingsScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.red }]}>Supprimer mon compte</Text>
+            <Text style={[styles.modalTitle, { color: colors.red }]}>{t('settings.delete_account')}</Text>
             <TouchableOpacity onPress={() => setDeleteModalVisible(false)} style={styles.modalClose}>
-              <Text style={styles.modalCloseText}>Annuler</Text>
+              <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             {deleteStep === 'confirm' && (
               <>
                 <View style={styles.deleteWarning}>
-                  <Text style={styles.deleteWarningTitle}>⚠️ Action irréversible</Text>
-                  <Text style={styles.deleteWarningText}>
-                    {'• '}Suppression définitive de ton profil{'\n'}
-                    {'• '}Déconnexion de tous tes groupes{'\n'}
-                    {'• '}Suppression de toutes tes sessions{'\n\n'}
-                    Les dépenses partagées restent visibles pour les autres membres.
-                  </Text>
+                  <Text style={styles.deleteWarningTitle}>⚠️ {t('settings.delete_warning')}</Text>
+                  <Text style={styles.deleteWarningText}>{t('settings.delete_bullets')}</Text>
                 </View>
                 <Text style={styles.deleteConfirmLabel}>
-                  Tape <Text style={{ color: colors.red, fontWeight: '700' }}>supprimer</Text> pour confirmer
+                  {t('settings.delete_type_before')} <Text style={{ color: colors.red, fontWeight: '700' }}>{t('settings.delete_keyword')}</Text> {t('settings.delete_type_after')}
                 </Text>
                 <TextInput
                   style={styles.deleteConfirmInput}
-                  placeholder="supprimer"
+                  placeholder={t('settings.delete_keyword')}
                   placeholderTextColor={colors.text3}
                   value={deleteConfirmText}
                   onChangeText={setDeleteConfirmText}
@@ -740,26 +737,24 @@ export default function SettingsScreen() {
                   autoCorrect={false}
                 />
                 <TouchableOpacity
-                  style={[styles.deleteBtn, deleteConfirmText.toLowerCase() !== 'supprimer' && styles.deleteBtnDisabled]}
+                  style={[styles.deleteBtn, deleteConfirmText.trim().toLowerCase() !== deleteKeyword && styles.deleteBtnDisabled]}
                   onPress={() => {
-                    if (deleteConfirmText.toLowerCase() !== 'supprimer') return;
+                    if (deleteConfirmText.trim().toLowerCase() !== deleteKeyword) return;
                     setDeleteStep('password');
                   }}
-                  disabled={deleteConfirmText.toLowerCase() !== 'supprimer'}
+                  disabled={deleteConfirmText.trim().toLowerCase() !== deleteKeyword}
                 >
-                  <Text style={styles.deleteBtnText}>Continuer →</Text>
+                  <Text style={styles.deleteBtnText}>{t('common.continue')} →</Text>
                 </TouchableOpacity>
               </>
             )}
             {deleteStep === 'password' && (
               <>
                 <View style={styles.deleteWarning}>
-                  <Text style={styles.deleteWarningTitle}>🔑 Confirme ton mot de passe</Text>
-                  <Text style={styles.deleteWarningText}>
-                    Entre ton mot de passe pour finaliser la suppression.
-                  </Text>
+                  <Text style={styles.deleteWarningTitle}>🔑 {t('settings.delete_confirm_pw')}</Text>
+                  <Text style={styles.deleteWarningText}>{t('settings.delete_confirm_pw_sub')}</Text>
                 </View>
-                <Text style={styles.deleteConfirmLabel}>Mot de passe</Text>
+                <Text style={styles.deleteConfirmLabel}>{t('auth.password')}</Text>
                 <TextInput
                   style={styles.deleteConfirmInput}
                   placeholder="••••••••"
@@ -775,11 +770,11 @@ export default function SettingsScreen() {
                   disabled={deleteMutation.isPending}
                 >
                   <Text style={styles.deleteBtnText}>
-                    {deleteMutation.isPending ? 'Suppression…' : 'Supprimer définitivement'}
+                    {deleteMutation.isPending ? t('settings.deleting') : t('settings.delete_final')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.deleteCancelBtn} onPress={() => setDeleteStep('confirm')}>
-                  <Text style={styles.deleteCancelText}>← Retour</Text>
+                  <Text style={styles.deleteCancelText}>{t('common.back')}</Text>
                 </TouchableOpacity>
               </>
             )}
