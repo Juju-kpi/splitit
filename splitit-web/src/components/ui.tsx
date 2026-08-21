@@ -61,10 +61,20 @@ export function Button({ label, onClick, variant = 'primary', loading, disabled,
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────────
-export function Input({ label, placeholder, value, onChange, type = 'text', error, autoFocus, required }: {
+// autoCapitalize / autoCorrect / spellCheck sont exposés parce que les
+// claviers mobiles (PWA iOS/Android) capitalisent et corrigent par défaut :
+// pour un champ comme le code d'invitation, il faut pouvoir tout désactiver.
+export function Input({
+  label, placeholder, value, onChange, type = 'text', error, autoFocus, required,
+  autoCapitalize, autoCorrect, spellCheck, autoComplete, inputMode, maxLength, mono,
+}: {
   label?: string; placeholder?: string; value: string
   onChange: (v: string) => void; type?: string; error?: string
   autoFocus?: boolean; required?: boolean
+  autoCapitalize?: 'none' | 'off' | 'sentences' | 'words' | 'characters'
+  autoCorrect?: 'on' | 'off'; spellCheck?: boolean; autoComplete?: string
+  inputMode?: 'text' | 'numeric' | 'decimal' | 'email' | 'search' | 'url'
+  maxLength?: number; mono?: boolean
 }) {
   return (
     <div className="mb-4">
@@ -76,7 +86,14 @@ export function Input({ label, placeholder, value, onChange, type = 'text', erro
         onChange={e => onChange(e.target.value)}
         autoFocus={autoFocus}
         required={required}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        spellCheck={spellCheck}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
         className={`w-full bg-surface2 border rounded-xl px-4 py-3 text-text placeholder-text3 text-sm outline-none transition-colors
+          ${mono ? 'font-mono tracking-wide' : ''}
           ${error ? 'border-red focus:border-red' : 'border-border focus:border-accent'}`}
       />
       {error && <p className="text-red text-xs mt-1">{error}</p>}

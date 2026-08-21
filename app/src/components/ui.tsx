@@ -65,6 +65,7 @@ interface InputProps {
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'email-address' | 'decimal-pad' | 'numeric';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
   autoComplete?: string;
   style?: ViewStyle;
   mono?: boolean;
@@ -73,7 +74,7 @@ interface InputProps {
 }
 export function Input({
   label, placeholder, value, onChangeText, secureTextEntry,
-  keyboardType = 'default', autoCapitalize = 'sentences',
+  keyboardType = 'default', autoCapitalize = 'sentences', autoCorrect,
   autoComplete, style, mono, error, autoFocus,
 }: InputProps) {
   const [hidden, setHidden] = useState(secureTextEntry ?? false);
@@ -95,6 +96,7 @@ export function Input({
           secureTextEntry={hidden}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
           autoComplete={autoComplete as any}
           autoFocus={autoFocus}
           onFocus={() => setFocused(true)}

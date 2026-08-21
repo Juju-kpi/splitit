@@ -152,6 +152,11 @@ export const groupsApi = {
 
   addMember: (groupId: string, displayName: string) =>
     api.post(`/groups/${groupId}/members`, { displayName }).then(r => r.data.data),
+
+  // NOUVEAU — quitter un groupe. force = true pour passer outre un solde
+  // non réglé (le backend répond 409 UNSETTLED_BALANCE sinon).
+  leave: (groupId: string, force = false) =>
+    api.post(`/groups/${groupId}/leave`, { force }).then(r => r.data.data),
 };
 
 export const expensesApi = {

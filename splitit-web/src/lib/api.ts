@@ -136,6 +136,9 @@ export const groupsApi = {
     api.post(`/groups/join/${inviteCode}`, { displayName, claimMemberId }).then(r => r.data.data),
   addMember: (groupId: string, displayName: string) =>
     api.post(`/groups/${groupId}/members`, { displayName }).then(r => r.data.data),
+  // force = true → quitter malgré un solde non réglé (409 UNSETTLED_BALANCE)
+  leave: (groupId: string, force = false) =>
+    api.post(`/groups/${groupId}/leave`, { force }).then(r => r.data.data),
 }
 
 export const expensesApi = {

@@ -5,11 +5,11 @@
 import { I18n } from 'i18n-js';
 import * as Localization from 'expo-localization';
 
-import fr from './locales/fr';
-import en from './locales/en';
-import de from './locales/de';
-import es from './locales/es';
-import it from './locales/it';
+import fr from './locales/fr.json';
+import en from './locales/en.json';
+import de from './locales/de.json';
+import es from './locales/es.json';
+import it from './locales/it.json';
 
 const i18n = new I18n({ fr, en, de, es, it });
 

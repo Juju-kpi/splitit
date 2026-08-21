@@ -45,7 +45,7 @@ export default function ExpenseDetailPage() {
   )
 
   return (
-    <div className="min-h-screen pb-10">
+    <div className="min-h-screen pb-[max(env(safe-area-inset-bottom),40px)]">
       {/* Header sticky */}
       <div className="px-5 pt-[max(env(safe-area-inset-top),16px)] pb-4 sticky top-0 z-20 glass border-b border-white/5">
         <div className="flex items-center justify-between">

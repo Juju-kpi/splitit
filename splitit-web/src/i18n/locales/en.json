@@ -100,7 +100,7 @@
     "give_name": "Give your group a name.",
     "create_error": "Couldn't create the group.",
     "join_sub": "Enter the invite code shared by a member.",
-    "code_ph": "e.g. AB12CD",
+    "code_ph": "Paste the code you received",
     "verify_code": "Check the code",
     "member_count": "{{n}} member(s)",
     "join_group_btn": "Join the group",
@@ -162,7 +162,17 @@
     "to_complete_pill": "⏳ {{n}} to complete",
     "back_groups": "← Groups",
     "code_label": "Code {{code}}",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "leave": "Leave group",
+    "leave_section": "Leave this group",
+    "leave_hint": "Your name and past expenses stay in the group history, but the group disappears from your list. You can join again later with the invite code.",
+    "leave_confirm": "Leave “{{name}}”? The group will disappear from your list.",
+    "leave_unsettled_owes": "You still owe {{amount}} in this group.",
+    "leave_unsettled_owed": "You are still owed {{amount}} in this group.",
+    "leave_unsettled_confirm": "Leave anyway?",
+    "leave_error": "Couldn't leave the group.",
+    "left_title": "Group left",
+    "left_msg": "You left the group."
   },
   "expenses": {
     "title": "Expenses",

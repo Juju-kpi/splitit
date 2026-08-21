@@ -116,7 +116,7 @@ function Modal({ visible, onClose, title, children }: { visible: boolean; onClos
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-surface border border-border rounded-t-3xl sm:rounded-3xl p-6 max-h-[80vh] overflow-y-auto">
+      <div className="relative w-full max-w-sm bg-surface border border-border rounded-t-3xl sm:rounded-3xl p-6 pb-[max(env(safe-area-inset-bottom),24px)] max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-text">{title}</h2>
           <button onClick={onClose} className="bg-surface2 border border-border px-3 py-1.5 rounded-full text-xs text-text2">{t('common.close')}</button>

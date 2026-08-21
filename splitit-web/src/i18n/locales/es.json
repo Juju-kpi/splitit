@@ -100,7 +100,7 @@
     "give_name": "Ponle un nombre a tu grupo.",
     "create_error": "No se pudo crear el grupo.",
     "join_sub": "Introduce el código de invitación compartido por un miembro.",
-    "code_ph": "Ej. AB12CD",
+    "code_ph": "Pega el código recibido",
     "verify_code": "Comprobar el código",
     "member_count": "{{n}} miembro(s)",
     "join_group_btn": "Unirse al grupo",
@@ -162,7 +162,17 @@
     "to_complete_pill": "⏳ {{n}} por completar",
     "back_groups": "← Grupos",
     "code_label": "Código {{code}}",
-    "copied": "¡Copiado!"
+    "copied": "¡Copiado!",
+    "leave": "Salir del grupo",
+    "leave_section": "Salir de este grupo",
+    "leave_hint": "Tu nombre y tus gastos anteriores permanecen en el historial del grupo, pero el grupo desaparece de tu lista. Podrás volver a unirte con el código de invitación.",
+    "leave_confirm": "¿Salir de «{{name}}»? El grupo desaparecerá de tu lista.",
+    "leave_unsettled_owes": "Todavía debes {{amount}} en este grupo.",
+    "leave_unsettled_owed": "Todavía te deben {{amount}} en este grupo.",
+    "leave_unsettled_confirm": "¿Salir de todos modos?",
+    "leave_error": "No se ha podido salir del grupo.",
+    "left_title": "Has salido del grupo",
+    "left_msg": "Has salido del grupo."
   },
   "expenses": {
     "title": "Gastos",

@@ -45,7 +45,7 @@ function ForgotPasswordInner() {
   }
 
   return (
-    <div className="min-h-screen px-5 py-6 max-w-sm mx-auto">
+    <div className="min-h-screen px-5 max-w-sm mx-auto pt-[max(env(safe-area-inset-top),24px)] pb-[max(env(safe-area-inset-bottom),24px)]">
       <button onClick={() => router.back()} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2 mb-8">
         {t('common.back')}
       </button>

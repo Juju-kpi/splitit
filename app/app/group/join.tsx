@@ -8,13 +8,14 @@
 //   - Si aucun membre sans compte ou si l'utilisateur choisit "Rejoindre avec mon nom"
 //     → comportement original
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView,
   Platform, ScrollView, Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Avatar, Card } from '../../src/components/ui';
 import { colors, spacing, radius } from '../../src/theme';
@@ -33,7 +34,10 @@ export default function JoinGroupScreen() {
   const { code } = useLocalSearchParams<{ code?: string }>();
   const [inviteCode, setInviteCode] = useState(code || '');
   const [displayName, setDisplayName] = useState('');
-  const [step, setStep] = useState<Step>(code ? 'claim' : 'code');
+  // On démarre toujours sur l'étape "code" : si un code arrive par lien
+  // d'invitation il est prérempli et vérifié automatiquement (voir useEffect
+  // plus bas). Sauter directement à "claim" affichait une liste vide.
+  const [step, setStep] = useState<Step>('code');
   const [groupPreview, setGroupPreview] = useState<{ groupName: string; groupEmoji: string } | null>(null);
   const [guestMembers, setGuestMembers] = useState<GuestMember[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -42,6 +46,13 @@ export default function JoinGroupScreen() {
   const router = useRouter();
   const qc = useQueryClient();
   const t = useT();
+  const insets = useSafeAreaInsets();
+
+  // Marges d'écran : jamais collé au bord (encoche / barre de gestes)
+  const screenPad = {
+    paddingTop: Math.max(insets.top, 16),
+    paddingBottom: Math.max(insets.bottom, 16) + 24,
+  };
 
   // Étape 1 : récupère le preview du groupe après saisie du code
   async function handleCodeSubmit() {
@@ -68,6 +79,12 @@ export default function JoinGroupScreen() {
       setLoadingPreview(false);
     }
   }
+
+  // Code reçu par lien d'invitation → on vérifie tout de suite
+  useEffect(() => {
+    if (code) handleCodeSubmit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Étape finale : rejoindre
   const joinMutation = useMutation({
@@ -111,8 +128,8 @@ export default function JoinGroupScreen() {
   if (step === 'code') {
     return (
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <ScrollView contentContainerStyle={[styles.container, screenPad]} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Text style={styles.backText}>{t('common.back')}</Text>
           </TouchableOpacity>
           <View style={styles.titleBlock}>
@@ -142,8 +159,8 @@ export default function JoinGroupScreen() {
   if (step === 'claim') {
     return (
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity onPress={() => setStep('code')} style={styles.backBtn}>
+        <ScrollView contentContainerStyle={[styles.container, screenPad]} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity onPress={() => setStep('code')} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Text style={styles.backText}>{t('common.back')}</Text>
           </TouchableOpacity>
 
@@ -204,8 +221,8 @@ export default function JoinGroupScreen() {
   // ── STEP: name ──────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity onPress={() => setStep(guestMembers.length > 0 ? 'claim' : 'code')} style={styles.backBtn}>
+      <ScrollView contentContainerStyle={[styles.container, screenPad]} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity onPress={() => setStep(guestMembers.length > 0 ? 'claim' : 'code')} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
 

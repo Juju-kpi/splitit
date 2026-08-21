@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Card } from '../../src/components/ui';
 import { colors, spacing } from '../../src/theme';
@@ -14,6 +15,7 @@ export default function NewGroupScreen() {
   const router = useRouter();
   const qc = useQueryClient();
   const t = useT();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('💰');
   const [displayName, setDisplayName] = useState('');
@@ -40,8 +42,8 @@ export default function NewGroupScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Text style={styles.backText}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.title}>{t('groups.new_title')}</Text>
@@ -58,7 +60,7 @@ export default function NewGroupScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 60 + insets.bottom }]}>
         <Input label={t('groups.your_name_in_group')} placeholder={t('groups.your_name_ph')} value={displayName} onChangeText={setDisplayName} />
 
         {tab === 'create' ? (
@@ -85,7 +87,7 @@ export default function NewGroupScreen() {
           </Card>
         ) : (
           <Card>
-            <Input label={t('groups.invite_code')} placeholder={t('groups.code_ph')} value={joinCode} onChangeText={setJoinCode} autoCapitalize="none" />
+            <Input label={t('groups.invite_code')} placeholder={t('groups.code_ph')} value={joinCode} onChangeText={setJoinCode} autoCapitalize="none" autoCorrect={false} />
             <Button label={`${t('common.join')} →`} onPress={() => joinMutation.mutate()} loading={joinMutation.isPending} style={{ marginTop: 8 }} />
           </Card>
         )}

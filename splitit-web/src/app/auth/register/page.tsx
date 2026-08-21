@@ -35,7 +35,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 py-10">
+    <div className="min-h-screen flex items-center justify-center px-5 pt-[max(env(safe-area-inset-top),40px)] pb-[max(env(safe-area-inset-bottom),40px)]">
       <form onSubmit={handleRegister} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="w-[60px] h-[60px] rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center mb-3.5 shadow-lg shadow-accent/25">

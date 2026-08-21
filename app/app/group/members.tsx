@@ -2,6 +2,7 @@
 // Two uses:
 // 1. Group creator/member adds guest names (no account needed)
 // 2. Someone who just joined identifies themselves among existing names OR adds their own
+// 3. Quitter le groupe (bas de page, mode "manage")
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
@@ -9,10 +10,11 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Avatar, Card, Notice } from '../../src/components/ui';
 import { colors, spacing, radius } from '../../src/theme';
-import { useT } from '../../src/store/langStore';
+import { useT, useFormatMoney } from '../../src/store/langStore';
 
 export default function GroupMembersScreen() {
   const { groupId, mode } = useLocalSearchParams<{ groupId: string; mode?: string }>();
@@ -22,9 +24,12 @@ export default function GroupMembersScreen() {
   const router = useRouter();
   const qc = useQueryClient();
   const t = useT();
+  const fmt = useFormatMoney();
+  const insets = useSafeAreaInsets();
 
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const { data: group, isLoading } = useQuery({
     queryKey: ['group', groupId],
@@ -51,14 +56,54 @@ export default function GroupMembersScreen() {
     addMutation.mutate(newName.trim());
   }
 
+  // ── Quitter le groupe ───────────────────────────────────────────────────
+  // Le backend refuse (409 UNSETTLED_BALANCE) tant qu'un solde est ouvert :
+  // on affiche le détail puis on redemande confirmation avant de forcer.
+  async function runLeave(force: boolean) {
+    setLeaving(true);
+    try {
+      await groupsApi.leave(groupId, force);
+      qc.invalidateQueries({ queryKey: ['groups'] });
+      qc.removeQueries({ queryKey: ['group', groupId] });
+      // On ferme la modale ET l'écran du groupe (sinon un retour arriere
+      // afficherait un groupe dont on n'est plus membre).
+      try { router.dismissAll(); } catch {}
+      router.replace('/(tabs)/groups');
+      Alert.alert(t('groups.left_title'), t('groups.left_msg'));
+    } catch (e: any) {
+      const res = e?.response?.data;
+      if (e?.response?.status === 409 && res?.error === 'UNSETTLED_BALANCE') {
+        const lines: string[] = [];
+        if (res.data?.owes > 0) lines.push(t('groups.leave_unsettled_owes', { amount: fmt(res.data.owes) }));
+        if (res.data?.owed > 0) lines.push(t('groups.leave_unsettled_owed', { amount: fmt(res.data.owed) }));
+        lines.push(t('groups.leave_unsettled_confirm'));
+        Alert.alert(t('groups.leave'), lines.join('\n'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('groups.leave'), style: 'destructive', onPress: () => runLeave(true) },
+        ]);
+      } else {
+        Alert.alert(t('common.error'), res?.error || t('groups.leave_error'));
+      }
+    } finally {
+      setLeaving(false);
+    }
+  }
+
+  function handleLeave() {
+    Alert.alert(t('groups.leave'), t('groups.leave_confirm', { name: group?.name || '' }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('groups.leave'), style: 'destructive', onPress: () => runLeave(false) },
+    ]);
+  }
+
   if (isLoading || !group) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
 
   const members = group.members || [];
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={styles.backText}>{t('common.back')}</Text>
         </TouchableOpacity>
         <Text style={styles.title}>
@@ -67,7 +112,10 @@ export default function GroupMembersScreen() {
         <View style={{ width: 70 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: 80 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
 
         {isIdentify ? (
           /* Identify mode: pick your name or add new */
@@ -176,6 +224,18 @@ export default function GroupMembersScreen() {
               variant="amber"
               text={t('groups.invite_notice')}
             />
+
+            {/* ── Quitter le groupe ───────────────────────────────────── */}
+            <View style={styles.dangerZone}>
+              <Text style={styles.sectionLabel}>{t('groups.leave_section')}</Text>
+              <Text style={styles.dangerHint}>{t('groups.leave_hint')}</Text>
+              <Button
+                label={t('groups.leave')}
+                variant="danger"
+                onPress={handleLeave}
+                loading={leaving}
+              />
+            </View>
           </>
         )}
       </ScrollView>
@@ -213,4 +273,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, padding: 16, alignItems: 'center',
   },
   addBtnText: { fontSize: 14, color: colors.accent2, fontWeight: '500' },
+  dangerZone: { marginTop: 28, paddingTop: 20, borderTopWidth: 0.5, borderTopColor: colors.border },
+  dangerHint: { fontSize: 12, color: colors.text3, lineHeight: 18, marginBottom: 12 },
 });
