@@ -235,6 +235,32 @@ export default function ExpenseDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
+        {/* À compléter — même bandeau que sur le web. La fiche reste
+            accessible (Modifier / Supprimer) au lieu de sauter directement
+            dans l'écran d'édition, qui n'offrait ni l'un ni l'autre. */}
+        {expense.isComplete === false && (
+          <View style={styles.todoBanner}>
+            <Text style={styles.todoTitle}>⏳ Dépense à compléter</Text>
+            <Text style={styles.todoText}>
+              {expense.items?.length > 0
+                ? 'Certains articles ne sont assignés à personne.'
+                : 'La répartition ne couvre pas le montant total.'}
+            </Text>
+            {expense.items?.length > 0 ? (
+              <TouchableOpacity
+                style={styles.todoBtn}
+                onPress={() => router.push(`/expense/add?groupId=${expense.groupId}&expenseId=${expense.id}&isEdit=true`)}
+              >
+                <Text style={styles.todoBtnText}>Assigner les articles →</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.todoBtn} onPress={startEditing}>
+                <Text style={styles.todoBtnText}>Choisir les participants →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Receipt photo */}
         {expense.receiptImageUrl && (
           <View style={styles.photoBlock}>
@@ -451,6 +477,20 @@ const styles = StyleSheet.create({
   splitRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   splitName: { flex: 1, fontSize: 14, color: colors.text },
   splitAmt: { fontSize: 14, fontFamily: 'monospace', color: colors.amber, fontWeight: '500' },
+  todoBanner: {
+    backgroundColor: 'rgba(251,191,36,0.06)',
+    borderWidth: 1, borderColor: 'rgba(251,191,36,0.22)',
+    borderRadius: 14, padding: 14, marginBottom: 14,
+  },
+  todoTitle: { fontSize: 14, fontWeight: '600', color: colors.amber, marginBottom: 4 },
+  todoText: { fontSize: 12, color: colors.text2, lineHeight: 18, marginBottom: 10 },
+  todoBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.accentBg,
+    borderWidth: 1, borderColor: 'rgba(124,110,250,0.25)',
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+  },
+  todoBtnText: { fontSize: 12, fontWeight: '600', color: colors.accent2 },
   settledTag: { fontSize: 10, color: colors.green, marginTop: 2 },
   // Edit
   label: { fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },

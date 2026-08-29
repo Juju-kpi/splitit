@@ -336,14 +336,7 @@ export default function GroupDetailScreen() {
             <TouchableOpacity
               key={exp.id}
               activeOpacity={0.8}
-              onPress={() => {
-                if (incomplete) {
-                  // Mode edit : tous les membres peuvent compléter
-                  router.push(`/expense/add?groupId=${id}&expenseId=${exp.id}&isEdit=true`);
-                } else {
-                  router.push(`/expense/${exp.id}`);
-                }
-              }}
+              onPress={() => router.push(`/expense/${exp.id}`)}
             >
               <View style={[styles.expenseItem, incomplete && styles.expenseItemIncomplete]}>
                 <View style={[styles.expIcon, { backgroundColor: incomplete ? 'rgba(251,191,36,0.12)' : colors.accentBg }]}>

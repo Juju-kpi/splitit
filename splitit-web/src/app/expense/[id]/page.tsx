@@ -74,11 +74,15 @@ export default function ExpenseDetailPage() {
         {isIncomplete && (
           <div className="bg-amber/5 border border-amber/20 rounded-xl p-4 mb-4">
             <p className="text-sm font-semibold text-amber mb-1">⏳ Dépense à compléter</p>
-            <p className="text-xs text-text2 mb-3">Certains articles n'ont pas encore été assignés à un membre.</p>
+            <p className="text-xs text-text2 mb-3">
+              {expense.items?.length > 0
+                ? "Certains articles n'ont pas encore été assignés à un membre."
+                : 'La répartition ne couvre pas le montant total — choisis qui participe.'}
+            </p>
             <button
               onClick={() => router.push(`/expense/add?groupId=${expense.groupId}&expenseId=${expense.id}&edit=true`)}
               className="text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-4 py-2 rounded-full">
-              Compléter la dépense →
+              {expense.items?.length > 0 ? 'Assigner les articles →' : 'Choisir les participants →'}
             </button>
           </div>
         )}

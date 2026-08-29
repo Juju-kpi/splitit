@@ -45,7 +45,13 @@ app.use('/api/ocr', authenticate, ocrRouter);
 app.use('/api/users', authenticate, usersRouter); // NOUVEAU
 
 // Health check
-app.get('/health', (_, res) => res.json({ ok: true, ts: new Date() }));
+// commit : Render expose RENDER_GIT_COMMIT — permet de verifier en une
+// requete quelle version tourne reellement en prod (curl .../health)
+app.get('/health', (_, res) => res.json({
+  ok: true,
+  ts: new Date(),
+  commit: (process.env.RENDER_GIT_COMMIT || 'local').slice(0, 7),
+}));
 
 // Nightly OCR training pipeline (2am)
 cron.schedule('0 2 * * *', async () => {
