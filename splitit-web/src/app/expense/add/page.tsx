@@ -129,7 +129,10 @@ function AddExpenseInner() {
     onError: (e: any) => setError(e?.response?.data?.error || "Impossible d'ajouter la dépense"),
   })
   const updateMutation = useMutation({
-    mutationFn: ({ items, payments, desc }: any) => expensesApi.updateItems(expenseId, { items, payments, description: desc }),
+    // totalAmount : le total suit les prix corrigés, sinon les parts sont
+    // recalculées sur l'ancien montant et la dépense passe "à compléter"
+    mutationFn: ({ items, payments, desc, total }: any) =>
+      expensesApi.updateItems(expenseId, { items, payments, description: desc, totalAmount: total }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['group', groupId] }); qc.invalidateQueries({ queryKey: ['expense', expenseId] }); router.back() },
     onError: (e: any) => setError(e?.response?.data?.error || 'Impossible de mettre à jour'),
   })
@@ -261,6 +264,7 @@ function AddExpenseInner() {
         })),
         payments: resolvedPayments,
         desc: description.trim() || (existingExpense as any)?.description || 'Ticket scanné',
+        total: totalAmount,
       })
       return
     }

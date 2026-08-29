@@ -177,6 +177,7 @@ export const expensesApi = {
     }>;
     payments?: Array<{ memberId: string; amount: number }>;
     description?: string;
+    totalAmount?: number;
   }) => api.put(`/expenses/${id}/items`, payload).then(r => r.data.data),
 };
 

@@ -157,8 +157,10 @@ export default function AddExpenseScreen() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ items, payments, desc }: { items: any[]; payments: any[]; desc: string }) =>
-      expensesApi.updateItems(expenseId!, { items, payments, description: desc }),
+    // totalAmount : le total suit les prix corrigés, sinon les parts sont
+    // recalculées sur l'ancien montant et la dépense passe "à compléter"
+    mutationFn: ({ items, payments, desc, total }: { items: any[]; payments: any[]; desc: string; total: number }) =>
+      expensesApi.updateItems(expenseId!, { items, payments, description: desc, totalAmount: total }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group', groupId] });
       qc.invalidateQueries({ queryKey: ['expense', expenseId] });
@@ -337,6 +339,7 @@ export default function AddExpenseScreen() {
         })),
         payments: resolvedPayments,
         desc: description.trim() || (existingExpense as any)?.description || 'Ticket scanné',
+        total: totalAmount,
       });
       return;
     }

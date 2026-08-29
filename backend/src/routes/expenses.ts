@@ -5,12 +5,23 @@
 //   3. PUT /:id — splits supprimés/recréés UNIQUEMENT si splitMemberIds ou customSplits fournis
 //      (sinon on écrasait les splits existants avec un tableau vide)
 //   4. POST / — notification push envoyée à tous les membres du groupe (notifExpense=true)
+//   5. Répartition au centime (services/split.ts) : la somme des parts est
+//      désormais rigoureusement égale au total de la dépense. Avant, chaque
+//      part était arrondie séparément, la somme ratait le total de quelques
+//      centimes — ce qui faussait les soldes ET marquait des dépenses pourtant
+//      complètes comme "à compléter".
+//   6. Les parts sont mises à jour en place : un remboursement marqué comme
+//      réglé n'est plus effacé par une modification de la dépense.
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth';
 import { sendPushNotification } from '../services/notifications';
+import {
+  Share, ItemInput, toCents, splitEqually, splitItemized,
+  normalizeCustomShares, normalizePayments,
+} from '../services/split';
 
 const router = Router();
 
@@ -87,6 +98,37 @@ function primaryPayer(payments: { memberId: string; amount: number }[]): string 
   return payments.reduce((best, p) => (p.amount > best.amount ? p : best), payments[0]).memberId;
 }
 
+// ── Helper : écrit les parts SANS perdre les remboursements déjà réglés ──
+// Avant, chaque recalcul faisait deleteMany + createMany : les colonnes
+// settled / settledAt repartaient à zéro et un remboursement déjà validé
+// réapparaissait comme dû. On met donc à jour ligne par ligne.
+async function applyShares(expenseId: string, shares: Share[]): Promise<void> {
+  const existing = await prisma.expenseSplit.findMany({ where: { expenseId } });
+  const previous = new Map(existing.map(s => [s.memberId, s]));
+  const kept = new Set(shares.map(s => s.memberId));
+
+  for (const share of shares) {
+    const prev = previous.get(share.memberId);
+    if (prev) {
+      if (toCents(prev.amount) !== toCents(share.amount)) {
+        await prisma.expenseSplit.update({
+          where: { id: prev.id },
+          data: { amount: share.amount },
+        });
+      }
+    } else {
+      await prisma.expenseSplit.create({
+        data: { expenseId, memberId: share.memberId, amount: share.amount },
+      });
+    }
+  }
+
+  const removed = existing.filter(s => !kept.has(s.memberId)).map(s => s.id);
+  if (removed.length > 0) {
+    await prisma.expenseSplit.deleteMany({ where: { id: { in: removed } } });
+  }
+}
+
 // ── Helper : calcule si une dépense est "complète" ───────────────────────
 async function computeIsComplete(expenseId: string): Promise<boolean> {
   const expense = await prisma.expense.findUnique({
@@ -125,37 +167,35 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   });
   if (!membership) return res.status(403).json({ error: 'Not a group member' });
 
-  const payments = resolvePayments(d);
+  // Les paiements doivent tomber exactement sur le total, sinon les soldes ne
+  // se compensent jamais (le payeur reste créditeur de quelques centimes).
+  const payments = normalizePayments(d.totalAmount, resolvePayments(d));
+  if (!payments) {
+    return res.status(400).json({ error: 'Payments do not add up to the total amount' });
+  }
   const paidByMemberId = primaryPayer(payments);
 
-  let splits: { memberId: string; amount: number }[] = [];
+  let splits: Share[] = [];
+  let hasUnassignedItems = false;
 
   if (d.splitType === 'EQUAL') {
-    const memberIds = d.splitMemberIds || [
-      ...(await prisma.groupMember.findMany({ where: { groupId: d.groupId }, select: { id: true } })).map(m => m.id),
-    ];
-    const share = Math.round((d.totalAmount / memberIds.length) * 100) / 100;
-    splits = memberIds.map(memberId => ({ memberId, amount: share }));
+    // splitMemberIds vide → tout le groupe (un tableau vide est "truthy" en JS,
+    // l'ancien code divisait alors par zéro)
+    const memberIds = d.splitMemberIds && d.splitMemberIds.length > 0
+      ? d.splitMemberIds
+      : (await prisma.groupMember.findMany({ where: { groupId: d.groupId }, select: { id: true } })).map(m => m.id);
+    splits = splitEqually(d.totalAmount, memberIds);
   } else if (d.splitType === 'ITEMIZED') {
-    const memberAmounts: Record<string, number> = {};
-    for (const item of d.items) {
-      if (item.assignedToMemberIds.length === 0) continue;
-      const share = item.price / item.assignedToMemberIds.length;
-      for (const mid of item.assignedToMemberIds) {
-        memberAmounts[mid] = (memberAmounts[mid] || 0) + share;
-      }
-    }
-    splits = Object.entries(memberAmounts).map(([memberId, amount]) => ({
-      memberId,
-      amount: Math.round(amount * 100) / 100,
-    }));
+    const itemized = splitItemized(d.totalAmount, d.items as ItemInput[]);
+    splits = itemized.shares;
+    hasUnassignedItems = itemized.hasUnassigned;
   } else if (d.splitType === 'CUSTOM' && d.customSplits) {
-    splits = d.customSplits as { memberId: string; amount: number }[];
+    splits = normalizeCustomShares(d.totalAmount, d.customSplits as Share[]);
   }
 
-  const hasUnassignedItems = d.items.some(i => i.assignedToMemberIds.length === 0);
   const splitTotal = splits.reduce((s, sp) => s + sp.amount, 0);
-  const isComplete = !hasUnassignedItems && Math.abs(splitTotal - d.totalAmount) < 0.02 && splits.length > 0;
+  const isComplete = !hasUnassignedItems && splits.length > 0
+    && Math.abs(splitTotal - d.totalAmount) <= 0.02;
 
   const expense = await prisma.expense.create({
     data: {
@@ -284,23 +324,45 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   const totalAmount = d.totalAmount ?? expense.totalAmount;
   const splitType = d.splitType ?? expense.splitType;
 
-  // ── Splits : ne toucher que si de nouvelles données sont fournies ──────
+  // ── Parts : on ne touche que si de nouvelles données sont fournies ─────
+  const totalChanged = d.totalAmount !== undefined
+    && toCents(d.totalAmount) !== toCents(expense.totalAmount);
+
   if (d.splitMemberIds || d.customSplits) {
-    let splits: { memberId: string; amount: number }[] = [];
+    let splits: Share[] = [];
 
-    if (splitType === 'EQUAL' && d.splitMemberIds) {
-      const share = Math.round((totalAmount / d.splitMemberIds.length) * 100) / 100;
-      splits = d.splitMemberIds.map(memberId => ({ memberId, amount: share }));
+    if (splitType === 'EQUAL' && d.splitMemberIds && d.splitMemberIds.length > 0) {
+      splits = splitEqually(totalAmount, d.splitMemberIds);
     } else if (splitType === 'CUSTOM' && d.customSplits) {
-      splits = d.customSplits as { memberId: string; amount: number }[];
+      splits = normalizeCustomShares(totalAmount, d.customSplits as Share[]);
     }
 
-    if (splits.length > 0) {
-      await prisma.expenseSplit.deleteMany({ where: { expenseId: req.params.id } });
-      await prisma.expenseSplit.createMany({
-        data: splits.map(s => ({ ...s, expenseId: req.params.id })),
+    if (splits.length > 0) await applyShares(req.params.id, splits);
+  } else if (totalChanged) {
+    // Le montant a changé sans nouvelle répartition : sans recalcul, la somme
+    // des parts ne correspond plus au total et la dépense bascule en
+    // "à compléter" alors que l'utilisateur vient juste de corriger un prix.
+    if (splitType === 'ITEMIZED') {
+      const items = await prisma.expenseItem.findMany({
+        where: { expenseId: req.params.id },
+        include: { assignedTo: true },
       });
+      const { shares } = splitItemized(totalAmount, items.map(i => ({
+        price: i.price,
+        assignedToMemberIds: i.assignedTo.map(a => a.memberId),
+      })));
+      if (shares.length > 0) await applyShares(req.params.id, shares);
+    } else if (splitType === 'EQUAL') {
+      const existing = await prisma.expenseSplit.findMany({
+        where: { expenseId: req.params.id },
+        orderBy: { id: 'asc' },
+      });
+      if (existing.length > 0) {
+        await applyShares(req.params.id, splitEqually(totalAmount, existing.map(sp => sp.memberId)));
+      }
     }
+    // CUSTOM : on ne réinvente pas des montants saisis à la main. L'écart est
+    // réel, la dépense sera signalée "à compléter" — ce qui est exact.
   }
 
   // ── Payeurs ───────────────────────────────────────────────────────────
@@ -366,12 +428,16 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
     items: z.array(itemSchema),
     payments: z.array(paymentSchema).optional(),
     description: z.string().max(120).optional(),
+    // Optionnel pour rester compatible avec les versions déjà installées :
+    // le client envoie le total qu'il affiche (= somme des articles corrigés).
+    totalAmount: z.number().positive().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
 
   const { items, payments, description } = parsed.data;
+  const totalAmount = parsed.data.totalAmount ?? expense.totalAmount;
 
   // 1. Supprimer les anciens items (cascade supprime les assignments)
   await prisma.expenseItem.deleteMany({ where: { expenseId: req.params.id } });
@@ -393,34 +459,31 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
     });
   }
 
-  // 3. Recalculer les splits ITEMIZED
-  const memberAmounts: Record<string, number> = {};
-  for (const item of items) {
-    if (item.assignedToMemberIds.length === 0) continue;
-    const share = item.price / item.assignedToMemberIds.length;
-    for (const mid of item.assignedToMemberIds) {
-      memberAmounts[mid] = (memberAmounts[mid] || 0) + share;
-    }
-  }
-  const newSplits = Object.entries(memberAmounts).map(([memberId, amount]) => ({
-    memberId,
-    amount: Math.round(amount * 100) / 100,
-  }));
+  // 3. Recalculer les parts au centime (le reliquat éventuel entre la somme
+  //    des articles et le total est réparti au prorata — service, taxe,
+  //    arrondi de caisse — sauf s'il reste des articles non assignés).
+  const { shares: newSplits } = splitItemized(totalAmount, items as ItemInput[]);
+  await applyShares(req.params.id, newSplits);
 
-  await prisma.expenseSplit.deleteMany({ where: { expenseId: req.params.id } });
-  if (newSplits.length > 0) {
-    await prisma.expenseSplit.createMany({
-      data: newSplits.map(s => ({ ...s, expenseId: req.params.id })),
+  // 3bis. Le total suit les articles corrigés quand le client le fournit
+  if (parsed.data.totalAmount !== undefined) {
+    await prisma.expense.update({
+      where: { id: req.params.id },
+      data: { totalAmount: parsed.data.totalAmount },
     });
   }
 
   // 4. Mettre à jour les payeurs si fournis
   if (payments && payments.length > 0) {
+    const normalized = normalizePayments(totalAmount, payments as Share[]);
+    if (!normalized) {
+      return res.status(400).json({ error: 'Payments do not add up to the total amount' });
+    }
     await prisma.expensePayment.deleteMany({ where: { expenseId: req.params.id } });
     await prisma.expensePayment.createMany({
-      data: payments.map(p => ({ memberId: p.memberId, amount: p.amount, expenseId: req.params.id })),
+      data: normalized.map(p => ({ memberId: p.memberId, amount: p.amount, expenseId: req.params.id })),
     });
-    const paidByMemberId = primaryPayer(payments as { memberId: string; amount: number }[]);
+    const paidByMemberId = primaryPayer(normalized);
     await prisma.expense.update({ where: { id: req.params.id }, data: { paidByMemberId } });
   }
 
