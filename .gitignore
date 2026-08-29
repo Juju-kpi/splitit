@@ -21,3 +21,7 @@ backend/ml/out/
 backend/ml/*.onnx
 backend/ml/__pycache__/
 backend/ml/*.pyc
+
+# Sauvegardes de base produites par backend/src/scripts/backup-db.ts
+# — elles contiennent des donnees personnelles, ne JAMAIS les commiter
+splitit-backup-*.json
