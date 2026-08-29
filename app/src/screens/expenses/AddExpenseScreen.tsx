@@ -132,6 +132,18 @@ export default function AddExpenseScreen() {
       // Mode manuel
       setAmount(exp.totalAmount?.toFixed(2) || '');
       setStep('manual');
+      // On restaure la répartition existante au lieu de la réinventer :
+      // sans ça, une dépense partagée entre 3 personnes repartait sur tout
+      // le groupe à la moindre correction de montant.
+      if (exp.splits && exp.splits.length > 0) {
+        setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId));
+        if (exp.splitType === 'CUSTOM') {
+          setSplitMode('custom');
+          setCustomAmounts(Object.fromEntries(
+            exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
+          ));
+        }
+      }
     }
 
     // Pré-remplir les payeurs
@@ -154,6 +166,20 @@ export default function AddExpenseScreen() {
     },
     onError: (e: any) =>
       Alert.alert('Erreur', e?.response?.data?.error || "Impossible d'ajouter la dépense"),
+  });
+
+  // Modification d'une dépense SANS articles : passe par PUT /:id (montant,
+  // participants, payeurs). L'ancien chemin appelait PUT /:id/items avec
+  // items: [] — ce qui supprimait toutes les parts de la dépense.
+  const editExpenseMutation = useMutation({
+    mutationFn: (payload: any) => expensesApi.update(expenseId!, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['group', groupId] });
+      qc.invalidateQueries({ queryKey: ['expense', expenseId] });
+      Alert.alert('✓ Dépense mise à jour', '', [{ text: 'OK', onPress: () => router.back() }]);
+    },
+    onError: (e: any) =>
+      Alert.alert('Erreur', e?.response?.data?.error || "Impossible de mettre à jour"),
   });
 
   const updateMutation = useMutation({
@@ -326,7 +352,21 @@ export default function AddExpenseScreen() {
       return;
     }
 
-    // MODE EDIT
+    // MODE EDIT — dépense manuelle (sans articles)
+    if (editMode && ocrItems.length === 0) {
+      editExpenseMutation.mutate({
+        description: description.trim() || undefined,
+        totalAmount,
+        payments: resolvedPayments,
+        splitType: splitMode === 'custom' ? 'CUSTOM' : 'EQUAL',
+        ...(splitMode === 'custom'
+          ? { customSplits: manualSplits }
+          : { splitMemberIds: activeMemberIds }),
+      });
+      return;
+    }
+
+    // MODE EDIT — ticket scanné
     if (editMode) {
       updateMutation.mutate({
         items: ocrItems.map(item => ({
@@ -894,7 +934,7 @@ export default function AddExpenseScreen() {
         <Button
           label={editMode ? '✓ Mettre à jour la dépense' : 'Confirmer la dépense →'}
           onPress={handleSubmit}
-          loading={createMutation.isPending || updateMutation.isPending}
+          loading={createMutation.isPending || updateMutation.isPending || editExpenseMutation.isPending}
           style={{ marginTop: 4, marginBottom: Math.max(insets.bottom, 16) }}
         />
         <Button label="← Modifier les payeurs" onPress={() => setStep('who_paid')} variant="ghost" />

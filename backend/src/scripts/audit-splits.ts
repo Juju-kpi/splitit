@@ -104,7 +104,8 @@ async function main() {
       // ── Parts ──────────────────────────────────────────────────────────
       let shares: Share[] | null = null;
       if (exp.splits.length === 0) {
-        notes.push('aucune part enregistrée — à refaire à la main dans l app');
+        notes.push('aucune part enregistrée — ouvre la dépense dans l app, '
+                 + 'Modifier, coche les participants, enregistre');
       } else if (currentCents !== totalCents) {
         shares = expectedShares(exp);
         if (!shares) {

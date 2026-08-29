@@ -115,6 +115,18 @@ function AddExpenseInner() {
     } else {
       setAmount(exp.totalAmount?.toFixed(2) || '')
       setStep('manual')
+      // On restaure la répartition existante au lieu de la réinventer :
+      // sans ça, une dépense partagée entre 3 personnes repartait sur tout
+      // le groupe à la moindre correction de montant.
+      if (exp.splits?.length > 0) {
+        setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId))
+        if (exp.splitType === 'CUSTOM') {
+          setSplitMode('custom')
+          setCustomAmounts(Object.fromEntries(
+            exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
+          ))
+        }
+      }
     }
     if (exp.payments?.length > 0) {
       setPayers(exp.payments.map((p: any) => ({ memberId: p.memberId, amount: p.amount.toFixed(2) })))
@@ -127,6 +139,18 @@ function AddExpenseInner() {
     mutationFn: expensesApi.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['group', groupId] }); router.replace(`/group/${groupId}`) },
     onError: (e: any) => setError(e?.response?.data?.error || "Impossible d'ajouter la dépense"),
+  })
+  // Modification d'une dépense SANS articles : passe par PUT /:id (montant,
+  // participants, payeurs). L'ancien chemin appelait PUT /:id/items avec
+  // items: [] — ce qui supprimait toutes les parts de la dépense.
+  const editExpenseMutation = useMutation({
+    mutationFn: (payload: any) => expensesApi.update(expenseId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['group', groupId] })
+      qc.invalidateQueries({ queryKey: ['expense', expenseId] })
+      router.back()
+    },
+    onError: (e: any) => setError(e?.response?.data?.error || 'Impossible de mettre à jour'),
   })
   const updateMutation = useMutation({
     // totalAmount : le total suit les prix corrigés, sinon les parts sont
@@ -255,6 +279,20 @@ function AddExpenseInner() {
     setError('')
     if (resolvedPayments.length === 0) { setError('Sélectionne au moins un payeur.'); return }
     if (!isPayerBalanced) { setError(`Total payeurs (${payerTotal.toFixed(2)}) ≠ total (${totalAmount.toFixed(2)}).`); return }
+
+    if (editMode && ocrItems.length === 0) {
+      if (!isCustomBalanced) { setError(`Total des parts (${customTotal.toFixed(2)}) ≠ montant (${totalAmount.toFixed(2)}).`); return }
+      editExpenseMutation.mutate({
+        description: description.trim() || undefined,
+        totalAmount,
+        payments: resolvedPayments,
+        splitType: splitMode === 'custom' ? 'CUSTOM' : 'EQUAL',
+        ...(splitMode === 'custom'
+          ? { customSplits: manualSplits }
+          : { splitMemberIds: activeMemberIds }),
+      })
+      return
+    }
 
     if (editMode) {
       updateMutation.mutate({
@@ -613,7 +651,7 @@ function AddExpenseInner() {
   // STEP: summary
   // ══════════════════════════════════════════════════════════════════════
   const correctionCount = ocrItems.filter(i => i.corrected).length
-  const isPending = createMutation.isPending || updateMutation.isPending
+  const isPending = createMutation.isPending || updateMutation.isPending || editExpenseMutation.isPending
 
   return (
     <div className="min-h-screen bg-bg pb-36">

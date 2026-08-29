@@ -368,15 +368,19 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   // ── Payeurs ───────────────────────────────────────────────────────────
   let paidByMemberId = expense.paidByMemberId;
   if (d.payments && d.payments.length > 0) {
+    const normalized = normalizePayments(totalAmount, d.payments as Share[]);
+    if (!normalized) {
+      return res.status(400).json({ error: 'Payments do not add up to the total amount' });
+    }
     await prisma.expensePayment.deleteMany({ where: { expenseId: req.params.id } });
     await prisma.expensePayment.createMany({
-      data: d.payments.map(p => ({
-        memberId: p.memberId as string,
-        amount: p.amount as number,
+      data: normalized.map(p => ({
+        memberId: p.memberId,
+        amount: p.amount,
         expenseId: req.params.id,
       })),
     });
-    paidByMemberId = primaryPayer(d.payments as { memberId: string; amount: number }[]);
+    paidByMemberId = primaryPayer(normalized);
   } else if (d.paidByMemberId) {
     await prisma.expensePayment.deleteMany({ where: { expenseId: req.params.id } });
     await prisma.expensePayment.create({
@@ -459,11 +463,30 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
     });
   }
 
-  // 3. Recalculer les parts au centime (le reliquat éventuel entre la somme
-  //    des articles et le total est réparti au prorata — service, taxe,
-  //    arrondi de caisse — sauf s'il reste des articles non assignés).
-  const { shares: newSplits } = splitItemized(totalAmount, items as ItemInput[]);
-  await applyShares(req.params.id, newSplits);
+  // 3. Recalculer les parts.
+  //
+  //    ⚠ Cas critique : l'écran de modification d'une dépense SANS articles
+  //    (une dépense manuelle : essence, courses…) appelle cette route avec
+  //    items: []. Avant, on supprimait alors toutes les parts sans en recréer
+  //    aucune — la dépense se retrouvait répartie entre personne, et son
+  //    montant disparaissait des comptes du groupe. On ne touche donc plus
+  //    aux parts quand aucun article n'est fourni : on se contente, si le
+  //    montant a changé, de refaire la répartition entre les mêmes personnes.
+  if (items.length > 0) {
+    // Le reliquat entre la somme des articles et le total (service, taxe,
+    // arrondi de caisse) est réparti au prorata, sauf s'il reste des articles
+    // non assignés — là, la dépense est réellement incomplète.
+    const { shares: newSplits } = splitItemized(totalAmount, items as ItemInput[]);
+    await applyShares(req.params.id, newSplits);
+  } else if (toCents(totalAmount) !== toCents(expense.totalAmount)) {
+    const existing = await prisma.expenseSplit.findMany({
+      where: { expenseId: req.params.id },
+      orderBy: { id: 'asc' },
+    });
+    if (existing.length > 0) {
+      await applyShares(req.params.id, splitEqually(totalAmount, existing.map(sp => sp.memberId)));
+    }
+  }
 
   // 3bis. Le total suit les articles corrigés quand le client le fournit
   if (parsed.data.totalAmount !== undefined) {
