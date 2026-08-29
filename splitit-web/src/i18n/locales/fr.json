@@ -330,7 +330,12 @@
     "detail_title": "Détail des remboursements",
     "remaining": "{{amount}} restant",
     "amount_settled": "{{amount}} réglé",
-    "none_calculated": "Aucun remboursement calculé"
+    "none_calculated": "Aucun remboursement calculé",
+    "who_advanced": "Qui a avancé, qui doit",
+    "owed_to_them": "on lui doit",
+    "even": "équilibré",
+    "they_owe": "il doit",
+    "net_hint": "Vert : cette personne a avancé plus que sa part, on lui doit de l'argent. Orange : elle doit encore sa part. Les remboursements ci-dessous règlent tout en un minimum de virements."
   },
   "home": {
     "greeting": "Bonjour, {{name}} 👋"

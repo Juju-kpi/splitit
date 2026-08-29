@@ -77,6 +77,10 @@ export default function AddExpenseScreen() {
 
   // ── OCR ───────────────────────────────────────────────────────────────
   const [ocrItems, setOcrItems] = useState<OcrItemLocal[]>([]);
+  // Total imprimé sur le ticket. Vide = on suit la somme des articles.
+  // Les lignes d'un ticket sont souvent HT : sans ce champ, les taxes et le
+  // service ne sont payés par personne.
+  const [receiptTotal, setReceiptTotal] = useState('');
   const [ocrImageUrl, setOcrImageUrl] = useState<string | undefined>();
   const [showReceiptImage, setShowReceiptImage] = useState(false);
 
@@ -127,6 +131,9 @@ export default function AddExpenseScreen() {
         editing: false,
       }));
       setOcrItems(localItems);
+      // Sans ça, rouvrir un ticket dont le total inclut des taxes ferait
+      // retomber le total sur la somme des articles à l'enregistrement.
+      setReceiptTotal(exp.totalAmount?.toFixed(2) || '');
       setStep('ocr');
     } else {
       // Mode manuel
@@ -173,14 +180,45 @@ export default function AddExpenseScreen() {
           onPress: () => {
             const next = ocrItems.filter((_, i) => i !== idx);
             setOcrItems(next);
-            const newTotal = next.reduce((sum, it) => sum + it.price, 0);
-            setPayers(prev => prev.length === 1
-              ? [{ ...prev[0], amount: newTotal.toFixed(2) }]
-              : prev);
+            // Si un total de ticket est saisi, il fait foi : seul le cas
+            // "le total suit les articles" demande de réaligner le payeur.
+            if (receiptTotal.trim() === '') {
+              const newTotal = next.reduce((sum, it) => sum + it.price, 0);
+              setPayers(prev => prev.length === 1
+                ? [{ ...prev[0], amount: newTotal.toFixed(2) }]
+                : prev);
+            }
           },
         },
       ],
     );
+  }
+
+  // Ajouter une ligne oubliée par l'OCR (ou absente du ticket)
+  function addOcrItem() {
+    setOcrItems(prev => [...prev, {
+      id: `manual_${Date.now()}`, name: 'Nouvel article', price: 0,
+      ocrRaw: '', confidence: 1, corrected: true, assignedTo: [],
+      editName: '', editPrice: '', editing: true,
+    } as OcrItemLocal]);
+  }
+
+  // Corriger le nom ou le prix d'une ligne (parité avec le web, qui le
+  // permettait déjà pendant la complétion d'une dépense)
+  function startEditOcrItem(idx: number) {
+    setOcrItems(prev => prev.map((it, i) => i === idx
+      ? { ...it, editing: true, editName: it.name, editPrice: it.price.toFixed(2) }
+      : it));
+  }
+
+  function saveEditOcrItem(idx: number) {
+    setOcrItems(prev => prev.map((it, i) => {
+      if (i !== idx) return it;
+      const newPrice = parseFloat((it.editPrice || '').replace(',', '.'));
+      const price = isNaN(newPrice) || newPrice < 0 ? it.price : newPrice;
+      const name = (it.editName || '').trim() || it.name;
+      return { ...it, name, price, editing: false, corrected: it.corrected || name !== it.name || price !== it.price };
+    }));
   }
 
   // ── Mutations ─────────────────────────────────────────────────────────
@@ -223,12 +261,22 @@ export default function AddExpenseScreen() {
   });
 
   // ── Montant total ─────────────────────────────────────────────────────
+  const itemsTotal = useMemo(() => ocrItems.reduce((s, i) => s + i.price, 0), [ocrItems]);
+
   const totalAmount = useMemo(() => {
     if (ocrItems.length > 0) {
-      return ocrItems.reduce((s, i) => s + i.price, 0);
+      const override = parseFloat(receiptTotal.replace(',', '.'));
+      return receiptTotal.trim() !== '' && !isNaN(override) && override > 0 ? override : itemsTotal;
     }
     return parseFloat(amount.replace(',', '.')) || 0;
-  }, [ocrItems, amount]);
+  }, [ocrItems, itemsTotal, receiptTotal, amount]);
+
+  // Écart entre le total du ticket et la somme des articles = taxes, service,
+  // arrondi de caisse. Il est réparti au prorata de ce que chacun a pris.
+  const taxAmount = useMemo(
+    () => Math.round(Math.max(0, totalAmount - itemsTotal) * 100) / 100,
+    [totalAmount, itemsTotal],
+  );
 
   // ── Splits ────────────────────────────────────────────────────────────
   const activeMemberIds = splitMemberIds.length > 0 ? splitMemberIds : members.map(m => m.id);
@@ -526,32 +574,106 @@ export default function AddExpenseScreen() {
             )}
 
             {/* Liste des items */}
+            {/* Total réellement payé (TTC). Les lignes d'un ticket sont
+                souvent HT : l'écart couvre taxes, service, arrondi. */}
+            <SectionLabel label="TOTAL PAYÉ SUR LE TICKET" />
+            <TextInput
+              style={styles.receiptTotalInput}
+              value={receiptTotal}
+              onChangeText={setReceiptTotal}
+              placeholder={itemsTotal.toFixed(2)}
+              placeholderTextColor={colors.text3}
+              keyboardType="decimal-pad"
+              selectionColor={colors.accent}
+            />
+            <Card>
+              <View style={styles.taxRow}>
+                <Text style={styles.taxLabel}>Somme des articles</Text>
+                <Text style={styles.taxValue}>{fmt(itemsTotal)}</Text>
+              </View>
+              <View style={styles.taxRow}>
+                <Text style={[styles.taxLabel, taxAmount > 0 && { color: colors.amber }]}>Taxes / service</Text>
+                <Text style={[styles.taxValue, taxAmount > 0 && { color: colors.amber }]}>
+                  {taxAmount > 0 ? `+${taxAmount.toFixed(2)}` : '0.00'}
+                </Text>
+              </View>
+              <View style={[styles.taxRow, styles.taxTotalRow]}>
+                <Text style={styles.taxTotalLabel}>Total réparti</Text>
+                <Text style={styles.taxTotalValue}>{fmt(totalAmount)}</Text>
+              </View>
+              {taxAmount > 0 && (
+                <Text style={styles.taxHint}>
+                  Les {taxAmount.toFixed(2)} de taxes et service sont répartis au prorata de ce que chacun a pris.
+                </Text>
+              )}
+              {totalAmount < itemsTotal - 0.01 && (
+                <Text style={[styles.taxHint, { color: colors.amber }]}>
+                  ⚠ Le total saisi est inférieur à la somme des articles — vérifie le montant.
+                </Text>
+              )}
+            </Card>
+
             <SectionLabel label="ARTICLES" />
             {ocrItems.map((item, idx) => (
               <View key={item.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  {/* Qui a coché cet article — visible d'un coup d'œil */}
-                  {item.assignedTo.length > 0 && (
-                    <View style={styles.itemAvatars}>
-                      {item.assignedTo.slice(0, 4).map(id => {
-                        const m = memberById(id);
-                        return m ? (
-                          <View key={id} style={styles.itemAvatar}>
-                            <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
-                          </View>
-                        ) : null;
-                      })}
-                    </View>
+                  {item.editing ? (
+                    <>
+                      <TextInput
+                        style={styles.itemEditName}
+                        value={item.editName}
+                        onChangeText={v => setOcrItems(prev => prev.map((it, i) => i === idx ? { ...it, editName: v } : it))}
+                        placeholder="Nom de l'article"
+                        placeholderTextColor={colors.text3}
+                        autoFocus
+                        selectionColor={colors.accent}
+                      />
+                      <TextInput
+                        style={styles.itemEditPrice}
+                        value={item.editPrice}
+                        onChangeText={v => setOcrItems(prev => prev.map((it, i) => i === idx ? { ...it, editPrice: v } : it))}
+                        placeholder="0.00"
+                        placeholderTextColor={colors.text3}
+                        keyboardType="decimal-pad"
+                        selectionColor={colors.accent}
+                      />
+                      <TouchableOpacity onPress={() => saveEditOcrItem(idx)} style={styles.itemOkBtn}>
+                        <Text style={styles.itemOkText}>OK</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                      {/* Qui a coché cet article — visible d'un coup d'œil */}
+                      {item.assignedTo.length > 0 && (
+                        <View style={styles.itemAvatars}>
+                          {item.assignedTo.slice(0, 4).map(id => {
+                            const m = memberById(id);
+                            return m ? (
+                              <View key={id} style={styles.itemAvatar}>
+                                <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
+                              </View>
+                            ) : null;
+                          })}
+                        </View>
+                      )}
+                      <Text style={styles.itemPrice}>{fmt(item.price)}</Text>
+                      <TouchableOpacity
+                        onPress={() => startEditOcrItem(idx)}
+                        style={styles.itemEditBtn}
+                        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                      >
+                        <Text style={styles.itemRemoveText}>✏️</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => removeOcrItem(idx)}
+                        style={styles.itemRemoveBtn}
+                        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                      >
+                        <Text style={styles.itemRemoveText}>🗑</Text>
+                      </TouchableOpacity>
+                    </>
                   )}
-                  <Text style={styles.itemPrice}>{fmt(item.price)}</Text>
-                  <TouchableOpacity
-                    onPress={() => removeOcrItem(idx)}
-                    style={styles.itemRemoveBtn}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={styles.itemRemoveText}>🗑</Text>
-                  </TouchableOpacity>
                 </View>
                 <Text style={styles.itemLabel}>Qui a pris cet article ?</Text>
                 <View style={styles.chipWrap}>
@@ -586,6 +708,10 @@ export default function AddExpenseScreen() {
                 )}
               </View>
             ))}
+
+            <TouchableOpacity onPress={addOcrItem} style={styles.addItemBtn} activeOpacity={0.8}>
+              <Text style={styles.addItemText}>+ Ajouter un article</Text>
+            </TouchableOpacity>
 
             <Button
               label="Continuer → Qui a payé ?"
@@ -1052,6 +1178,38 @@ const styles = StyleSheet.create({
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
   },
   itemRemoveText: { fontSize: 12 },
+  itemEditBtn: { marginLeft: 8, paddingHorizontal: 6, paddingVertical: 4 },
+  itemEditName: {
+    flex: 1, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent,
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, color: colors.text, fontSize: 13,
+  },
+  itemEditPrice: {
+    width: 74, marginLeft: 6, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent,
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, color: colors.text,
+    fontSize: 13, fontFamily: 'monospace', textAlign: 'right',
+  },
+  itemOkBtn: {
+    marginLeft: 6, backgroundColor: colors.accentBg, borderWidth: 1,
+    borderColor: 'rgba(124,110,250,0.3)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  itemOkText: { fontSize: 12, fontWeight: '600', color: colors.accent2 },
+  addItemBtn: {
+    borderWidth: 1.5, borderColor: colors.border2, borderStyle: 'dashed',
+    borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', marginTop: 4,
+  },
+  addItemText: { fontSize: 14, fontWeight: '600', color: colors.accent2 },
+  receiptTotalInput: {
+    backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12,
+    color: colors.text, fontSize: 18, fontFamily: 'monospace', marginBottom: 10,
+  },
+  taxRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 },
+  taxLabel: { fontSize: 12, color: colors.text3 },
+  taxValue: { fontSize: 12, fontFamily: 'monospace', color: colors.text2 },
+  taxTotalRow: { borderTopWidth: 0.5, borderTopColor: colors.border, marginTop: 4, paddingTop: 7 },
+  taxTotalLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
+  taxTotalValue: { fontSize: 13, fontWeight: '600', fontFamily: 'monospace', color: colors.accent2 },
+  taxHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
   itemLabel: { fontSize: 11, color: colors.text3, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   itemUnassigned: { fontSize: 11, color: colors.amber, marginTop: 6 },
   itemAssigned: { fontSize: 11, color: colors.green, marginTop: 6 },

@@ -330,7 +330,12 @@
     "detail_title": "Rückzahlungsdetails",
     "remaining": "{{amount}} offen",
     "amount_settled": "{{amount}} beglichen",
-    "none_calculated": "Keine Rückzahlung berechnet"
+    "none_calculated": "Keine Rückzahlung berechnet",
+    "who_advanced": "Wer ausgelegt hat, wer schuldet",
+    "owed_to_them": "bekommt zurück",
+    "even": "ausgeglichen",
+    "they_owe": "schuldet",
+    "net_hint": "Grün: diese Person hat mehr als ihren Anteil ausgelegt, sie bekommt Geld zurück. Orange: sie schuldet noch ihren Anteil. Die Rückzahlungen unten gleichen alles mit möglichst wenigen Überweisungen aus."
   },
   "home": {
     "greeting": "Hallo, {{name}} 👋"

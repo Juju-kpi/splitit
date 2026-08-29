@@ -330,7 +330,12 @@
     "detail_title": "Detalle de reembolsos",
     "remaining": "{{amount}} restante",
     "amount_settled": "{{amount}} saldado",
-    "none_calculated": "Ningún reembolso calculado"
+    "none_calculated": "Ningún reembolso calculado",
+    "who_advanced": "Quién ha adelantado, quién debe",
+    "owed_to_them": "le deben",
+    "even": "equilibrado",
+    "they_owe": "debe",
+    "net_hint": "Verde: esta persona ha adelantado más que su parte, se le debe dinero. Naranja: aún debe su parte. Los reembolsos de abajo lo saldan todo con el mínimo de transferencias."
   },
   "home": {
     "greeting": "Hola, {{name}} 👋"

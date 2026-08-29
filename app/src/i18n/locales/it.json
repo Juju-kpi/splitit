@@ -330,7 +330,12 @@
     "detail_title": "Dettaglio rimborsi",
     "remaining": "{{amount}} rimanente",
     "amount_settled": "{{amount}} saldato",
-    "none_calculated": "Nessun rimborso calcolato"
+    "none_calculated": "Nessun rimborso calcolato",
+    "who_advanced": "Chi ha anticipato, chi deve",
+    "owed_to_them": "gli si deve",
+    "even": "in pari",
+    "they_owe": "deve",
+    "net_hint": "Verde: questa persona ha anticipato più della sua parte, le si devono dei soldi. Arancione: deve ancora la sua parte. I rimborsi qui sotto saldano tutto con il minor numero di bonifici."
   },
   "home": {
     "greeting": "Ciao, {{name}} 👋"

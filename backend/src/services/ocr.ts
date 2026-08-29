@@ -37,8 +37,10 @@ async function runMistralPixtral(
               { type: 'image_url', image_url: dataUrl },
               {
                 type: 'text',
-                text: `Extract all line items from this receipt. Return ONLY a JSON array, no markdown, no explanation.
-Format: [{"name": "Item name", "price": 12.50}, ...]
+                text: `Extract all line items from this receipt. Return ONLY JSON, no markdown, no explanation.
+Format: {"items": [{"name": "Item name", "price": 12.50}], "total": 49.90, "tax": 2.60}
+- "total" = the grand total actually printed on the receipt (tax included). Omit if not printed.
+- "tax" = sum of VAT/TVA/MwSt/IVA/service/tip lines. Omit if none.
 Rules:
 - Only include individual food/drink/product items that have a price
 - Skip: totals, subtotals, taxes (TVA/MwSt/IVA), tips, service charge, table numbers, dates, headers, footers
@@ -62,14 +64,33 @@ Rules:
     const data = await response.json() as any;
     const content: string = data.choices?.[0]?.message?.content || '';
 
-    // Extract JSON array — model sometimes adds a brief sentence before
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      console.error('[OCR] Mistral: no JSON found in response:', content.slice(0, 200));
-      return null;
+    // Le modele peut repondre soit l'objet demande, soit (anciennes reponses,
+    // ou modele capricieux) le simple tableau d'articles. On accepte les deux.
+    let parsed: Array<{ name: string; price: number }> | null = null;
+    let detectedTotal: number | undefined;
+    let detectedTax: number | undefined;
+
+    const objectMatch = content.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      try {
+        const obj = JSON.parse(objectMatch[0]) as any;
+        if (Array.isArray(obj?.items)) {
+          parsed = obj.items;
+          if (typeof obj.total === 'number' && obj.total > 0) detectedTotal = obj.total;
+          if (typeof obj.tax === 'number' && obj.tax > 0) detectedTax = obj.tax;
+        }
+      } catch { /* on retombe sur le tableau */ }
     }
 
-    const parsed: Array<{ name: string; price: number }> = JSON.parse(jsonMatch[0]);
+    if (!parsed) {
+      const arrayMatch = content.match(/\[[\s\S]*\]/);
+      if (!arrayMatch) {
+        console.error('[OCR] Mistral: no JSON found in response:', content.slice(0, 200));
+        return null;
+      }
+      parsed = JSON.parse(arrayMatch[0]);
+    }
+
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
 
     const items: OcrItem[] = parsed
@@ -84,7 +105,22 @@ Rules:
       }));
 
     console.log('[OCR] Mistral Pixtral: %d items extracted', items.length);
-    return { items, rawText: content, confidence: 0.95, vendor: undefined };
+
+    // Total credible uniquement : au moins la somme des articles, et pas plus
+    // du double (sinon c'est un numero de ticket mal lu).
+    const itemsSum = items.reduce((sum, i) => sum + i.price, 0);
+    const totalOk = detectedTotal !== undefined
+      && detectedTotal >= itemsSum - 0.01
+      && (itemsSum === 0 || detectedTotal <= itemsSum * 2);
+
+    return {
+      items,
+      rawText: content,
+      confidence: 0.95,
+      vendor: undefined,
+      detectedTotal: totalOk ? Math.round(detectedTotal! * 100) / 100 : undefined,
+      detectedTax: detectedTax !== undefined ? Math.round(detectedTax * 100) / 100 : undefined,
+    };
   } catch (e) {
     console.error('[OCR] Mistral Pixtral threw:', e);
     return null;
@@ -115,7 +151,26 @@ function parseReceiptText(text: string, baseConf: number): OcrResult {
 
   const items: OcrItem[] = [];
 
+  // Le total imprime et les taxes etaient simplement ignores. On les capte :
+  // sur beaucoup de tickets les lignes d'articles sont HT, et sans le total
+  // TTC la difference n'est payee par personne.
+  const amountRe = /(\d{1,5}[.,]\d{2})\s*$/;
+  let detectedTotal: number | undefined;
+  let detectedTax = 0;
+
   for (const line of lines) {
+    const amountMatch = amountRe.exec(line);
+    const amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '.')) : NaN;
+
+    if (/(total|montant|somme|zu zahlen|a payer|à payer)/i.test(line) && !isNaN(amount)) {
+      // Plusieurs lignes "total" possibles (sous-total, total TTC) : on garde
+      // la plus grande, qui est le montant reellement paye.
+      if (detectedTotal === undefined || amount > detectedTotal) detectedTotal = amount;
+    }
+    if (/(tva|mwst|iva|vat|tax|service|pourboire|tip)/i.test(line) && !isNaN(amount)) {
+      detectedTax += amount;
+    }
+
     if (/total|subtotal|tva|mwst|iva|rabais|service|merci|bienvenue|table|bon|kasse|receipt|thank/i.test(line)) continue;
     if (line.length < 3) continue;
 
@@ -140,11 +195,21 @@ function parseReceiptText(text: string, baseConf: number): OcrResult {
     });
   }
 
+  const itemsSum = items.reduce((sum, i) => sum + i.price, 0);
+
   return {
     items,
     rawText: text,
     confidence: baseConf,
     vendor: lines.find(l => l.length > 3 && !/^\d/.test(l))?.slice(0, 60),
+    // On ne renvoie le total que s'il est credible : au moins la somme des
+    // articles, et pas plus du double (sinon c'est un numero de ticket).
+    detectedTotal: detectedTotal !== undefined
+      && detectedTotal >= itemsSum - 0.01
+      && (itemsSum === 0 || detectedTotal <= itemsSum * 2)
+      ? Math.round(detectedTotal * 100) / 100
+      : undefined,
+    detectedTax: detectedTax > 0 ? Math.round(detectedTax * 100) / 100 : undefined,
   };
 }
 

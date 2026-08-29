@@ -75,6 +75,10 @@ function AddExpenseInner() {
 
   // OCR
   const [ocrItems, setOcrItems] = useState<OcrItemLocal[]>([])
+  // Total imprimé sur le ticket. Vide = on suit la somme des articles.
+  // Les lignes d'un ticket sont souvent HT : sans ce champ, les taxes et le
+  // service ne sont payés par personne.
+  const [receiptTotal, setReceiptTotal] = useState('')
   const [ocrImageUrl, setOcrImageUrl] = useState<string>('')
   const [showReceipt, setShowReceipt] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -106,6 +110,9 @@ function AddExpenseInner() {
     setDescription(exp.description || '')
     setOcrImageUrl(exp.receiptImageUrl || '')
     if (exp.items?.length > 0) {
+      // Sans ça, rouvrir un ticket dont le total inclut des taxes ferait
+      // retomber le total sur la somme des articles à l'enregistrement.
+      setReceiptTotal(exp.totalAmount?.toFixed(2) || '')
       setOcrItems(exp.items.map((item: any, i: number) => ({
         id: `existing_${i}`, name: item.name, price: item.price,
         ocrRaw: item.ocrRaw, confidence: item.ocrConfidence, corrected: item.corrected,
@@ -163,10 +170,22 @@ function AddExpenseInner() {
   })
 
   // Calculs
+  const itemsTotal = useMemo(() => ocrItems.reduce((s, i) => s + i.price, 0), [ocrItems])
+
   const totalAmount = useMemo(() => {
-    if (ocrItems.length > 0) return ocrItems.reduce((s, i) => s + i.price, 0)
+    if (ocrItems.length > 0) {
+      const override = parseFloat(receiptTotal.replace(',', '.'))
+      return receiptTotal.trim() !== '' && !isNaN(override) && override > 0 ? override : itemsTotal
+    }
     return parseFloat(amount.replace(',', '.')) || 0
-  }, [ocrItems, amount])
+  }, [ocrItems, itemsTotal, receiptTotal, amount])
+
+  // Écart entre le total du ticket et la somme des articles = taxes, service,
+  // arrondi de caisse. Il est réparti au prorata de ce que chacun a pris.
+  const taxAmount = useMemo(
+    () => Math.round(Math.max(0, totalAmount - itemsTotal) * 100) / 100,
+    [totalAmount, itemsTotal],
+  )
 
   const activeMemberIds = splitMemberIds.length > 0 ? splitMemberIds : members.map((m: any) => m.id)
 
@@ -261,6 +280,12 @@ function AddExpenseInner() {
         }))
         setOcrItems(localItems)
         if (result.vendor && !description) setDescription(result.vendor)
+        // Total TTC lu sur le ticket : il inclut les taxes que les lignes
+        // d'articles n'ont pas forcément.
+        const itemsSum = localItems.reduce((sum, it) => sum + it.price, 0)
+        if (typeof result.detectedTotal === 'number' && result.detectedTotal > itemsSum + 0.01) {
+          setReceiptTotal(result.detectedTotal.toFixed(2))
+        }
       } else {
         // Fallback : pas d'items détectés, on remplit juste le montant
         const sum = (result.items || []).reduce((s: number, it: any) => s + it.price, 0)
@@ -285,8 +310,21 @@ function AddExpenseInner() {
     if (!confirm(`Retirer « ${item.name} » (${item.price.toFixed(2)}) de la dépense ?`)) return
     const next = ocrItems.filter((_, i) => i !== idx)
     setOcrItems(next)
-    const newTotal = next.reduce((sum, it) => sum + it.price, 0)
-    setPayers(prev => prev.length === 1 ? [{ ...prev[0], amount: newTotal.toFixed(2) }] : prev)
+    // Si un total de ticket est saisi, il fait foi : seul le cas "le total
+    // suit les articles" demande de réaligner le payeur.
+    if (receiptTotal.trim() === '') {
+      const newTotal = next.reduce((sum, it) => sum + it.price, 0)
+      setPayers(prev => prev.length === 1 ? [{ ...prev[0], amount: newTotal.toFixed(2) }] : prev)
+    }
+  }
+
+  // Ajouter une ligne oubliée par l'OCR (ou absente du ticket)
+  function addOcrItem() {
+    setOcrItems(prev => [...prev, {
+      id: `manual_${Date.now()}`, name: 'Nouvel article', price: 0,
+      ocrRaw: '', confidence: 1, corrected: true, assignedTo: [],
+      editName: '', editPrice: '', editing: true,
+    } as OcrItemLocal])
   }
 
   function handleSubmit() {
@@ -425,6 +463,47 @@ function AddExpenseInner() {
             onChange={setDescription}
           />
 
+          {/* Total réellement payé (TTC). Les lignes d'un ticket sont souvent
+              HT : l'écart couvre les taxes, le service, l'arrondi de caisse. */}
+          <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Total payé sur le ticket</p>
+          <div className="relative mb-2">
+            <input
+              type="text" inputMode="decimal"
+              placeholder={itemsTotal.toFixed(2)}
+              value={receiptTotal}
+              onChange={e => setReceiptTotal(e.target.value)}
+              className="w-full bg-surface2 border border-border rounded-xl px-4 py-3 text-text text-lg font-mono outline-none focus:border-accent pr-14"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text3 text-sm font-mono">CHF</span>
+          </div>
+
+          <div className="glass-card rounded-xl p-3 mb-4 space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-text3">Somme des articles</span>
+              <span className="font-mono text-text2">{itemsTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className={taxAmount > 0 ? 'text-amber' : 'text-text3'}>Taxes / service</span>
+              <span className={`font-mono ${taxAmount > 0 ? 'text-amber' : 'text-text3'}`}>
+                {taxAmount > 0 ? `+${taxAmount.toFixed(2)}` : '0.00'}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm pt-1 border-t border-white/5">
+              <span className="font-semibold text-text">Total réparti</span>
+              <span className="font-mono font-semibold text-accent2">{totalAmount.toFixed(2)}</span>
+            </div>
+            {taxAmount > 0 && (
+              <p className="text-[11px] text-text3 pt-1 leading-relaxed">
+                Les {taxAmount.toFixed(2)} de taxes et service sont répartis au prorata de ce que chacun a pris.
+              </p>
+            )}
+            {totalAmount < itemsTotal - 0.01 && (
+              <p className="text-[11px] text-amber pt-1 leading-relaxed">
+                ⚠ Le total saisi est inférieur à la somme des articles — vérifie le montant.
+              </p>
+            )}
+          </div>
+
           <SectionLabel label="ARTICLES" />
           <div className="space-y-3">
             {ocrItems.map((item, idx) => (
@@ -527,6 +606,13 @@ function AddExpenseInner() {
               </div>
             ))}
           </div>
+
+          <button
+            onClick={addOcrItem}
+            className="w-full mt-3 py-3 rounded-xl border border-dashed border-border2 text-sm font-semibold text-accent2 hover:border-accent/40 transition-colors"
+          >
+            + Ajouter un article
+          </button>
 
           {error && <Notice variant="amber" text={error} />}
         </div>

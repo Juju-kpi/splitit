@@ -330,7 +330,12 @@
     "detail_title": "Repayment details",
     "remaining": "{{amount}} remaining",
     "amount_settled": "{{amount}} settled",
-    "none_calculated": "No repayment calculated"
+    "none_calculated": "No repayment calculated",
+    "who_advanced": "Who paid, who owes",
+    "owed_to_them": "is owed",
+    "even": "even",
+    "they_owe": "owes",
+    "net_hint": "Green: this person paid more than their share, so they are owed money. Orange: they still owe their share. The reimbursements below settle everything in as few transfers as possible."
   },
   "home": {
     "greeting": "Hi, {{name}} 👋"

@@ -104,6 +104,23 @@ export default function GroupDetailPage() {
     netLog[key].lines.push(line)
   })
 
+  // Solde net de chaque membre : ce qu'il a avancé moins ce qu'il doit.
+  // Exactement les mêmes données que les remboursements affichés plus bas —
+  // c'est une lecture, le calcul des dettes n'est pas modifié.
+  const memberNet: Record<string, number> = {}
+  group.members.forEach((m: any) => { memberNet[m.id] = 0 })
+  ;(group.expenses || []).forEach((exp: any) => {
+    const payments = exp.payments?.length > 0
+      ? exp.payments
+      : [{ memberId: exp.paidByMemberId, amount: exp.totalAmount }]
+    payments.forEach((p: any) => { memberNet[p.memberId] = (memberNet[p.memberId] || 0) + p.amount })
+    exp.splits?.forEach((sp: any) => { memberNet[sp.memberId] = (memberNet[sp.memberId] || 0) - sp.amount })
+  })
+  const netRows = group.members
+    .map((m: any) => ({ member: m, net: Math.round((memberNet[m.id] || 0) * 100) / 100 }))
+    .sort((a: any, b: any) => b.net - a.net)
+  const maxAbsNet = Math.max(...netRows.map((r: any) => Math.abs(r.net)), 0.01)
+
   const inviteUrl = typeof window !== 'undefined' ? `${window.location.origin}/group/join?code=${group.inviteCode}` : ''
 
   async function handleShare() {
@@ -184,6 +201,55 @@ export default function GroupDetailPage() {
                   </p>
                 </div>
               )}
+            </Card>
+          </>
+        )}
+
+        {/* Qui a avancé / qui doit — lecture visuelle des soldes */}
+        {group.expenses?.length > 0 && (
+          <>
+            <SectionLabel label="Qui a avancé, qui doit" />
+            <Card>
+              <div className="flex items-center justify-between text-[11px] mb-3">
+                <span className="text-green font-semibold">← on lui doit</span>
+                <span className="text-text3">équilibré</span>
+                <span className="text-amber font-semibold">il doit →</span>
+              </div>
+              <div className="space-y-2.5">
+                {netRows.map(({ member: m, net }: any) => {
+                  const isMe = m.userId === user?.id
+                  const width = `${Math.max(Math.abs(net) / maxAbsNet * 50, net === 0 ? 0 : 2)}%`
+                  const creditor = net > 0.005
+                  const debtor = net < -0.005
+                  return (
+                    <div key={m.id} className="flex items-center gap-2.5">
+                      <Avatar initials={m.avatarInitials} color={m.avatarColor} size={26} />
+                      <span className={`text-xs w-20 truncate ${isMe ? 'text-accent2 font-semibold' : 'text-text2'}`}>
+                        {m.displayName}{isMe ? ' (moi)' : ''}
+                      </span>
+                      {/* barre divergente : la ligne du milieu = équilibre */}
+                      <div className="flex-1 flex items-center h-5">
+                        <div className="flex-1 flex justify-end">
+                          {creditor && <div className="h-2.5 rounded-l-full bg-green/70" style={{ width }} />}
+                        </div>
+                        <div className="w-px h-4 bg-white/15" />
+                        <div className="flex-1">
+                          {debtor && <div className="h-2.5 rounded-r-full bg-amber/70" style={{ width }} />}
+                        </div>
+                      </div>
+                      <span className={`font-mono text-xs w-20 text-right font-semibold ${
+                        creditor ? 'text-green' : debtor ? 'text-amber' : 'text-text3'
+                      }`}>
+                        {net > 0 ? '+' : ''}{formatMoney(net, currency)}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="text-[11px] text-text3 mt-3 leading-relaxed">
+                Vert : cette personne a avancé plus que sa part, on lui doit de l&apos;argent.
+                Orange : elle doit encore sa part. Les remboursements ci-dessous règlent tout en un minimum de virements.
+              </p>
             </Card>
           </>
         )}

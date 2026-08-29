@@ -86,6 +86,23 @@ export default function GroupDetailScreen() {
   // Compte les dépenses incomplètes
   const incompleteCount = (group.expenses || []).filter(isExpenseIncomplete).length;
 
+  // Solde net de chaque membre : ce qu'il a avancé moins ce qu'il doit.
+  // Exactement les mêmes données que les remboursements affichés plus bas —
+  // c'est une lecture, le calcul des dettes n'est pas modifié.
+  const memberNet: Record<string, number> = {};
+  group.members.forEach((m: any) => { memberNet[m.id] = 0; });
+  (group.expenses || []).forEach((exp: any) => {
+    const payments = exp.payments?.length > 0
+      ? exp.payments
+      : [{ memberId: exp.paidByMemberId, amount: exp.totalAmount }];
+    payments.forEach((p: any) => { memberNet[p.memberId] = (memberNet[p.memberId] || 0) + p.amount; });
+    exp.splits?.forEach((sp: any) => { memberNet[sp.memberId] = (memberNet[sp.memberId] || 0) - sp.amount; });
+  });
+  const netRows = group.members
+    .map((m: any) => ({ member: m, net: Math.round((memberNet[m.id] || 0) * 100) / 100 }))
+    .sort((a: any, b: any) => b.net - a.net);
+  const maxAbsNet = Math.max(...netRows.map((r: any) => Math.abs(r.net)), 0.01);
+
   async function handleShare() {
     try {
       await Share.share({
@@ -222,6 +239,58 @@ export default function GroupDetailScreen() {
                   <Text style={styles.incompleteBannerText}>{t(incompleteCount > 1 ? 'groups.incomplete_count_other' : 'groups.incomplete_count_one', { n: incompleteCount })}</Text>
                 </View>
               )}
+            </Card>
+          </>
+        )}
+
+        {/* Qui a avancé / qui doit — lecture visuelle des soldes */}
+        {group.expenses?.length > 0 && (
+          <>
+            <SectionLabel label={t('balances.who_advanced')} />
+            <Card>
+              <View style={styles.netLegend}>
+                <Text style={[styles.netLegendText, { color: colors.green }]}>← {t('balances.owed_to_them')}</Text>
+                <Text style={styles.netLegendMid}>{t('balances.even')}</Text>
+                <Text style={[styles.netLegendText, { color: colors.amber }]}>{t('balances.they_owe')} →</Text>
+              </View>
+
+              {netRows.map(({ member: m, net }: any) => {
+                const isMe = m.userId === user?.id;
+                const creditor = net > 0.005;
+                const debtor = net < -0.005;
+                const ratio = Math.min(Math.abs(net) / maxAbsNet, 1);
+                return (
+                  <View key={m.id} style={styles.netRow}>
+                    <Avatar initials={m.avatarInitials} color={m.avatarColor} size={26} />
+                    <Text style={[styles.netName, isMe && { color: colors.accent2, fontWeight: '600' }]} numberOfLines={1}>
+                      {m.displayName}
+                    </Text>
+                    {/* barre divergente : la ligne du milieu = équilibre */}
+                    <View style={styles.netBarWrap}>
+                      <View style={styles.netBarSide}>
+                        {creditor && (
+                          <View style={[styles.netBar, styles.netBarLeft, { flex: ratio, backgroundColor: colors.green }]} />
+                        )}
+                      </View>
+                      <View style={styles.netAxis} />
+                      <View style={styles.netBarSide}>
+                        {debtor && (
+                          <View style={[styles.netBar, styles.netBarRight, { flex: ratio, backgroundColor: colors.amber }]} />
+                        )}
+                      </View>
+                    </View>
+                    <Text style={[
+                      styles.netAmount,
+                      creditor && { color: colors.green },
+                      debtor && { color: colors.amber },
+                    ]}>
+                      {net > 0 ? '+' : ''}{fmt(net)}
+                    </Text>
+                  </View>
+                );
+              })}
+
+              <Text style={styles.netHint}>{t('balances.net_hint')}</Text>
             </Card>
           </>
         )}
@@ -484,6 +553,19 @@ const styles = StyleSheet.create({
   balancesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   logBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border2, marginBottom: 4 },
   logBtnText: { fontSize: 11, color: colors.text2, fontWeight: '500' },
+  netLegend: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  netLegendText: { fontSize: 10, fontWeight: '600' },
+  netLegendMid: { fontSize: 10, color: colors.text3 },
+  netRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
+  netName: { width: 66, fontSize: 11, color: colors.text2 },
+  netBarWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', height: 18 },
+  netBarSide: { flex: 1, flexDirection: 'row', height: 10 },
+  netBar: { height: 10 },
+  netBarLeft: { borderTopLeftRadius: 5, borderBottomLeftRadius: 5, marginLeft: 'auto' },
+  netBarRight: { borderTopRightRadius: 5, borderBottomRightRadius: 5 },
+  netAxis: { width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.15)' },
+  netAmount: { width: 76, textAlign: 'right', fontSize: 11, fontFamily: 'monospace', fontWeight: '600', color: colors.text3 },
+  netHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 10 },
   balanceHint: { fontSize: 11, color: colors.text3, marginBottom: 12 },
   balanceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   balanceRowMe: { backgroundColor: colors.accentBg, borderRadius: 8, paddingHorizontal: 8, marginHorizontal: -8 },

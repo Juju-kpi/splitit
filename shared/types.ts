@@ -97,6 +97,11 @@ export interface OcrResult {
   rawText: string;
   confidence: number;
   vendor?: string;
+  // Total imprime sur le ticket (TTC) et taxes/service detectes. Les lignes
+  // d'articles sont souvent HT : l'ecart entre ce total et la somme des
+  // articles est reparti au prorata entre les participants.
+  detectedTotal?: number;
+  detectedTax?: number;
 }
 
 export interface OcrItem {
