@@ -61,6 +61,7 @@ function AddExpenseInner() {
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
   const fileRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
 
   const [step, setStep] = useState<Step>(editMode ? 'ocr' : 'select')
   const [initialized, setInitialized] = useState(false)
@@ -272,7 +273,20 @@ function AddExpenseInner() {
     } finally {
       setScanning(false)
       if (fileRef.current) fileRef.current.value = ''
+      if (galleryRef.current) galleryRef.current.value = ''
     }
+  }
+
+  // Supprimer un article (doublon OCR, ligne parasite…). Le total d'une
+  // dépense scannée est la somme des articles : il suit automatiquement, et
+  // on réaligne le payeur unique pour ne pas bloquer sur "payeurs ≠ total".
+  function removeOcrItem(idx: number) {
+    const item = ocrItems[idx]
+    if (!confirm(`Retirer « ${item.name} » (${item.price.toFixed(2)}) de la dépense ?`)) return
+    const next = ocrItems.filter((_, i) => i !== idx)
+    setOcrItems(next)
+    const newTotal = next.reduce((sum, it) => sum + it.price, 0)
+    setPayers(prev => prev.length === 1 ? [{ ...prev[0], amount: newTotal.toFixed(2) }] : prev)
   }
 
   function handleSubmit() {
@@ -337,18 +351,28 @@ function AddExpenseInner() {
           <p className="text-sm text-text3 mb-5">{group.emoji} {group.name}</p>
           <Notice text="Le scan OCR détecte les articles automatiquement. Chacun coche ce qu'il a pris." />
           <div className="grid grid-cols-2 gap-3 mt-5">
+            {/* capture="environment" ouvre l'appareil photo */}
             <label className="relative block">
               <div className={`glass-card rounded-2xl p-6 text-center cursor-pointer border-accent/30 bg-accent/10 hover:bg-accent/20 transition-colors ${scanning ? 'opacity-50' : ''}`}>
                 <div className="text-3xl mb-2">{scanning ? '⏳' : '📷'}</div>
                 <p className="text-sm font-bold text-white">{scanning ? 'Analyse…' : 'Scanner'}</p>
-                <p className="text-xs text-accent2 mt-1">OCR gratuit</p>
+                <p className="text-xs text-accent2 mt-1">Prendre une photo</p>
               </div>
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleScan} disabled={scanning} />
             </label>
-            <button onClick={() => setStep('manual')} className="glass-card rounded-2xl p-6 text-center hover:border-border2 transition-colors">
-              <div className="text-3xl mb-2">✏️</div>
-              <p className="text-sm font-bold text-text">Manuel</p>
-              <p className="text-xs text-text3 mt-1">Montant global</p>
+            {/* même champ SANS capture : ouvre la galerie / les fichiers */}
+            <label className="relative block">
+              <div className={`glass-card rounded-2xl p-6 text-center cursor-pointer hover:border-border2 transition-colors ${scanning ? 'opacity-50' : ''}`}>
+                <div className="text-3xl mb-2">{scanning ? '⏳' : '🖼️'}</div>
+                <p className="text-sm font-bold text-text">Importer</p>
+                <p className="text-xs text-text3 mt-1">Photo déjà prise</p>
+              </div>
+              <input ref={galleryRef} type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleScan} disabled={scanning} />
+            </label>
+            <button onClick={() => setStep('manual')} className="col-span-2 glass-card rounded-2xl p-5 text-center hover:border-border2 transition-colors">
+              <div className="text-2xl mb-1">✏️</div>
+              <p className="text-sm font-bold text-text">Saisie manuelle</p>
+              <p className="text-xs text-text3 mt-1">Montant global, sans ticket</p>
             </button>
           </div>
           {scanError && <Notice variant="amber" text={scanError} />}
@@ -394,6 +418,13 @@ function AddExpenseInner() {
             </>
           )}
 
+          <Input
+            label="Titre de la dépense"
+            placeholder="Ticket scanné"
+            value={description}
+            onChange={setDescription}
+          />
+
           <SectionLabel label="ARTICLES" />
           <div className="space-y-3">
             {ocrItems.map((item, idx) => (
@@ -421,6 +452,24 @@ function AddExpenseInner() {
                     </div>
                   )}
                   <div className="flex items-center gap-2 shrink-0">
+                    {/* Qui a coché cet article — visible d'un coup d'œil */}
+                    {!item.editing && item.assignedTo.length > 0 && (
+                      <div className="flex -space-x-1.5">
+                        {item.assignedTo.slice(0, 4).map(id => {
+                          const m = memberById(id)
+                          return m ? (
+                            <div key={id} title={m.displayName} className="ring-2 ring-[#16161A] rounded-full">
+                              <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
+                            </div>
+                          ) : null
+                        })}
+                        {item.assignedTo.length > 4 && (
+                          <div className="ring-2 ring-[#16161A] rounded-full bg-surface3 w-5 h-5 flex items-center justify-center text-[9px] font-semibold text-text2">
+                            +{item.assignedTo.length - 4}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {!item.editing && <span className="font-mono text-sm font-semibold text-accent2">{item.price.toFixed(2)}</span>}
                     <button
                       onClick={() => {
@@ -447,6 +496,15 @@ function AddExpenseInner() {
                     >
                       {item.editing ? '✓ OK' : '✏️'}
                     </button>
+                    {!item.editing && (
+                      <button
+                        onClick={() => removeOcrItem(idx)}
+                        title="Retirer cet article"
+                        className="text-xs bg-red/10 border border-red/25 px-2 py-1 rounded-lg text-red"
+                      >
+                        🗑
+                      </button>
+                    )}
                   </div>
                 </div>
                 <p className="text-[10px] uppercase tracking-widest text-text3 font-semibold mb-2">Qui a pris cet article ?</p>

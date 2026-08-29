@@ -91,6 +91,19 @@ export default function OcrScanScreen({ members, onComplete }: Props) {
     }
   }
 
+  function removeItem(id: string) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    Alert.alert(
+      'Retirer cet article ?',
+      `« ${item.name} » — ${item.price.toFixed(2)}`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Retirer', style: 'destructive', onPress: () => setItems(prev => prev.filter(i => i.id !== id)) },
+      ],
+    );
+  }
+
   function toggleAssign(itemId: string, memberId: string) {
     setItems(prev => prev.map(item => {
       if (item.id !== itemId) return item;
@@ -185,6 +198,7 @@ export default function OcrScanScreen({ members, onComplete }: Props) {
             <ItemRow
               item={item}
               activeMemberId={activeMember}
+              onRemove={() => removeItem(item.id)}
               onToggle={() => toggleAssign(item.id, activeMember)}
               onStartEdit={() => startEdit(item.id)}
               onSaveEdit={() => saveEdit(item.id)}
@@ -208,10 +222,11 @@ export default function OcrScanScreen({ members, onComplete }: Props) {
 }
 
 // ── ItemRow component ──────────────────────────────────────────────────────
-function ItemRow({ item, activeMemberId, onToggle, onStartEdit, onSaveEdit, onChangeName, onChangePrice }: {
+function ItemRow({ item, activeMemberId, onToggle, onRemove, onStartEdit, onSaveEdit, onChangeName, onChangePrice }: {
   item: LocalItem;
   activeMemberId: string;
   onToggle: () => void;
+  onRemove: () => void;
   onStartEdit: () => void;
   onSaveEdit: () => void;
   onChangeName: (v: string) => void;
@@ -271,6 +286,14 @@ function ItemRow({ item, activeMemberId, onToggle, onStartEdit, onSaveEdit, onCh
         <>
           <TouchableOpacity onPress={onStartEdit} style={styles.editBtn}>
             <Text style={styles.editBtnText}>✏️</Text>
+          </TouchableOpacity>
+          {/* Retirer une ligne parasite ou un doublon détecté par l'OCR */}
+          <TouchableOpacity
+            onPress={onRemove}
+            style={styles.editBtn}
+            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+          >
+            <Text style={styles.editBtnText}>🗑</Text>
           </TouchableOpacity>
           <Text style={styles.itemPrice}>{item.price.toFixed(2)}</Text>
         </>

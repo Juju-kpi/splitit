@@ -157,6 +157,32 @@ export default function AddExpenseScreen() {
     setInitialized(true);
   }, [existingExpense, members, editMode, initialized]);
 
+  // Retirer un article (doublon OCR, ligne parasite…). Le total d'une dépense
+  // scannée est la somme des articles : il suit tout seul, et on réaligne le
+  // payeur unique pour ne pas bloquer sur "payeurs ≠ total".
+  function removeOcrItem(idx: number) {
+    const item = ocrItems[idx];
+    Alert.alert(
+      'Retirer cet article ?',
+      `« ${item.name} » — ${item.price.toFixed(2)}`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Retirer',
+          style: 'destructive',
+          onPress: () => {
+            const next = ocrItems.filter((_, i) => i !== idx);
+            setOcrItems(next);
+            const newTotal = next.reduce((sum, it) => sum + it.price, 0);
+            setPayers(prev => prev.length === 1
+              ? [{ ...prev[0], amount: newTotal.toFixed(2) }]
+              : prev);
+          },
+        },
+      ],
+    );
+  }
+
   // ── Mutations ─────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: expensesApi.create,
@@ -505,7 +531,27 @@ export default function AddExpenseScreen() {
               <View key={item.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemName}>{item.name}</Text>
+                  {/* Qui a coché cet article — visible d'un coup d'œil */}
+                  {item.assignedTo.length > 0 && (
+                    <View style={styles.itemAvatars}>
+                      {item.assignedTo.slice(0, 4).map(id => {
+                        const m = memberById(id);
+                        return m ? (
+                          <View key={id} style={styles.itemAvatar}>
+                            <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
+                          </View>
+                        ) : null;
+                      })}
+                    </View>
+                  )}
                   <Text style={styles.itemPrice}>{fmt(item.price)}</Text>
+                  <TouchableOpacity
+                    onPress={() => removeOcrItem(idx)}
+                    style={styles.itemRemoveBtn}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={styles.itemRemoveText}>🗑</Text>
+                  </TouchableOpacity>
                 </View>
                 <Text style={styles.itemLabel}>Qui a pris cet article ?</Text>
                 <View style={styles.chipWrap}>
@@ -997,6 +1043,15 @@ const styles = StyleSheet.create({
   itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   itemName: { fontSize: 14, fontWeight: '600', color: colors.text, flex: 1 },
   itemPrice: { fontSize: 14, fontFamily: 'monospace', color: colors.accent2, fontWeight: '600' },
+  itemAvatars: { flexDirection: 'row', marginRight: 8 },
+  itemAvatar: { marginLeft: -6, borderWidth: 2, borderColor: colors.surface, borderRadius: 12 },
+  itemRemoveBtn: {
+    marginLeft: 10,
+    backgroundColor: 'rgba(248,113,113,0.10)',
+    borderWidth: 1, borderColor: 'rgba(248,113,113,0.25)',
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+  },
+  itemRemoveText: { fontSize: 12 },
   itemLabel: { fontSize: 11, color: colors.text3, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   itemUnassigned: { fontSize: 11, color: colors.amber, marginTop: 6 },
   itemAssigned: { fontSize: 11, color: colors.green, marginTop: 6 },
