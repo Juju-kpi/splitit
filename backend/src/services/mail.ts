@@ -50,6 +50,17 @@ export function canSendToAnyRecipient(): boolean {
   return transport === 'resend' && !!from && !from.includes('resend.dev');
 }
 
+// L'adresse d'expedition. Une adresse resend.dev n'a de sens QUE pour Resend :
+// ailleurs elle n'est pas un expediteur validé et le message est rejete en
+// silence. On lui prefere alors le compte SMTP configure.
+function resolveFrom(transport: MailTransport): string {
+  const explicit = process.env.APP_FROM_EMAIL || process.env.EMAIL_FROM;
+  if (transport === 'resend') return explicit || 'SplitIt <onboarding@resend.dev>';
+  if (explicit && !explicit.includes('resend.dev')) return explicit;
+  if (SMTP_USER) return `SplitIt <${SMTP_USER}>`;
+  return '';
+}
+
 let transporter: Transporter | null = null;
 function smtp(): Transporter {
   if (!transporter) {
@@ -71,9 +82,10 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
   const transport = activeTransport();
   if (!transport) throw new Error('Aucun transport email configure (BREVO_API_KEY, SMTP_USER ou RESEND_API_KEY)');
 
-  const from = process.env.APP_FROM_EMAIL
-    || process.env.EMAIL_FROM
-    || (transport === 'smtp' ? `SplitIt <${SMTP_USER}>` : 'SplitIt <onboarding@resend.dev>');
+  const from = resolveFrom(transport);
+  if (!from) {
+    throw new Error('Aucune adresse d expedition utilisable : renseigne APP_FROM_EMAIL');
+  }
 
   if (transport === 'brevo') {
     const sender = parseFrom(from);
@@ -119,7 +131,12 @@ export function logMailConfig(): void {
     return;
   }
   if (transport === 'brevo') {
-    console.log(`[Mail] Brevo (API HTTPS) — expediteur ${process.env.APP_FROM_EMAIL || process.env.EMAIL_FROM || '?'}`);
+    const from = resolveFrom('brevo');
+    console.log(`[Mail] Brevo (API HTTPS) — expediteur ${from || 'AUCUN'}`);
+    if (!from) {
+      console.warn('[Mail] Renseigne APP_FROM_EMAIL avec une adresse validee comme '
+        + 'expediteur chez Brevo, sinon aucun message ne partira.');
+    }
     return;
   }
   if (transport === 'smtp') {
