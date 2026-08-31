@@ -49,7 +49,9 @@ export async function getAccessToken() {
 }
 
 const api: AxiosInstance = axios.create({
-  timeout: 15000,
+  // Un service Render gratuit s'endort apres 15 min et met 30 a 60 s a
+  // redemarrer : en dessous d'une minute, le client abandonne avant lui.
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
