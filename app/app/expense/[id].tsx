@@ -28,7 +28,6 @@ export default function ExpenseDetailScreen() {
   const insets = useSafeAreaInsets();
   const fmt = useFormatMoney();
 
-  const [editing, setEditing] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
 
   // Note/commentaire
@@ -36,10 +35,6 @@ export default function ExpenseDetailScreen() {
   const [editingNote, setEditingNote] = useState(false);
 
   // Edit state
-  const [editDesc, setEditDesc] = useState('');
-  const [editAmount, setEditAmount] = useState('');
-  const [editPaidBy, setEditPaidBy] = useState('');
-  const [editSplitIds, setEditSplitIds] = useState<string[]>([]);
 
   const { data: expense, isLoading } = useQuery<any>({
     queryKey: ['expense', id],
@@ -59,16 +54,6 @@ export default function ExpenseDetailScreen() {
       qc.invalidateQueries({ queryKey: ['group'] });
       router.back();
     },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (payload: any) => expensesApi.update(id, payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['expense', id] });
-      qc.invalidateQueries({ queryKey: ['group', expense?.groupId] });
-      setEditing(false);
-    },
-    onError: (e: any) => Alert.alert('Erreur', e?.response?.data?.error || 'Modification impossible'),
   });
 
   // Sauvegarde de la note
@@ -109,29 +94,12 @@ export default function ExpenseDetailScreen() {
     onError: () => Alert.alert('Erreur', 'Impossible de dupliquer la dépense.'),
   });
 
+  // Ecran d'edition complet : montant, participants, parts egales ou
+  // personnalisees, et articles pour un ticket. Le formulaire reduit forcait
+  // une repartition egale, ce qui ecrasait les parts d'un ticket scanne.
   function startEditing() {
     if (!expense) return;
-    setEditDesc(expense.description);
-    setEditAmount(expense.totalAmount.toFixed(2));
-    setEditPaidBy(expense.paidByMemberId);
-    setEditSplitIds(expense.splits.map((s: any) => s.memberId));
-    setEditing(true);
-  }
-
-  function saveEdit() {
-    const total = parseFloat(editAmount.replace(',', '.'));
-    if (!editDesc.trim() || isNaN(total) || total <= 0) {
-      Alert.alert('Données invalides');
-      return;
-    }
-    const memberIds = editSplitIds.length > 0 ? editSplitIds : group?.members.map((m: any) => m.id) || [];
-    updateMutation.mutate({
-      description: editDesc.trim(),
-      totalAmount: total,
-      paidByMemberId: editPaidBy,
-      splitType: 'EQUAL',
-      splitMemberIds: memberIds,
-    });
+    router.push(`/expense/add?groupId=${expense.groupId}&expenseId=${expense.id}&isEdit=true`);
   }
 
   function confirmDelete() {
@@ -158,68 +126,6 @@ export default function ExpenseDetailScreen() {
   const myMember = members.find((m: any) => m.userId === user?.id);
   const mySplit = expense.splits.find((s: any) => s.memberId === myMember?.id);
   const headerPaddingTop = Math.max(insets.top, 16) + 6;
-
-  // ── Edit mode ────────────────────────────────────────────────────────
-  if (editing) {
-    return (
-      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
-          <TouchableOpacity onPress={() => setEditing(false)} style={styles.backBtn}>
-            <Text style={styles.backText}>← Annuler</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Modifier</Text>
-          <TouchableOpacity onPress={saveEdit} style={styles.saveBtn}>
-            <Text style={styles.saveBtnText}>{updateMutation.isPending ? '…' : 'Sauver'}</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Text style={styles.label}>DESCRIPTION</Text>
-          <TextInput
-            style={styles.textInput}
-            value={editDesc}
-            onChangeText={setEditDesc}
-            placeholder="Description"
-            placeholderTextColor={colors.text3}
-          />
-          <Text style={styles.label}>MONTANT TOTAL</Text>
-          <AmountInput value={editAmount} onChangeText={setEditAmount} />
-          <Text style={styles.label}>PAYÉ PAR</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {members.map((m: any) => (
-                <TouchableOpacity
-                  key={m.id}
-                  style={[styles.payerChip, editPaidBy === m.id && styles.payerChipOn]}
-                  onPress={() => setEditPaidBy(m.id)}
-                >
-                  <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
-                  <Text style={[styles.payerChipText, editPaidBy === m.id && { color: colors.accent2 }]}>
-                    {m.displayName}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-          <Text style={styles.label}>PARTAGER AVEC</Text>
-          <View style={styles.chipWrap}>
-            {members.map((m: any) => (
-              <Chip
-                key={m.id}
-                label={m.displayName}
-                selected={editSplitIds.includes(m.id)}
-                onPress={() => setEditSplitIds(prev =>
-                  prev.includes(m.id) ? prev.filter(x => x !== m.id) : [...prev, m.id]
-                )}
-                avatar={{ initials: m.avatarInitials, color: m.avatarColor }}
-              />
-            ))}
-          </View>
-          <Text style={styles.hint}>Aucune sélection = tout le monde</Text>
-          <Button label="Sauvegarder" onPress={saveEdit} loading={updateMutation.isPending} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    );
-  }
 
   // ── View mode ────────────────────────────────────────────────────────
   return (

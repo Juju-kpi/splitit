@@ -152,12 +152,11 @@ export default function AddExpenseScreen() {
       // Sans ça, une dépense partagée entre 3 repartirait sur tout le groupe
       if (exp.splits && exp.splits.length > 0) {
         setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId));
-        if (exp.splitType === 'CUSTOM') {
-          setSplitMode('custom');
-          setCustomAmounts(Object.fromEntries(
-            exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
-          ));
-        }
+        // Amorce toujours la saisie manuelle avec les parts reelles
+        setCustomAmounts(Object.fromEntries(
+          exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
+        ));
+        if (exp.splitType === 'CUSTOM') setSplitMode('custom');
       }
     }
 
@@ -347,6 +346,12 @@ export default function AddExpenseScreen() {
     return out;
   }
 
+  // Parts egales exactes au centime — sert d'amorce a la saisie manuelle
+  const equalShares = useMemo(() => {
+    const cents = distributeCents(Math.round(totalAmount * 100), activeMemberIds.map(() => 1));
+    return activeMemberIds.map((memberId, i) => ({ memberId, amount: cents[i] / 100 }));
+  }, [totalAmount, activeMemberIds]);
+
   // Ce que chacun paiera réellement, taxes comprises
   const ocrShares = useMemo(() => {
     if (ocrItems.length === 0) return [] as { memberId: string; amount: number }[];
@@ -373,6 +378,23 @@ export default function AddExpenseScreen() {
     if (!hasUnassigned && assigned !== totalCents) cents = distributeCents(totalCents, cents);
     return ids.map((memberId, i) => ({ memberId, amount: cents[i] / 100 }));
   }, [ocrItems, ocrSplitMode, totalAmount, activeMemberIds, manualSplits]);
+
+  // Bascule vers la saisie manuelle : on part de la repartition affichee,
+  // pas de zero.
+  function switchSplitMode(mode: SplitMode, shares: { memberId: string; amount: number }[]) {
+    if (mode === 'custom') {
+      setCustomAmounts(prev => {
+        const next = { ...prev };
+        shares.forEach(({ memberId, amount }) => {
+          if (!next[memberId] || next[memberId] === '0' || next[memberId] === '') {
+            next[memberId] = amount.toFixed(2);
+          }
+        });
+        return next;
+      });
+    }
+    setSplitMode(mode);
+  }
 
   function memberById(id: string) { return members.find(m => m.id === id); }
 
@@ -676,7 +698,11 @@ export default function AddExpenseScreen() {
                 <TouchableOpacity
                   key={mode}
                   style={[styles.modeBtn, ocrSplitMode === mode && styles.modeBtnOn]}
-                  onPress={() => setOcrSplitMode(mode)}
+                  onPress={() => {
+                    // ocrShares tient encore la repartition du mode courant
+                    if (mode === 'custom') switchSplitMode('custom', ocrShares);
+                    setOcrSplitMode(mode);
+                  }}
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.modeBtnText, ocrSplitMode === mode && styles.modeBtnTextOn]}>{label}</Text>
@@ -926,7 +952,7 @@ export default function AddExpenseScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.splitModeBtn, splitMode === 'custom' && styles.splitModeBtnOn]}
-              onPress={() => setSplitMode('custom')}
+              onPress={() => switchSplitMode('custom', equalShares)}
             >
               <Text style={[styles.splitModeBtnText, splitMode === 'custom' && { color: colors.accent2 }]}>
                 ✏️ Personnalisé

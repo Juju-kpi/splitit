@@ -136,12 +136,11 @@ function AddExpenseInner() {
       // Sans ça, une dépense partagée entre 3 repartirait sur tout le groupe
       if (exp.splits?.length > 0) {
         setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId))
-        if (exp.splitType === 'CUSTOM') {
-          setSplitMode('custom')
-          setCustomAmounts(Object.fromEntries(
-            exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
-          ))
-        }
+        // Amorce toujours la saisie manuelle avec les parts reelles
+        setCustomAmounts(Object.fromEntries(
+          exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
+        ))
+        if (exp.splitType === 'CUSTOM') setSplitMode('custom')
       }
     }
     if (exp.payments?.length > 0) {
@@ -235,6 +234,12 @@ function AddExpenseInner() {
     for (let k = 0; k < rest; k++) out[order[k % n].i] += 1
     return out
   }
+
+  // Parts egales exactes au centime — sert d'amorce a la saisie manuelle
+  const equalShares = useMemo(() => {
+    const cents = distributeCents(Math.round(totalAmount * 100), activeMemberIds.map(() => 1))
+    return activeMemberIds.map((memberId, i) => ({ memberId, amount: cents[i] / 100 }))
+  }, [totalAmount, activeMemberIds])
 
   // Ce que chacun paiera réellement, taxes comprises
   const ocrShares = useMemo(() => {
@@ -380,6 +385,23 @@ function AddExpenseInner() {
       ocrRaw: '', confidence: 1, corrected: true, assignedTo: [],
       editName: '', editPrice: '', editing: true,
     } as OcrItemLocal])
+  }
+
+  // Bascule vers la saisie manuelle : on part de la repartition affichee,
+  // pas de zero.
+  function switchSplitMode(mode: SplitMode, shares: { memberId: string; amount: number }[]) {
+    if (mode === 'custom') {
+      setCustomAmounts(prev => {
+        const next = { ...prev }
+        shares.forEach(({ memberId, amount }) => {
+          if (!next[memberId] || next[memberId] === '0' || next[memberId] === '') {
+            next[memberId] = amount.toFixed(2)
+          }
+        })
+        return next
+      })
+    }
+    setSplitMode(mode)
   }
 
   function handleSubmit() {
@@ -581,7 +603,11 @@ function AddExpenseInner() {
               ['equal', '⚖️ Équitable'],
               ['custom', '✏️ Personnalisé'],
             ] as const).map(([mode, label]) => (
-              <button key={mode} onClick={() => setOcrSplitMode(mode)}
+              <button key={mode} onClick={() => {
+                  // ocrShares tient encore la repartition du mode courant
+                  if (mode === 'custom') switchSplitMode('custom', ocrShares)
+                  setOcrSplitMode(mode)
+                }}
                 className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
                   ocrSplitMode === mode ? 'border-accent bg-accent/10 text-accent2' : 'border-border bg-surface2 text-text2'
                 }`}>
@@ -800,7 +826,7 @@ function AddExpenseInner() {
           <SectionLabel label="RÉPARTITION" />
           <div className="flex gap-2 mb-4">
             {(['equal', 'custom'] as SplitMode[]).map(mode => (
-              <button key={mode} onClick={() => setSplitMode(mode)}
+              <button key={mode} onClick={() => switchSplitMode(mode, equalShares)}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${splitMode === mode ? 'border-accent bg-accent/10 text-accent2' : 'border-border bg-surface2 text-text2'}`}>
                 {mode === 'equal' ? '⚖️ Équitable' : '✏️ Personnalisé'}
               </button>

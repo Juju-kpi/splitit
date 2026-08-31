@@ -154,12 +154,10 @@ export default function ExpenseDetailPage() {
 
         {/* Actions */}
         <div className="space-y-2.5">
-          {isIncomplete && (
-            <Button
-              label="✏️ Compléter la dépense"
-              onClick={() => router.push(`/expense/add?groupId=${expense.groupId}&expenseId=${expense.id}&edit=true`)}
-            />
-          )}
+          <Button
+            label={isIncomplete ? '✏️ Compléter la dépense' : '✏️ Modifier la dépense'}
+            onClick={() => router.push(`/expense/add?groupId=${expense.groupId}&expenseId=${expense.id}&edit=true`)}
+          />
           <Button label="Dupliquer cette dépense" variant="ghost" onClick={() => duplicateMutation.mutate()} loading={duplicateMutation.isPending} />
           <Button label="Supprimer" variant="danger"
             onClick={() => { if (confirm('Supprimer cette dépense ?')) deleteMutation.mutate() }}

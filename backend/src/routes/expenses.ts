@@ -382,7 +382,11 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     data: {
       ...(d.description !== undefined && { description: d.description }),
       ...(d.totalAmount !== undefined && { totalAmount: d.totalAmount }),
-      ...(d.note !== undefined && { note: d.note }),   // ← FIX : note écrite en base
+      ...(d.note !== undefined && { note: d.note }),
+      // Sans ca, une repartition passee en personnalisee restait etiquetee
+      // EQUAL : l'ecran d'edition et le script d'audit la recalculaient a parts
+      // egales, effacant les montants saisis.
+      ...(d.splitType !== undefined && { splitType: d.splitType as any }),
       paidByMemberId,
     },
   });
