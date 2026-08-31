@@ -2,17 +2,20 @@
 //
 // Envoi d'emails, deux transports possibles :
 //
-//   SMTP   — SMTP_USER + SMTP_PASSWORD (ou GMAIL_USER + GMAIL_APP_PASSWORD).
-//            Par defaut smtp.gmail.com:465. Envoie a n'importe quel
-//            destinataire, sans posseder de domaine. Un mot de passe
-//            d'application Google est requis (2FA activee), pas le mot de
-//            passe du compte. Environ 500 destinataires par jour.
+//   Brevo  — BREVO_API_KEY. API HTTPS, donc utilisable depuis un hebergeur
+//            qui filtre les ports SMTP (c'est le cas de Render sur ses offres
+//            gratuites : 25, 465 et 587 sont bloques). Brevo valide une simple
+//            ADRESSE d'expedition, pas forcement un domaine : une adresse
+//            Gmail verifiee suffit pour ecrire a n'importe qui.
+//
+//   SMTP   — SMTP_USER + SMTP_PASSWORD (ou GMAIL_USER + GMAIL_APP_PASSWORD),
+//            smtp.gmail.com:465 par defaut. Ne fonctionne que la ou les ports
+//            SMTP sortants sont ouverts.
 //
 //   Resend — RESEND_API_KEY. Sans domaine verifie, Resend n'accepte QUE
-//            l'adresse du proprietaire du compte comme destinataire : a
-//            reserver aux mails qui te sont adresses.
+//            l'adresse du proprietaire du compte comme destinataire.
 //
-// SMTP est prioritaire quand il est configure.
+// Ordre de priorite : Brevo, puis SMTP, puis Resend.
 
 import nodemailer, { Transporter } from 'nodemailer';
 
@@ -21,21 +24,30 @@ const SMTP_PASSWORD = process.env.SMTP_PASSWORD || process.env.GMAIL_APP_PASSWOR
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
 
-export type MailTransport = 'smtp' | 'resend' | null;
+export type MailTransport = 'brevo' | 'smtp' | 'resend' | null;
 
 export function activeTransport(): MailTransport {
+  if (process.env.BREVO_API_KEY) return 'brevo';
   if (SMTP_USER && SMTP_PASSWORD) return 'smtp';
   if (process.env.RESEND_API_KEY) return 'resend';
   return null;
 }
 
+/** Separe "Nom <adresse@exemple.fr>" en ses deux parties. */
+function parseFrom(value: string): { name?: string; email: string } {
+  const match = value.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (match) return { name: match[1] || undefined, email: match[2].trim() };
+  return { email: value.trim() };
+}
+
 /** Vrai si l'on peut ecrire a n'importe qui, pas seulement au proprietaire du compte. */
 export function canSendToAnyRecipient(): boolean {
-  if (activeTransport() === 'smtp') return true;
+  const transport = activeTransport();
+  if (transport === 'brevo' || transport === 'smtp') return true;
   // Resend n'accepte des destinataires libres qu'avec un domaine verifie,
   // c'est-a-dire un expediteur autre que son adresse de test partagee.
   const from = process.env.APP_FROM_EMAIL || process.env.EMAIL_FROM || '';
-  return activeTransport() === 'resend' && !!from && !from.includes('resend.dev');
+  return transport === 'resend' && !!from && !from.includes('resend.dev');
 }
 
 let transporter: Transporter | null = null;
@@ -46,18 +58,42 @@ function smtp(): Transporter {
       port: SMTP_PORT,
       secure: SMTP_PORT === 465,
       auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
-    });
+      // Certains hebergeurs n'ont pas d'IPv6 sortant : sans ca, Node tente
+      // l'enregistrement AAAA et echoue en ENETUNREACH. `family` n'est pas
+      // declare dans les types de nodemailer mais est transmis a net.connect.
+      family: 4,
+    } as any);
   }
   return transporter;
 }
 
 export async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<void> {
   const transport = activeTransport();
-  if (!transport) throw new Error('Aucun transport email configure (SMTP_USER ou RESEND_API_KEY)');
+  if (!transport) throw new Error('Aucun transport email configure (BREVO_API_KEY, SMTP_USER ou RESEND_API_KEY)');
 
   const from = process.env.APP_FROM_EMAIL
     || process.env.EMAIL_FROM
     || (transport === 'smtp' ? `SplitIt <${SMTP_USER}>` : 'SplitIt <onboarding@resend.dev>');
+
+  if (transport === 'brevo') {
+    const sender = parseFrom(from);
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY!,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender,
+        to: [{ email: opts.to }],
+        subject: opts.subject,
+        htmlContent: opts.html,
+      }),
+    });
+    if (!res.ok) throw new Error(`Brevo ${res.status} : ${await res.text()}`);
+    return;
+  }
 
   if (transport === 'smtp') {
     await smtp().sendMail({ from, to: opts.to, subject: opts.subject, html: opts.html });
@@ -82,8 +118,14 @@ export function logMailConfig(): void {
     console.warn('[Mail] Aucun transport configure — les mails de reinitialisation ne partiront pas.');
     return;
   }
+  if (transport === 'brevo') {
+    console.log(`[Mail] Brevo (API HTTPS) — expediteur ${process.env.APP_FROM_EMAIL || process.env.EMAIL_FROM || '?'}`);
+    return;
+  }
   if (transport === 'smtp') {
     console.log(`[Mail] SMTP ${SMTP_HOST}:${SMTP_PORT} (${SMTP_USER})`);
+    console.warn('[Mail] Attention : de nombreux hebergeurs filtrent les ports SMTP sortants '
+      + '(Render bloque 25, 465 et 587). Utilise BREVO_API_KEY si les envois expirent.');
     return;
   }
   console.log('[Mail] Resend');
