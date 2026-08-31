@@ -81,6 +81,8 @@ export default function AddExpenseScreen() {
   // Les lignes d'un ticket sont souvent HT : sans ce champ, les taxes et le
   // service ne sont payés par personne.
   const [receiptTotal, setReceiptTotal] = useState('');
+  // Répartition d'un ticket : par articles (défaut), équitable ou personnalisée
+  const [ocrSplitMode, setOcrSplitMode] = useState<'items' | 'equal' | 'custom'>('items');
   const [ocrImageUrl, setOcrImageUrl] = useState<string | undefined>();
   const [showReceiptImage, setShowReceiptImage] = useState(false);
 
@@ -134,6 +136,16 @@ export default function AddExpenseScreen() {
       // Sans ça, rouvrir un ticket dont le total inclut des taxes ferait
       // retomber le total sur la somme des articles à l'enregistrement.
       setReceiptTotal(exp.totalAmount?.toFixed(2) || '');
+      // On restaure le mode de répartition réellement enregistré
+      if (exp.splitType === 'EQUAL' || exp.splitType === 'CUSTOM') {
+        setOcrSplitMode(exp.splitType === 'EQUAL' ? 'equal' : 'custom');
+        if (exp.splits && exp.splits.length > 0) {
+          setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId));
+          setCustomAmounts(Object.fromEntries(
+            exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
+          ));
+        }
+      }
       setStep('ocr');
     } else {
       // Mode manuel
@@ -249,8 +261,8 @@ export default function AddExpenseScreen() {
   const updateMutation = useMutation({
     // totalAmount : le total suit les prix corrigés, sinon les parts sont
     // recalculées sur l'ancien montant et la dépense passe "à compléter"
-    mutationFn: ({ items, payments, desc, total }: { items: any[]; payments: any[]; desc: string; total: number }) =>
-      expensesApi.updateItems(expenseId!, { items, payments, description: desc, totalAmount: total }),
+    mutationFn: ({ items, payments, desc, total, split }: { items: any[]; payments: any[]; desc: string; total: number; split?: any }) =>
+      expensesApi.updateItems(expenseId!, { items, payments, description: desc, totalAmount: total, ...(split || {}) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group', groupId] });
       qc.invalidateQueries({ queryKey: ['expense', expenseId] });
@@ -327,6 +339,51 @@ export default function AddExpenseScreen() {
   const unassignedItems = ocrItems.filter(i => i.assignedTo.length === 0);
 
   // ── Helpers ───────────────────────────────────────────────────────────
+  // Répartition en centimes par plus fort reste — même méthode que le serveur,
+  // pour que l'aperçu affiché soit exactement ce qui sera enregistré.
+  function distributeCents(totalCents: number, weights: number[]): number[] {
+    const n = weights.length;
+    if (n === 0) return [];
+    const sum = weights.reduce((s, w) => s + w, 0);
+    const eff = sum > 0 ? weights : weights.map(() => 1);
+    const effSum = sum > 0 ? sum : n;
+    const exact = eff.map(w => (totalCents * w) / effSum);
+    const out = exact.map(v => Math.floor(v));
+    const rest = totalCents - out.reduce((s, v) => s + v, 0);
+    const order = exact
+      .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+      .sort((a, b) => (b.frac - a.frac) || (a.i - b.i));
+    for (let k = 0; k < rest; k++) out[order[k % n].i] += 1;
+    return out;
+  }
+
+  // Ce que chacun paiera réellement, taxes comprises
+  const ocrShares = useMemo(() => {
+    if (ocrItems.length === 0) return [] as { memberId: string; amount: number }[];
+    const totalCents = Math.round(totalAmount * 100);
+
+    if (ocrSplitMode === 'equal') {
+      const ids = activeMemberIds;
+      const cents = distributeCents(totalCents, ids.map(() => 1));
+      return ids.map((memberId, i) => ({ memberId, amount: cents[i] / 100 }));
+    }
+    if (ocrSplitMode === 'custom') return manualSplits;
+
+    const centsByMember: Record<string, number> = {};
+    ocrItems.forEach(item => {
+      if (item.assignedTo.length === 0) return;
+      const parts = distributeCents(Math.round(item.price * 100), item.assignedTo.map(() => 1));
+      item.assignedTo.forEach((id, i) => { centsByMember[id] = (centsByMember[id] || 0) + parts[i]; });
+    });
+    const ids = Object.keys(centsByMember);
+    if (ids.length === 0) return [];
+    let cents = ids.map(id => centsByMember[id]);
+    const assigned = cents.reduce((sum, c) => sum + c, 0);
+    const hasUnassigned = ocrItems.some(i => i.assignedTo.length === 0);
+    if (!hasUnassigned && assigned !== totalCents) cents = distributeCents(totalCents, cents);
+    return ids.map((memberId, i) => ({ memberId, amount: cents[i] / 100 }));
+  }, [ocrItems, ocrSplitMode, totalAmount, activeMemberIds, manualSplits]);
+
   function memberById(id: string) { return members.find(m => m.id === id); }
 
   function toggleSplitMember(id: string) {
@@ -454,6 +511,12 @@ export default function AddExpenseScreen() {
         payments: resolvedPayments,
         desc: description.trim() || (existingExpense as any)?.description || 'Ticket scanné',
         total: totalAmount,
+        // Un ticket scanné peut être réparti autrement que par articles
+        split: ocrSplitMode === 'equal'
+          ? { splitType: 'EQUAL', splitMemberIds: activeMemberIds }
+          : ocrSplitMode === 'custom'
+            ? { splitType: 'CUSTOM', customSplits: manualSplits }
+            : { splitType: 'ITEMIZED' },
       });
       return;
     }
@@ -465,7 +528,11 @@ export default function AddExpenseScreen() {
         description: description.trim() || 'Ticket scanné',
         totalAmount,
         payments: resolvedPayments,
-        splitType: 'ITEMIZED',
+        ...(ocrSplitMode === 'equal'
+          ? { splitType: 'EQUAL', splitMemberIds: activeMemberIds }
+          : ocrSplitMode === 'custom'
+            ? { splitType: 'CUSTOM', customSplits: manualSplits }
+            : { splitType: 'ITEMIZED' }),
         receiptImageUrl: ocrImageUrl,
         items: ocrItems.map(item => ({
           name: item.name,
@@ -612,6 +679,85 @@ export default function AddExpenseScreen() {
                 </Text>
               )}
             </Card>
+
+            <SectionLabel label="RÉPARTITION" />
+            <View style={styles.modeRow}>
+              {([['items', '🧾 Articles'], ['equal', '⚖️ Équitable'], ['custom', '✏️ Perso']] as const).map(([mode, label]) => (
+                <TouchableOpacity
+                  key={mode}
+                  style={[styles.modeBtn, ocrSplitMode === mode && styles.modeBtnOn]}
+                  onPress={() => setOcrSplitMode(mode)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.modeBtnText, ocrSplitMode === mode && styles.modeBtnTextOn]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {ocrSplitMode === 'equal' && (
+              <View style={styles.chipWrap}>
+                {members.map(m => (
+                  <Chip
+                    key={m.id}
+                    label={m.displayName}
+                    selected={splitMemberIds.includes(m.id) || splitMemberIds.length === 0}
+                    onPress={() => toggleSplitMember(m.id)}
+                    avatar={{ initials: m.avatarInitials, color: m.avatarColor }}
+                  />
+                ))}
+              </View>
+            )}
+
+            {ocrSplitMode === 'custom' && (
+              <Card>
+                <Text style={styles.taxLabel}>Entre le montant pour chacun</Text>
+                {activeMemberIds.map(id => {
+                  const m = memberById(id);
+                  if (!m) return null;
+                  return (
+                    <View key={id} style={styles.shareRow}>
+                      <Avatar initials={m.avatarInitials} color={m.avatarColor} size={26} />
+                      <Text style={styles.shareName}>{m.displayName}</Text>
+                      <TextInput
+                        style={styles.shareInput}
+                        value={customAmounts[id] || ''}
+                        onChangeText={v => setCustomAmounts(prev => ({ ...prev, [id]: v }))}
+                        placeholder="0.00"
+                        placeholderTextColor={colors.text3}
+                        keyboardType="decimal-pad"
+                        selectionColor={colors.accent}
+                      />
+                    </View>
+                  );
+                })}
+                <Text style={[styles.taxHint, { textAlign: 'right', color: isCustomBalanced ? colors.green : colors.amber }]}>
+                  {customTotal.toFixed(2)} / {totalAmount.toFixed(2)}{isCustomBalanced ? ' ✓' : ''}
+                </Text>
+              </Card>
+            )}
+
+            {/* Ce que chacun paiera réellement — taxes comprises */}
+            {ocrShares.length > 0 && (
+              <Card>
+                <Text style={styles.taxLabel}>Chaque personne paie</Text>
+                {ocrShares.map(({ memberId, amount }) => {
+                  const m = memberById(memberId);
+                  if (!m) return null;
+                  return (
+                    <View key={memberId} style={styles.shareRow}>
+                      <Avatar initials={m.avatarInitials} color={m.avatarColor} size={26} />
+                      <Text style={styles.shareName}>{m.displayName}</Text>
+                      <Text style={styles.shareAmount}>{fmt(amount)}</Text>
+                    </View>
+                  );
+                })}
+                {ocrSplitMode === 'items' && unassignedItems.length > 0 && (
+                  <Text style={[styles.taxHint, { color: colors.amber }]}>
+                    {unassignedItems.length} article(s) non assigné(s) : leur montant n'est encore attribué à personne.
+                  </Text>
+                )}
+              </Card>
+            )}
 
             <SectionLabel label="ARTICLES" />
             {ocrItems.map((item, idx) => (
@@ -1210,6 +1356,22 @@ const styles = StyleSheet.create({
   taxTotalLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
   taxTotalValue: { fontSize: 13, fontWeight: '600', fontFamily: 'monospace', color: colors.accent2 },
   taxHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
+  modeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  modeBtn: {
+    flex: 1, paddingVertical: 10, borderRadius: radius.md, alignItems: 'center',
+    backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
+  },
+  modeBtnOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },
+  modeBtnText: { fontSize: 12, fontWeight: '600', color: colors.text3 },
+  modeBtnTextOn: { color: colors.accent2 },
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  shareName: { flex: 1, fontSize: 13, color: colors.text },
+  shareAmount: { fontSize: 13, fontFamily: 'monospace', color: colors.accent2 },
+  shareInput: {
+    width: 92, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6,
+    color: colors.text, fontSize: 13, fontFamily: 'monospace', textAlign: 'right',
+  },
   itemLabel: { fontSize: 11, color: colors.text3, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   itemUnassigned: { fontSize: 11, color: colors.amber, marginTop: 6 },
   itemAssigned: { fontSize: 11, color: colors.green, marginTop: 6 },

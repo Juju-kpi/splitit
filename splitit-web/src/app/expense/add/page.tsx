@@ -79,6 +79,8 @@ function AddExpenseInner() {
   // Les lignes d'un ticket sont souvent HT : sans ce champ, les taxes et le
   // service ne sont payés par personne.
   const [receiptTotal, setReceiptTotal] = useState('')
+  // Répartition d'un ticket : par articles (défaut), équitable ou personnalisée
+  const [ocrSplitMode, setOcrSplitMode] = useState<'items' | 'equal' | 'custom'>('items')
   const [ocrImageUrl, setOcrImageUrl] = useState<string>('')
   const [showReceipt, setShowReceipt] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -113,6 +115,16 @@ function AddExpenseInner() {
       // Sans ça, rouvrir un ticket dont le total inclut des taxes ferait
       // retomber le total sur la somme des articles à l'enregistrement.
       setReceiptTotal(exp.totalAmount?.toFixed(2) || '')
+      // On restaure le mode de répartition réellement enregistré
+      if (exp.splitType === 'EQUAL' || exp.splitType === 'CUSTOM') {
+        setOcrSplitMode(exp.splitType === 'EQUAL' ? 'equal' : 'custom')
+        if (exp.splits?.length > 0) {
+          setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId))
+          setCustomAmounts(Object.fromEntries(
+            exp.splits.map((sp: any) => [sp.memberId, sp.amount.toFixed(2)])
+          ))
+        }
+      }
       setOcrItems(exp.items.map((item: any, i: number) => ({
         id: `existing_${i}`, name: item.name, price: item.price,
         ocrRaw: item.ocrRaw, confidence: item.ocrConfidence, corrected: item.corrected,
@@ -163,8 +175,8 @@ function AddExpenseInner() {
   const updateMutation = useMutation({
     // totalAmount : le total suit les prix corrigés, sinon les parts sont
     // recalculées sur l'ancien montant et la dépense passe "à compléter"
-    mutationFn: ({ items, payments, desc, total }: any) =>
-      expensesApi.updateItems(expenseId, { items, payments, description: desc, totalAmount: total }),
+    mutationFn: ({ items, payments, desc, total, split }: any) =>
+      expensesApi.updateItems(expenseId, { items, payments, description: desc, totalAmount: total, ...split }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['group', groupId] }); qc.invalidateQueries({ queryKey: ['expense', expenseId] }); router.back() },
     onError: (e: any) => setError(e?.response?.data?.error || 'Impossible de mettre à jour'),
   })
@@ -211,6 +223,54 @@ function AddExpenseInner() {
     })
     return result
   }, [ocrItems])
+
+  // Répartition en centimes par plus fort reste — même méthode que le serveur,
+  // pour que l'aperçu affiché soit exactement ce qui sera enregistré.
+  function distributeCents(totalCents: number, weights: number[]): number[] {
+    const n = weights.length
+    if (n === 0) return []
+    const sum = weights.reduce((s, w) => s + w, 0)
+    const eff = sum > 0 ? weights : weights.map(() => 1)
+    const effSum = sum > 0 ? sum : n
+    const exact = eff.map(w => (totalCents * w) / effSum)
+    const out = exact.map(v => Math.floor(v))
+    const rest = totalCents - out.reduce((s, v) => s + v, 0)
+    const order = exact
+      .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+      .sort((a, b) => (b.frac - a.frac) || (a.i - b.i))
+    for (let k = 0; k < rest; k++) out[order[k % n].i] += 1
+    return out
+  }
+
+  // Ce que chacun paiera réellement, taxes comprises
+  const ocrShares = useMemo(() => {
+    if (ocrItems.length === 0) return []
+    const totalCents = Math.round(totalAmount * 100)
+
+    if (ocrSplitMode === 'equal') {
+      const ids = activeMemberIds
+      const cents = distributeCents(totalCents, ids.map(() => 1))
+      return ids.map((memberId, i) => ({ memberId, amount: cents[i] / 100 }))
+    }
+    if (ocrSplitMode === 'custom') {
+      return manualSplits
+    }
+    // Par articles : chaque article réparti entre ceux qui l'ont pris, puis
+    // mise à l'échelle sur le total du ticket (taxes, service).
+    const centsByMember: Record<string, number> = {}
+    ocrItems.forEach(item => {
+      if (item.assignedTo.length === 0) return
+      const parts = distributeCents(Math.round(item.price * 100), item.assignedTo.map(() => 1))
+      item.assignedTo.forEach((id, i) => { centsByMember[id] = (centsByMember[id] || 0) + parts[i] })
+    })
+    const ids = Object.keys(centsByMember)
+    if (ids.length === 0) return []
+    let cents = ids.map(id => centsByMember[id])
+    const assigned = cents.reduce((s, c) => s + c, 0)
+    const hasUnassigned = ocrItems.some(i => i.assignedTo.length === 0)
+    if (!hasUnassigned && assigned !== totalCents) cents = distributeCents(totalCents, cents)
+    return ids.map((memberId, i) => ({ memberId, amount: cents[i] / 100 }))
+  }, [ocrItems, ocrSplitMode, totalAmount, activeMemberIds, manualSplits])
 
   const resolvedPayments = useMemo(() =>
     payers.filter(p => p.memberId && parseFloat(p.amount.replace(',', '.')) > 0)
@@ -270,6 +330,10 @@ function AddExpenseInner() {
     setScanning(true); setScanError('')
     try {
       const result = await ocrApi.scan(file)
+      // La photo était perdue : ocrImageUrl n'était renseigné qu'en édition,
+      // donc une dépense scannée depuis le web n'avait jamais de ticket à
+      // revoir. Le backend renvoie pourtant l'URL stockée.
+      if (result.imageUrl) setOcrImageUrl(result.imageUrl)
       // Port complet : on génère des OcrItemLocal à partir des items retournés
       if (result.items?.length > 0) {
         const localItems: OcrItemLocal[] = result.items.map((it: any, i: number) => ({
@@ -355,19 +419,34 @@ function AddExpenseInner() {
         payments: resolvedPayments,
         desc: description.trim() || (existingExpense as any)?.description || 'Ticket scanné',
         total: totalAmount,
+        split: ocrSplitMode === 'equal'
+          ? { splitType: 'EQUAL', splitMemberIds: activeMemberIds }
+          : ocrSplitMode === 'custom'
+            ? { splitType: 'CUSTOM', customSplits: manualSplits }
+            : { splitType: 'ITEMIZED' },
       })
       return
     }
 
     if (ocrItems.length > 0) {
+      const itemsPayload = ocrItems.map(item => ({
+        name: item.name, price: item.price, ocrRaw: item.ocrRaw,
+        ocrConfidence: item.confidence, corrected: item.corrected, assignedToMemberIds: item.assignedTo,
+      }))
+      // Un ticket scanné peut être réparti autrement que par articles
+      const splitPayload = ocrSplitMode === 'equal'
+        ? { splitType: 'EQUAL' as const, splitMemberIds: activeMemberIds }
+        : ocrSplitMode === 'custom'
+          ? { splitType: 'CUSTOM' as const, customSplits: manualSplits }
+          : { splitType: 'ITEMIZED' as const }
+      if (ocrSplitMode === 'custom' && !isCustomBalanced) {
+        setError(`Total des parts (${customTotal.toFixed(2)}) ≠ montant (${totalAmount.toFixed(2)}).`); return
+      }
       createMutation.mutate({
         groupId, description: description.trim() || 'Ticket scanné',
-        totalAmount, payments: resolvedPayments, splitType: 'ITEMIZED',
+        totalAmount, payments: resolvedPayments, ...splitPayload,
         receiptImageUrl: ocrImageUrl || undefined,
-        items: ocrItems.map(item => ({
-          name: item.name, price: item.price, ocrRaw: item.ocrRaw,
-          ocrConfidence: item.confidence, corrected: item.corrected, assignedToMemberIds: item.assignedTo,
-        })),
+        items: itemsPayload,
       })
     } else if (splitMode === 'custom') {
       createMutation.mutate({ groupId, description: description.trim(), totalAmount, payments: resolvedPayments, splitType: 'CUSTOM', customSplits: manualSplits, items: [] })
@@ -503,6 +582,80 @@ function AddExpenseInner() {
               </p>
             )}
           </div>
+
+          <SectionLabel label="RÉPARTITION" />
+          <div className="flex gap-2 mb-3">
+            {([
+              ['items', '🧾 Par articles'],
+              ['equal', '⚖️ Équitable'],
+              ['custom', '✏️ Personnalisé'],
+            ] as const).map(([mode, label]) => (
+              <button key={mode} onClick={() => setOcrSplitMode(mode)}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
+                  ocrSplitMode === mode ? 'border-accent bg-accent/10 text-accent2' : 'border-border bg-surface2 text-text2'
+                }`}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {ocrSplitMode === 'equal' && (
+            <>
+              <p className="text-xs text-text3 mb-2">Aucune sélection = tout le monde</p>
+              <div className="flex flex-wrap mb-3">
+                {members.map((m: any) => (
+                  <Chip key={m.id} label={m.displayName}
+                    selected={splitMemberIds.includes(m.id) || splitMemberIds.length === 0}
+                    avatar={{ initials: m.avatarInitials, color: m.avatarColor }}
+                    onClick={() => toggleSplitMember(m.id)} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {ocrSplitMode === 'custom' && (
+            <div className="glass-card rounded-xl p-4 mb-3 space-y-2">
+              <p className="text-xs text-text3 font-semibold mb-1">Entre le montant pour chacun</p>
+              {activeMemberIds.map(id => {
+                const m = memberById(id); if (!m) return null
+                return (
+                  <div key={id} className="flex items-center gap-3">
+                    <Avatar initials={m.avatarInitials} color={m.avatarColor} size={28} />
+                    <span className="flex-1 text-sm text-text">{m.displayName}</span>
+                    <input type="text" inputMode="decimal" placeholder="0.00"
+                      value={customAmounts[id] || ''}
+                      onChange={e => setCustomAmounts(prev => ({ ...prev, [id]: e.target.value }))}
+                      className="w-24 bg-surface2 border border-border rounded-lg px-2 py-1.5 text-right text-sm font-mono text-text outline-none focus:border-accent" />
+                  </div>
+                )
+              })}
+              <p className={`text-xs text-right font-mono pt-1 border-t border-white/5 ${isCustomBalanced && totalAmount > 0 ? 'text-green' : 'text-amber'}`}>
+                {customTotal.toFixed(2)} / {totalAmount.toFixed(2)}{isCustomBalanced && totalAmount > 0 ? ' ✓' : ''}
+              </p>
+            </div>
+          )}
+
+          {/* Ce que chacun paiera réellement — taxes comprises */}
+          {ocrShares.length > 0 && (
+            <div className="glass-card rounded-xl p-4 mb-4 space-y-2">
+              <p className="text-xs text-text3 font-semibold mb-1">Chaque personne paie</p>
+              {ocrShares.map(({ memberId, amount: amt }) => {
+                const m = memberById(memberId); if (!m) return null
+                return (
+                  <div key={memberId} className="flex items-center gap-3">
+                    <Avatar initials={m.avatarInitials} color={m.avatarColor} size={28} />
+                    <span className="flex-1 text-sm text-text">{m.displayName}</span>
+                    <span className="font-mono text-sm text-accent2">{amt.toFixed(2)}</span>
+                  </div>
+                )
+              })}
+              {ocrSplitMode === 'items' && unassignedItems.length > 0 && (
+                <p className="text-[11px] text-amber pt-1">
+                  {unassignedItems.length} article(s) non assigné(s) : leur montant n&apos;est encore attribué à personne.
+                </p>
+              )}
+            </div>
+          )}
 
           <SectionLabel label="ARTICLES" />
           <div className="space-y-3">

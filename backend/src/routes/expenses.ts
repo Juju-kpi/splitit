@@ -140,8 +140,11 @@ async function computeIsComplete(expenseId: string): Promise<boolean> {
   });
   if (!expense) return false;
 
-  // Check 1 : items non assignés
-  if (expense.items.length > 0) {
+  // Check 1 : articles non assignés — uniquement quand la répartition est
+  // justement basée sur les articles. Si l'utilisateur a choisi "équitable"
+  // ou "personnalisé" sur un ticket scanné, les articles ne sont plus qu'un
+  // détail informatif et ne doivent pas bloquer la dépense.
+  if (expense.splitType === 'ITEMIZED' && expense.items.length > 0) {
     const hasUnassigned = expense.items.some(item => item.assignedTo.length === 0);
     if (hasUnassigned) return false;
   }
@@ -435,6 +438,11 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
     // Optionnel pour rester compatible avec les versions déjà installées :
     // le client envoie le total qu'il affiche (= somme des articles corrigés).
     totalAmount: z.number().positive().optional(),
+    // Répartition choisie pour un ticket scanné. Absent = par articles,
+    // comportement historique.
+    splitType: z.enum(['ITEMIZED', 'EQUAL', 'CUSTOM']).optional(),
+    splitMemberIds: z.array(z.string()).optional(),
+    customSplits: z.array(z.object({ memberId: z.string(), amount: z.number() })).optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -472,7 +480,15 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
   //    montant disparaissait des comptes du groupe. On ne touche donc plus
   //    aux parts quand aucun article n'est fourni : on se contente, si le
   //    montant a changé, de refaire la répartition entre les mêmes personnes.
-  if (items.length > 0) {
+  const chosenType = parsed.data.splitType;
+
+  if (chosenType === 'EQUAL' && parsed.data.splitMemberIds && parsed.data.splitMemberIds.length > 0) {
+    // Ticket scanné réparti à parts égales : les articles restent affichés,
+    // mais ne définissent plus qui doit quoi.
+    await applyShares(req.params.id, splitEqually(totalAmount, parsed.data.splitMemberIds));
+  } else if (chosenType === 'CUSTOM' && parsed.data.customSplits) {
+    await applyShares(req.params.id, normalizeCustomShares(totalAmount, parsed.data.customSplits as Share[]));
+  } else if (items.length > 0) {
     // Le reliquat entre la somme des articles et le total (service, taxe,
     // arrondi de caisse) est réparti au prorata, sauf s'il reste des articles
     // non assignés — là, la dépense est réellement incomplète.
@@ -488,11 +504,15 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
     }
   }
 
-  // 3bis. Le total suit les articles corrigés quand le client le fournit
-  if (parsed.data.totalAmount !== undefined) {
+  // 3bis. Le total suit les articles corrigés quand le client le fournit,
+  //       et le mode de répartition choisi est mémorisé.
+  if (parsed.data.totalAmount !== undefined || chosenType !== undefined) {
     await prisma.expense.update({
       where: { id: req.params.id },
-      data: { totalAmount: parsed.data.totalAmount },
+      data: {
+        ...(parsed.data.totalAmount !== undefined && { totalAmount: parsed.data.totalAmount }),
+        ...(chosenType !== undefined && { splitType: chosenType as any }),
+      },
     });
   }
 

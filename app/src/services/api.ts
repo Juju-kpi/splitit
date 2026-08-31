@@ -178,6 +178,10 @@ export const expensesApi = {
     payments?: Array<{ memberId: string; amount: number }>;
     description?: string;
     totalAmount?: number;
+    // Répartition choisie pour un ticket scanné (absent = par articles)
+    splitType?: 'ITEMIZED' | 'EQUAL' | 'CUSTOM';
+    splitMemberIds?: string[];
+    customSplits?: Array<{ memberId: string; amount: number }>;
   }) => api.put(`/expenses/${id}/items`, payload).then(r => r.data.data),
 };
 
