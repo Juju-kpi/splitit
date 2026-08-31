@@ -115,7 +115,7 @@ function Modal({ visible, onClose, title, children }: { visible: boolean; onClos
   if (!visible) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-surface border border-border rounded-t-3xl sm:rounded-3xl p-6 pb-[max(env(safe-area-inset-bottom),24px)] max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-text">{title}</h2>
@@ -294,7 +294,6 @@ export default function SettingsPage() {
       <div className="px-5 pb-28">
         {/* Profil hero */}
         <div className="glass-card rounded-2xl p-5 mt-4 mb-3 relative overflow-hidden">
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
           <div className="flex items-center gap-4">
             <button onClick={() => setColorModal(true)} className="relative">
               <Avatar initials={(user?.username ?? '??').slice(0, 2).toUpperCase()} color={user?.avatarColor || '#7C6EFA'} size={60} ring />

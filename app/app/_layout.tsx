@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../src/store/authStore';
 import { useRouter, useSegments } from 'expo-router';
 import * as Linking from 'expo-linking';
+import { colors } from '../src/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,7 +61,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthGuard />
         <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0C0C0F' } }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="group/[id]" options={{ presentation: 'card' }} />

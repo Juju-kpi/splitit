@@ -2,15 +2,15 @@
 import { StyleSheet, Platform } from 'react-native';
 
 export const colors = {
-  bg: '#0C0C0F',
-  surface: '#16161A',
-  surface2: '#1E1E24',
-  surface3: '#26262E',
-  border: '#2A2A35',
-  border2: '#363644',
-  text: '#F2F2F5',
-  text2: '#9090A8',
-  text3: '#5A5A72',
+  bg: '#0B0C0F',
+  surface: '#141519',
+  surface2: '#1B1D22',
+  surface3: '#23262C',
+  border: '#2B2E36',
+  border2: '#3A3E48',
+  text: '#F4F5F7',
+  text2: '#A8AEBC',
+  text3: '#79808F',
   accent: '#7C6EFA',
   accent2: '#A899FF',
   accentBg: 'rgba(124,110,250,0.12)',
@@ -22,10 +22,10 @@ export const colors = {
   red: '#F87171',
   redBg: 'rgba(248,113,113,0.1)',
   white: '#FFFFFF',
-  // Glass effect colors
-  glass: 'rgba(22,22,26,0.85)',
-  glassBorder: 'rgba(255,255,255,0.06)',
-  glassHighlight: 'rgba(255,255,255,0.03)',
+  // Surfaces pleines : le contenu qui defile ne doit pas transparaitre
+  glass: '#141519',
+  glassBorder: '#2B2E36',
+  glassHighlight: '#1B1D22',
 } as const;
 
 export const radius = {
@@ -59,25 +59,25 @@ export const typography = {
 
 export const shadows = {
   accent: {
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   card: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3,
+    elevation: 1,
   },
   tabBar: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 20,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 };
 

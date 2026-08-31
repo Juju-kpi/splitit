@@ -4,25 +4,28 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  body { background: #0C0C0F; color: #F2F2F5; }
+  body { background: #0B0C0F; color: #F4F5F7; }
+  /* Chiffres alignes en colonne — lisibilite des montants */
+  .font-mono { font-variant-numeric: tabular-nums; }
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #16161A; }
-  ::-webkit-scrollbar-thumb { background: #2A2A35; border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: #141519; }
+  ::-webkit-scrollbar-thumb { background: #2B2E36; border-radius: 2px; }
 }
 
 @layer utilities {
+  /* Surfaces pleines : la barre collante doit masquer le contenu qui defile.
+     .glass sert aussi de carte (ecrans d'authentification), d'ou la bordure
+     complete — sur un en-tete pleine largeur, les cotes sortent de l'ecran. */
   .glass {
-    background: rgba(22,22,26,0.85);
-    border: 1px solid rgba(255,255,255,0.06);
-    backdrop-filter: blur(12px);
+    background: #141519;
+    border: 1px solid #2B2E36;
   }
   .glass-card {
-    background: rgba(22,22,26,0.9);
-    border: 1px solid rgba(255,255,255,0.07);
-    backdrop-filter: blur(16px);
+    background: #141519;
+    border: 1px solid #2B2E36;
   }
   .glow-accent {
-    box-shadow: 0 0 40px rgba(124,110,250,0.15);
+    border-color: rgba(124,110,250,0.35);
   }
   .mono { font-family: 'JetBrains Mono', monospace; }
 }

@@ -362,7 +362,7 @@ export default function GroupDetailPage() {
       {/* Modal détail complet de tous les remboursements */}
       {showLog && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowLog(false)} />
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowLog(false)} />
           <div className="relative w-full max-w-sm bg-surface border border-border rounded-t-3xl sm:rounded-3xl p-6 pb-[max(env(safe-area-inset-bottom),24px)] max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-text">Détail des remboursements</h2>

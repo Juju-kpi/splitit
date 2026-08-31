@@ -23,12 +23,12 @@ export function AvatarRow({ members, max = 5 }: { members: { id: string; avatarI
   return (
     <div className="flex items-center -space-x-2 mt-2">
       {shown.map(m => (
-        <div key={m.id} title={m.displayName} className="ring-2 ring-[#16161A] rounded-full">
+        <div key={m.id} title={m.displayName} className="ring-2 ring-surface rounded-full">
           <Avatar initials={m.avatarInitials} color={m.avatarColor} size={28} />
         </div>
       ))}
       {extra > 0 && (
-        <div className="ring-2 ring-[#16161A] rounded-full bg-surface3 w-7 h-7 flex items-center justify-center text-[11px] font-semibold text-text2">
+        <div className="ring-2 ring-surface rounded-full bg-surface3 w-7 h-7 flex items-center justify-center text-[11px] font-semibold text-text2">
           +{extra}
         </div>
       )}
@@ -43,7 +43,7 @@ export function Button({ label, onClick, variant = 'primary', loading, disabled,
 }) {
   const base = 'flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-150 min-h-[48px] w-full'
   const variants = {
-    primary: 'bg-accent text-white hover:bg-accent/90 shadow-lg shadow-accent/25',
+    primary: 'bg-accent text-white hover:bg-accent/90',
     ghost: 'bg-surface2 text-text2 border border-border hover:bg-surface3',
     danger: 'bg-red/10 text-red border border-red/30 hover:bg-red/20',
   }
@@ -119,8 +119,7 @@ export function GlassCard({ children, className = '', glow = false }: {
   children: React.ReactNode; className?: string; glow?: boolean
 }) {
   return (
-    <div className={`glass-card rounded-2xl p-5 mb-3 relative overflow-hidden ${glow ? 'glow-accent border-accent/20' : ''} ${className}`}>
-      {glow && <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl" />}
+    <div className={`glass-card rounded-2xl p-5 mb-3 relative overflow-hidden ${glow ? 'glow-accent' : ''} ${className}`}>
       {children}
     </div>
   )
@@ -231,7 +230,7 @@ export function ActionPill({ label, icon, primary, onClick }: { label: string; i
     <button
       onClick={onClick}
       className={`text-xs font-semibold px-3 py-2 rounded-full transition-colors whitespace-nowrap
-        ${primary ? 'bg-accent text-white shadow-lg shadow-accent/25' : 'bg-surface2 text-text2 border border-border'}`}
+        ${primary ? 'bg-accent text-white' : 'bg-surface2 text-text2 border border-border'}`}
     >
       {icon && <span className="mr-1">{icon}</span>}{label}
     </button>

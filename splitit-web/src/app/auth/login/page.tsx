@@ -45,7 +45,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center px-5 pt-[max(env(safe-area-inset-top),40px)] pb-[max(env(safe-area-inset-bottom),40px)]">
       <form onSubmit={handleLogin} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-9">
-          <div className="w-[60px] h-[60px] rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center mb-4 shadow-lg shadow-accent/25">
+          <div className="w-[60px] h-[60px] rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center mb-4">
             <span className="text-3xl font-extrabold text-accent">S</span>
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight text-text">Split<span className="text-accent">it</span></h1>

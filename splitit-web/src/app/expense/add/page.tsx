@@ -681,13 +681,13 @@ function AddExpenseInner() {
                         {item.assignedTo.slice(0, 4).map(id => {
                           const m = memberById(id)
                           return m ? (
-                            <div key={id} title={m.displayName} className="ring-2 ring-[#16161A] rounded-full">
+                            <div key={id} title={m.displayName} className="ring-2 ring-surface rounded-full">
                               <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
                             </div>
                           ) : null
                         })}
                         {item.assignedTo.length > 4 && (
-                          <div className="ring-2 ring-[#16161A] rounded-full bg-surface3 w-5 h-5 flex items-center justify-center text-[9px] font-semibold text-text2">
+                          <div className="ring-2 ring-surface rounded-full bg-surface3 w-5 h-5 flex items-center justify-center text-[9px] font-semibold text-text2">
                             +{item.assignedTo.length - 4}
                           </div>
                         )}
