@@ -235,9 +235,7 @@ export default function ExpenseDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* À compléter — même bandeau que sur le web. La fiche reste
-            accessible (Modifier / Supprimer) au lieu de sauter directement
-            dans l'écran d'édition, qui n'offrait ni l'un ni l'autre. */}
+        {/* À compléter — la fiche reste accessible (Modifier / Supprimer) */}
         {expense.isComplete === false && (
           <View style={styles.todoBanner}>
             <Text style={styles.todoTitle}>⏳ Dépense à compléter</Text>

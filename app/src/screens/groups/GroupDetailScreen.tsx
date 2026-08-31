@@ -86,9 +86,8 @@ export default function GroupDetailScreen() {
   // Compte les dépenses incomplètes
   const incompleteCount = (group.expenses || []).filter(isExpenseIncomplete).length;
 
-  // Solde net de chaque membre : ce qu'il a avancé moins ce qu'il doit.
-  // Exactement les mêmes données que les remboursements affichés plus bas —
-  // c'est une lecture, le calcul des dettes n'est pas modifié.
+  // Solde net : ce qu'il a avancé moins ce qu'il doit. Mêmes données que les
+  // remboursements ci-dessous — affichage seul, le calcul n'est pas modifié.
   const memberNet: Record<string, number> = {};
   group.members.forEach((m: any) => { memberNet[m.id] = 0; });
   (group.expenses || []).forEach((exp: any) => {

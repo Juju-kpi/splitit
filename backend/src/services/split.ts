@@ -1,24 +1,12 @@
 // backend/src/services/split.ts
 //
-// Répartition d'un montant à l'exactitude du centime.
+// Repartition d'un montant en centimes entiers, par plus fort reste : chacun
+// recoit le plancher de sa part exacte, puis les centimes restants vont aux
+// plus grandes decimales. La somme des parts vaut donc exactement le total.
 //
-// Problème résolu : avant, chaque part était calculée avec
-//   Math.round((total / n) * 100) / 100
-// appliqué INDÉPENDAMMENT à chaque membre. La somme des parts ne retombait
-// donc pas sur le total. Exemple réel : 100.00 CHF partagés entre 7 →
-// 14.2857… arrondi à 14.29 pour tout le monde → 100.03 au lieu de 100.00.
-// Conséquences en cascade :
-//   - les parts affichées étaient fausses (de quelques centimes) ;
-//   - computeIsComplete() comparait somme(parts) au total avec une tolérance
-//     de 2 centimes → la dépense passait "à compléter" alors qu'elle était
-//     parfaitement remplie ;
-//   - computeBalances() créditait le payeur du total mais débitait une somme
-//     différente → les soldes ne se compensaient pas exactement.
-//
-// Méthode : on travaille en centimes (entiers), on donne à chacun le plancher
-// de sa part exacte, puis on distribue les centimes restants aux plus grands
-// restes (méthode du plus fort reste, celle des répartitions de sièges).
-// La somme des parts est alors TOUJOURS égale au total, au centime près.
+// Arrondir chaque part independamment ne tombe pas juste : 100.00 / 7 donne
+// 14.29 x 7 = 100.03. L'ecart faussait les soldes et faisait passer des
+// depenses completes en "a completer".
 
 export type Share = { memberId: string; amount: number };
 
@@ -30,11 +18,7 @@ export function fromCents(cents: number): number {
   return Math.round(cents) / 100;
 }
 
-/**
- * Répartit `totalCents` selon des poids, en centimes entiers.
- * La somme du résultat vaut exactement `totalCents`.
- * Poids tous nuls (ou absents) → répartition égale.
- */
+/** Repartit `totalCents` selon des poids. Poids tous nuls → parts egales. */
 export function distributeCents(totalCents: number, weights: number[]): number[] {
   const n = weights.length;
   if (n === 0) return [];
@@ -45,12 +29,10 @@ export function distributeCents(totalCents: number, weights: number[]): number[]
 
   const exact = effective.map(w => (totalCents * w) / effectiveSum);
   const floors = exact.map(v => Math.floor(v));
-  // sum(floors) <= totalCents, et l'écart est strictement inférieur à n.
+  // sum(floors) <= totalCents, l'ecart est strictement inferieur a n.
   const remainder = totalCents - floors.reduce((s, v) => s + v, 0);
 
-  // Les centimes restants vont aux plus grands restes. À reste égal, l'ordre
-  // d'entrée tranche — la répartition est donc déterministe (même dépense,
-  // même résultat à chaque recalcul).
+  // A reste egal, l'ordre d'entree tranche : le resultat est deterministe.
   const order = exact
     .map((v, i) => ({ i, frac: v - Math.floor(v) }))
     .sort((a, b) => (b.frac - a.frac) || (a.i - b.i));
@@ -61,7 +43,7 @@ export function distributeCents(totalCents: number, weights: number[]): number[]
   return out;
 }
 
-/** Parts égales — la somme vaut exactement `totalAmount`. */
+/** Parts egales. */
 export function splitEqually(totalAmount: number, memberIds: string[]): Share[] {
   if (memberIds.length === 0) return [];
   const cents = distributeCents(toCents(totalAmount), memberIds.map(() => 1));
@@ -71,16 +53,11 @@ export function splitEqually(totalAmount: number, memberIds: string[]): Share[] 
 export type ItemInput = { price: number; assignedToMemberIds: string[] };
 
 /**
- * Parts calculées article par article.
+ * Parts calculees article par article.
  *
- * 1. Le prix de chaque article est réparti au centime entre ses assignés.
- * 2. Si tous les articles sont assignés mais que leur somme ne tombe pas sur
- *    le total de la dépense (service, taxe, arrondi de caisse, total OCR),
- *    l'écart est réparti proportionnellement à ce que chacun consomme.
- *    Sans ça, l'écart n'était payé par personne : la dépense restait
- *    éternellement "à compléter" et les soldes étaient faux.
- * 3. S'il reste des articles non assignés, on ne comble RIEN : la dépense est
- *    réellement incomplète et doit le rester.
+ * L'ecart entre la somme des articles et le total (service, taxe, arrondi de
+ * caisse) est reparti au prorata de ce que chacun consomme — sauf s'il reste
+ * des articles non assignes : la depense est alors reellement incomplete.
  */
 export function splitItemized(
   totalAmount: number,
@@ -105,7 +82,7 @@ export function splitItemized(
   const totalCents = toCents(totalAmount);
 
   if (!hasUnassigned && memberIds.length > 0 && assignedCents !== totalCents) {
-    // Mise à l'échelle proportionnelle sur le total réel de la dépense
+    // Mise a l'echelle proportionnelle sur le total reel
     cents = distributeCents(totalCents, cents);
   }
 
@@ -116,10 +93,9 @@ export function splitItemized(
 }
 
 /**
- * Parts saisies à la main. On respecte les montants de l'utilisateur, mais si
- * la somme rate le total de quelques centimes (arrondis de saisie), on corrige
- * la plus grosse part pour que le compte tombe juste. Au-delà de `tolerance`,
- * on ne touche à rien : l'écart est réel et la dépense doit être signalée.
+ * Parts saisies a la main. Un ecart de quelques centimes (arrondi de saisie)
+ * est absorbe par la plus grosse part ; au-dela de `tolerance` on ne touche a
+ * rien, l'ecart est reel et la depense doit etre signalee.
  */
 export function normalizeCustomShares(
   totalAmount: number,
@@ -138,10 +114,8 @@ export function normalizeCustomShares(
 }
 
 /**
- * Idem pour les payeurs : si la somme des paiements rate le total de quelques
- * centimes, les soldes ne se compensent jamais. On ajuste le plus gros payeur.
- * Renvoie null si l'écart est trop grand pour être un arrondi (le rappel doit
- * alors être renvoyé à l'appelant sous forme d'erreur).
+ * Idem pour les payeurs : sans somme exacte, les soldes ne se compensent
+ * jamais. Renvoie null si l'ecart depasse un simple arrondi.
  */
 export function normalizePayments(
   totalAmount: number,

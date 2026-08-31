@@ -64,8 +64,7 @@ Rules:
     const data = await response.json() as any;
     const content: string = data.choices?.[0]?.message?.content || '';
 
-    // Le modele peut repondre soit l'objet demande, soit (anciennes reponses,
-    // ou modele capricieux) le simple tableau d'articles. On accepte les deux.
+    // Le modele repond soit l'objet demande, soit un simple tableau.
     let parsed: Array<{ name: string; price: number }> | null = null;
     let detectedTotal: number | undefined;
     let detectedTax: number | undefined;
@@ -151,9 +150,8 @@ function parseReceiptText(text: string, baseConf: number): OcrResult {
 
   const items: OcrItem[] = [];
 
-  // Le total imprime et les taxes etaient simplement ignores. On les capte :
-  // sur beaucoup de tickets les lignes d'articles sont HT, et sans le total
-  // TTC la difference n'est payee par personne.
+  // Total imprime et taxes : sur beaucoup de tickets les lignes sont HT, et
+  // sans le total TTC la difference n'est payee par personne.
   const amountRe = /(\d{1,5}[.,]\d{2})\s*$/;
   let detectedTotal: number | undefined;
   let detectedTax = 0;

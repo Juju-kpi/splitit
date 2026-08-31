@@ -75,9 +75,8 @@ function AddExpenseInner() {
 
   // OCR
   const [ocrItems, setOcrItems] = useState<OcrItemLocal[]>([])
-  // Total imprimé sur le ticket. Vide = on suit la somme des articles.
-  // Les lignes d'un ticket sont souvent HT : sans ce champ, les taxes et le
-  // service ne sont payés par personne.
+  // Total imprimé sur le ticket. Vide = somme des articles.
+  // Les lignes sont souvent HT : sans ce champ, les taxes ne sont payées par personne.
   const [receiptTotal, setReceiptTotal] = useState('')
   // Répartition d'un ticket : par articles (défaut), équitable ou personnalisée
   const [ocrSplitMode, setOcrSplitMode] = useState<'items' | 'equal' | 'custom'>('items')
@@ -112,8 +111,7 @@ function AddExpenseInner() {
     setDescription(exp.description || '')
     setOcrImageUrl(exp.receiptImageUrl || '')
     if (exp.items?.length > 0) {
-      // Sans ça, rouvrir un ticket dont le total inclut des taxes ferait
-      // retomber le total sur la somme des articles à l'enregistrement.
+      // Sinon le total retomberait sur la somme des articles, taxes perdues
       setReceiptTotal(exp.totalAmount?.toFixed(2) || '')
       // On restaure le mode de répartition réellement enregistré
       if (exp.splitType === 'EQUAL' || exp.splitType === 'CUSTOM') {
@@ -135,9 +133,7 @@ function AddExpenseInner() {
     } else {
       setAmount(exp.totalAmount?.toFixed(2) || '')
       setStep('manual')
-      // On restaure la répartition existante au lieu de la réinventer :
-      // sans ça, une dépense partagée entre 3 personnes repartait sur tout
-      // le groupe à la moindre correction de montant.
+      // Sans ça, une dépense partagée entre 3 repartirait sur tout le groupe
       if (exp.splits?.length > 0) {
         setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId))
         if (exp.splitType === 'CUSTOM') {
@@ -160,9 +156,8 @@ function AddExpenseInner() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['group', groupId] }); router.replace(`/group/${groupId}`) },
     onError: (e: any) => setError(e?.response?.data?.error || "Impossible d'ajouter la dépense"),
   })
-  // Modification d'une dépense SANS articles : passe par PUT /:id (montant,
-  // participants, payeurs). L'ancien chemin appelait PUT /:id/items avec
-  // items: [] — ce qui supprimait toutes les parts de la dépense.
+  // Dépense sans articles : PUT /:id (montant, participants, payeurs).
+  // La route /items avec items: [] viderait la répartition.
   const editExpenseMutation = useMutation({
     mutationFn: (payload: any) => expensesApi.update(expenseId, payload),
     onSuccess: () => {
@@ -224,8 +219,7 @@ function AddExpenseInner() {
     return result
   }, [ocrItems])
 
-  // Répartition en centimes par plus fort reste — même méthode que le serveur,
-  // pour que l'aperçu affiché soit exactement ce qui sera enregistré.
+  // Même méthode que le serveur, pour que l'aperçu corresponde au centime
   function distributeCents(totalCents: number, weights: number[]): number[] {
     const n = weights.length
     if (n === 0) return []
@@ -330,9 +324,7 @@ function AddExpenseInner() {
     setScanning(true); setScanError('')
     try {
       const result = await ocrApi.scan(file)
-      // La photo était perdue : ocrImageUrl n'était renseigné qu'en édition,
-      // donc une dépense scannée depuis le web n'avait jamais de ticket à
-      // revoir. Le backend renvoie pourtant l'URL stockée.
+      // Sans ça, la photo du ticket n'est jamais rattachée à la dépense
       if (result.imageUrl) setOcrImageUrl(result.imageUrl)
       // Port complet : on génère des OcrItemLocal à partir des items retournés
       if (result.items?.length > 0) {
@@ -374,8 +366,7 @@ function AddExpenseInner() {
     if (!confirm(`Retirer « ${item.name} » (${item.price.toFixed(2)}) de la dépense ?`)) return
     const next = ocrItems.filter((_, i) => i !== idx)
     setOcrItems(next)
-    // Si un total de ticket est saisi, il fait foi : seul le cas "le total
-    // suit les articles" demande de réaligner le payeur.
+    // Un total saisi fait foi ; sinon le payeur unique suit les articles
     if (receiptTotal.trim() === '') {
       const newTotal = next.reduce((sum, it) => sum + it.price, 0)
       setPayers(prev => prev.length === 1 ? [{ ...prev[0], amount: newTotal.toFixed(2) }] : prev)

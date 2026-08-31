@@ -77,9 +77,8 @@ export default function AddExpenseScreen() {
 
   // ── OCR ───────────────────────────────────────────────────────────────
   const [ocrItems, setOcrItems] = useState<OcrItemLocal[]>([]);
-  // Total imprimé sur le ticket. Vide = on suit la somme des articles.
-  // Les lignes d'un ticket sont souvent HT : sans ce champ, les taxes et le
-  // service ne sont payés par personne.
+  // Total imprimé sur le ticket. Vide = somme des articles.
+  // Les lignes sont souvent HT : sans ce champ, les taxes ne sont payées par personne.
   const [receiptTotal, setReceiptTotal] = useState('');
   // Répartition d'un ticket : par articles (défaut), équitable ou personnalisée
   const [ocrSplitMode, setOcrSplitMode] = useState<'items' | 'equal' | 'custom'>('items');
@@ -133,8 +132,7 @@ export default function AddExpenseScreen() {
         editing: false,
       }));
       setOcrItems(localItems);
-      // Sans ça, rouvrir un ticket dont le total inclut des taxes ferait
-      // retomber le total sur la somme des articles à l'enregistrement.
+      // Sinon le total retomberait sur la somme des articles, taxes perdues
       setReceiptTotal(exp.totalAmount?.toFixed(2) || '');
       // On restaure le mode de répartition réellement enregistré
       if (exp.splitType === 'EQUAL' || exp.splitType === 'CUSTOM') {
@@ -151,9 +149,7 @@ export default function AddExpenseScreen() {
       // Mode manuel
       setAmount(exp.totalAmount?.toFixed(2) || '');
       setStep('manual');
-      // On restaure la répartition existante au lieu de la réinventer :
-      // sans ça, une dépense partagée entre 3 personnes repartait sur tout
-      // le groupe à la moindre correction de montant.
+      // Sans ça, une dépense partagée entre 3 repartirait sur tout le groupe
       if (exp.splits && exp.splits.length > 0) {
         setSplitMemberIds(exp.splits.map((sp: any) => sp.memberId));
         if (exp.splitType === 'CUSTOM') {
@@ -176,9 +172,7 @@ export default function AddExpenseScreen() {
     setInitialized(true);
   }, [existingExpense, members, editMode, initialized]);
 
-  // Retirer un article (doublon OCR, ligne parasite…). Le total d'une dépense
-  // scannée est la somme des articles : il suit tout seul, et on réaligne le
-  // payeur unique pour ne pas bloquer sur "payeurs ≠ total".
+  // Retirer une ligne (doublon OCR). Le total suit la somme des articles.
   function removeOcrItem(idx: number) {
     const item = ocrItems[idx];
     Alert.alert(
@@ -192,8 +186,7 @@ export default function AddExpenseScreen() {
           onPress: () => {
             const next = ocrItems.filter((_, i) => i !== idx);
             setOcrItems(next);
-            // Si un total de ticket est saisi, il fait foi : seul le cas
-            // "le total suit les articles" demande de réaligner le payeur.
+            // Un total saisi fait foi ; sinon le payeur unique suit les articles
             if (receiptTotal.trim() === '') {
               const newTotal = next.reduce((sum, it) => sum + it.price, 0);
               setPayers(prev => prev.length === 1
@@ -215,8 +208,7 @@ export default function AddExpenseScreen() {
     } as OcrItemLocal]);
   }
 
-  // Corriger le nom ou le prix d'une ligne (parité avec le web, qui le
-  // permettait déjà pendant la complétion d'une dépense)
+  // Corriger le nom ou le prix d'une ligne
   function startEditOcrItem(idx: number) {
     setOcrItems(prev => prev.map((it, i) => i === idx
       ? { ...it, editing: true, editName: it.name, editPrice: it.price.toFixed(2) }
@@ -244,9 +236,8 @@ export default function AddExpenseScreen() {
       Alert.alert('Erreur', e?.response?.data?.error || "Impossible d'ajouter la dépense"),
   });
 
-  // Modification d'une dépense SANS articles : passe par PUT /:id (montant,
-  // participants, payeurs). L'ancien chemin appelait PUT /:id/items avec
-  // items: [] — ce qui supprimait toutes les parts de la dépense.
+  // Dépense sans articles : PUT /:id (montant, participants, payeurs).
+  // La route /items avec items: [] viderait la répartition.
   const editExpenseMutation = useMutation({
     mutationFn: (payload: any) => expensesApi.update(expenseId!, payload),
     onSuccess: () => {
@@ -339,8 +330,7 @@ export default function AddExpenseScreen() {
   const unassignedItems = ocrItems.filter(i => i.assignedTo.length === 0);
 
   // ── Helpers ───────────────────────────────────────────────────────────
-  // Répartition en centimes par plus fort reste — même méthode que le serveur,
-  // pour que l'aperçu affiché soit exactement ce qui sera enregistré.
+  // Même méthode que le serveur, pour que l'aperçu corresponde au centime
   function distributeCents(totalCents: number, weights: number[]): number[] {
     const n = weights.length;
     if (n === 0) return [];

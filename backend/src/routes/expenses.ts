@@ -1,17 +1,7 @@
 // backend/src/routes/expenses.ts
-// Fixes appliqués :
-//   1. PUT /:id — `note` correctement sauvegardé (était dans le schema mais pas dans data{})
-//   2. POST /:id/duplicate — isComplete recalculé après création (plus hardcodé à false)
-//   3. PUT /:id — splits supprimés/recréés UNIQUEMENT si splitMemberIds ou customSplits fournis
-//      (sinon on écrasait les splits existants avec un tableau vide)
-//   4. POST / — notification push envoyée à tous les membres du groupe (notifExpense=true)
-//   5. Répartition au centime (services/split.ts) : la somme des parts est
-//      désormais rigoureusement égale au total de la dépense. Avant, chaque
-//      part était arrondie séparément, la somme ratait le total de quelques
-//      centimes — ce qui faussait les soldes ET marquait des dépenses pourtant
-//      complètes comme "à compléter".
-//   6. Les parts sont mises à jour en place : un remboursement marqué comme
-//      réglé n'est plus effacé par une modification de la dépense.
+//
+// Les parts sont calculees par services/split.ts (repartition au centime) et
+// ecrites en place par applyShares(), qui preserve `settled`.
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
@@ -98,10 +88,8 @@ function primaryPayer(payments: { memberId: string; amount: number }[]): string 
   return payments.reduce((best, p) => (p.amount > best.amount ? p : best), payments[0]).memberId;
 }
 
-// ── Helper : écrit les parts SANS perdre les remboursements déjà réglés ──
-// Avant, chaque recalcul faisait deleteMany + createMany : les colonnes
-// settled / settledAt repartaient à zéro et un remboursement déjà validé
-// réapparaissait comme dû. On met donc à jour ligne par ligne.
+// Mise a jour ligne par ligne : un deleteMany + createMany remettrait
+// settled / settledAt a zero et ferait reapparaitre des dettes deja reglees.
 async function applyShares(expenseId: string, shares: Share[]): Promise<void> {
   const existing = await prisma.expenseSplit.findMany({ where: { expenseId } });
   const previous = new Map(existing.map(s => [s.memberId, s]));
@@ -170,8 +158,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   });
   if (!membership) return res.status(403).json({ error: 'Not a group member' });
 
-  // Les paiements doivent tomber exactement sur le total, sinon les soldes ne
-  // se compensent jamais (le payeur reste créditeur de quelques centimes).
+  // Sans somme exacte, le payeur reste crediteur de quelques centimes.
   const payments = normalizePayments(d.totalAmount, resolvePayments(d));
   if (!payments) {
     return res.status(400).json({ error: 'Payments do not add up to the total amount' });
@@ -182,8 +169,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   let hasUnassignedItems = false;
 
   if (d.splitType === 'EQUAL') {
-    // splitMemberIds vide → tout le groupe (un tableau vide est "truthy" en JS,
-    // l'ancien code divisait alors par zéro)
+    // Liste vide → tout le groupe (un tableau vide est truthy en JS)
     const memberIds = d.splitMemberIds && d.splitMemberIds.length > 0
       ? d.splitMemberIds
       : (await prisma.groupMember.findMany({ where: { groupId: d.groupId }, select: { id: true } })).map(m => m.id);
@@ -342,9 +328,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 
     if (splits.length > 0) await applyShares(req.params.id, splits);
   } else if (totalChanged) {
-    // Le montant a changé sans nouvelle répartition : sans recalcul, la somme
-    // des parts ne correspond plus au total et la dépense bascule en
-    // "à compléter" alors que l'utilisateur vient juste de corriger un prix.
+    // Montant modifie sans nouvelle repartition : on recalcule sur la meme
+    // base, sinon la depense bascule en "a completer".
     if (splitType === 'ITEMIZED') {
       const items = await prisma.expenseItem.findMany({
         where: { expenseId: req.params.id },
@@ -364,8 +349,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         await applyShares(req.params.id, splitEqually(totalAmount, existing.map(sp => sp.memberId)));
       }
     }
-    // CUSTOM : on ne réinvente pas des montants saisis à la main. L'écart est
-    // réel, la dépense sera signalée "à compléter" — ce qui est exact.
+    // CUSTOM : montants saisis a la main, on n'y touche pas.
   }
 
   // ── Payeurs ───────────────────────────────────────────────────────────
@@ -473,13 +457,9 @@ router.put('/:id/items', async (req: AuthRequest, res: Response) => {
 
   // 3. Recalculer les parts.
   //
-  //    ⚠ Cas critique : l'écran de modification d'une dépense SANS articles
-  //    (une dépense manuelle : essence, courses…) appelle cette route avec
-  //    items: []. Avant, on supprimait alors toutes les parts sans en recréer
-  //    aucune — la dépense se retrouvait répartie entre personne, et son
-  //    montant disparaissait des comptes du groupe. On ne touche donc plus
-  //    aux parts quand aucun article n'est fourni : on se contente, si le
-  //    montant a changé, de refaire la répartition entre les mêmes personnes.
+  //    Sans article fourni, on ne touche PAS aux parts : l'ecran de
+  //    modification d'une depense manuelle appelle cette route avec items: [],
+  //    et les supprimer viderait la depense de toute repartition.
   const chosenType = parsed.data.splitType;
 
   if (chosenType === 'EQUAL' && parsed.data.splitMemberIds && parsed.data.splitMemberIds.length > 0) {
