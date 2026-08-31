@@ -141,7 +141,15 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     const expiry = new Date(Date.now() + 60 * 60 * 1000);
     await prisma.user.update({ where: { id: user.id }, data: { resetToken: token, resetTokenExpiry: expiry } });
 
-    const resetUrl = `${process.env.APP_RESET_BASE_URL || 'splitit://forgot-password'}?token=${token}`;
+    const resetBase = process.env.APP_RESET_BASE_URL || 'splitit://forgot-password';
+    const resetUrl = `${resetBase}?token=${token}`;
+    // On journalise la base seule, jamais le jeton : de quoi verifier la
+    // configuration sans exposer un identifiant valable une heure.
+    console.log(`[Auth] Lien de reinitialisation genere sur ${resetBase}`);
+    if (!resetBase.startsWith('https://')) {
+      console.warn('[Auth] APP_RESET_BASE_URL n est pas une URL https : le lien '
+        + 'ne s ouvrira pas depuis un ordinateur ni depuis un telephone sans l app.');
+    }
 
     if (activeTransport()) {
       try {
