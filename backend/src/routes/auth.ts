@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../db';
+import { sendEmail, activeTransport } from '../services/mail';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -142,24 +143,20 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
 
     const resetUrl = `${process.env.APP_RESET_BASE_URL || 'splitit://forgot-password'}?token=${token}`;
 
-    if (process.env.RESEND_API_KEY) {
+    if (activeTransport()) {
       try {
-        const resendRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
-          body: JSON.stringify({
-            from: process.env.APP_FROM_EMAIL || 'noreply@splitit.app',
-            to: [user.email],
-            subject: 'Réinitialisation de ton mot de passe SplitIt',
-            html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0C0C0F;color:#F2F2F5;border-radius:12px"><h2 style="margin-top:0;color:#A899FF">Mot de passe oublié ?</h2><p>Clique sur le lien ci-dessous, valable <strong>1 heure</strong>.</p><a href="${resetUrl}" style="display:inline-block;margin:20px 0;padding:14px 28px;background:#7C6EFA;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Réinitialiser mon mot de passe</a><p style="color:#5A5A72;font-size:12px">Lien direct : ${resetUrl}</p></div>`,
-          }),
+        await sendEmail({
+          to: user.email,
+          subject: 'Réinitialisation de ton mot de passe SplitIt',
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0B0C0F;color:#F4F5F7;border-radius:12px"><h2 style="margin-top:0;color:#A899FF">Mot de passe oublié ?</h2><p>Clique sur le lien ci-dessous, valable <strong>1 heure</strong>.</p><a href="${resetUrl}" style="display:inline-block;margin:20px 0;padding:14px 28px;background:#7C6EFA;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Réinitialiser mon mot de passe</a><p style="color:#79808F;font-size:12px">Lien direct : ${resetUrl}</p></div>`,
         });
-        if (!resendRes.ok) console.error('[Auth] Resend error:', await resendRes.text());
       } catch (e) {
-        console.error('[Auth] Failed to send reset email:', e);
+        // On ne revele jamais au client si l'adresse existe : on journalise
+        // et on repond ok quoi qu'il arrive.
+        console.error('[Auth] Envoi du mail de reinitialisation impossible :', e);
       }
     } else {
-      console.log(`[Auth] Reset link for ${email}: ${resetUrl}`);
+      console.log(`[Auth] Lien de reinitialisation pour ${email} : ${resetUrl}`);
     }
   }
 

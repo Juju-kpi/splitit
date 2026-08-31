@@ -6,47 +6,32 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth';
+import { sendEmail, activeTransport, canSendToAnyRecipient } from '../services/mail';
 
 const router = Router();
 
 // ── Resend (HTTP API, fonctionne sur Render) ──────────────────────────────
 // Variable d'environnement requise : RESEND_API_KEY
 // Resend permet d'envoyer depuis onboarding@resend.dev sans domaine custom
-async function sendEmailViaResend(opts: {
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error('RESEND_API_KEY not configured');
-
-  // Sans domaine vérifié, Resend exige que le destinataire soit smh.redirection@gmail.com
-  // Solution : envoyer à ADMIN_EMAIL (variable d'env) avec l'email user dans le sujet
-  // → Ajoute ADMIN_EMAIL=smh.redirection@gmail.com dans tes variables Render
-  const adminEmail = process.env.ADMIN_EMAIL ?? process.env.GMAIL_USER ?? 'smh.redirection@gmail.com';
-  const from = process.env.EMAIL_FROM ?? 'SplitIt <onboarding@resend.dev>';
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: [adminEmail],
-      subject: `[Export SplitIt] Pour ${opts.to} — ${opts.subject}`,
-      html: `<div style="background:#fffbeb;border:1px solid #fcd34d;padding:12px;border-radius:8px;margin-bottom:24px;font-family:sans-serif">
-        <strong>Export demandé par :</strong> ${opts.to}<br>
-        <small style="color:#666">Sans domaine vérifié, l'export est envoyé à l'admin.</small>
-      </div>` + opts.html,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Resend error ${res.status}: ${body}`);
+// Quand un transport peut ecrire a n'importe qui (SMTP), l'export part
+// directement a l'utilisateur. Sinon on retombe sur le repli historique :
+// tout est redirige vers l'admin, avec l'adresse demandeuse dans le sujet,
+// parce que Resend sans domaine verifie refuse les autres destinataires.
+async function sendExportEmail(opts: { to: string; subject: string; html: string }): Promise<void> {
+  if (canSendToAnyRecipient()) {
+    await sendEmail(opts);
+    return;
   }
+  const adminEmail = process.env.ADMIN_EMAIL ?? process.env.GMAIL_USER;
+  if (!adminEmail) throw new Error('ADMIN_EMAIL non configure et transport limite au proprietaire du compte');
+  await sendEmail({
+    to: adminEmail,
+    subject: `[Export SplitIt] Pour ${opts.to} — ${opts.subject}`,
+    html: `<div style="background:#fffbeb;border:1px solid #fcd34d;padding:12px;border-radius:8px;margin-bottom:24px;font-family:sans-serif">
+        <strong>Export demande par :</strong> ${opts.to}<br>
+        <small style="color:#666">Sans domaine verifie, l'export est envoye a l'admin.</small>
+      </div>` + opts.html,
+  });
 }
 
 // ── PATCH /api/users/profile ─────────────────────────────────────────────
@@ -235,13 +220,13 @@ router.post('/export', async (req: AuthRequest, res: Response) => {
   <p style="color:#999;font-size:11px;margin-top:32px">Cet export contient vos 50 dépenses les plus récentes par groupe. Contact : hello@splitit.app</p>
 </body></html>`;
 
-  if (!process.env.RESEND_API_KEY) {
-    console.error('[Export] RESEND_API_KEY not set');
-    return res.status(503).json({ error: 'Service email non configuré (RESEND_API_KEY manquante).' });
+  if (!activeTransport()) {
+    console.error('[Export] aucun transport email configure');
+    return res.status(503).json({ error: 'Service email non configuré.' });
   }
 
   try {
-    await sendEmailViaResend({
+    await sendExportEmail({
       to: user.email,
       subject: 'SplitIt — Export de tes données',
       html,

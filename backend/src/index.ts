@@ -14,6 +14,7 @@ import expensesRouter from './routes/expenses';
 import ocrRouter from './routes/ocr';
 import usersRouter from './routes/users';
 import { authenticate } from './middleware/auth';
+import { logMailConfig } from './services/mail';
 import { runTrainingPipeline } from './services/trainingPipeline';
 import { sendPushNotification } from './services/notifications';
 import dns from 'dns';
@@ -116,4 +117,5 @@ cron.schedule('0 9 * * *', async () => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`✅ Splitit backend running on :${PORT}`);
+  logMailConfig();
 });
