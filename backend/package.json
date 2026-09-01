@@ -7,6 +7,8 @@
     "start": "node dist/backend/src/index.js",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "tsx src/scripts/migrate-deploy.ts",
+    "db:status": "tsx src/scripts/migrate-deploy.ts --status",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/seed.ts"
   },
