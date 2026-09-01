@@ -382,7 +382,21 @@
     "pending_badge": "⏳ {{n}} por confirmar",
     "all_settled": "🎉 Todo saldado — no queda nada por devolver.",
     "chain_hint": "Este saldo viene de una compensación entre varias personas: ningún gasto os une directamente, así que el reembolso se anota aparte.",
-    "guest_auto": "{{name}} no tiene cuenta: su lado se valida automáticamente."
+    "guest_auto": "{{name}} no tiene cuenta: su lado se valida automáticamente.",
+    "calc_show": "🔎 Ver el cálculo",
+    "calc_hide": "Ocultar el cálculo",
+    "calc_title": "De dónde salen estos importes",
+    "calc_paid": "ha adelantado",
+    "calc_share": "su parte",
+    "calc_settled_own": "sus partes ya saldadas",
+    "calc_settled_as_payer": "partes saldadas que había adelantado",
+    "calc_paid_back": "reembolsos pagados",
+    "calc_received": "reembolsos recibidos",
+    "calc_net": "posición",
+    "calc_total": "Suma de las posiciones",
+    "calc_total_ok": "✓ los + y los − se anulan exactamente — no se ha perdido nada",
+    "calc_total_bad": "⚠ desfase de {{amount}} — comunícalo, esto no debería ocurrir",
+    "calc_explain": "Cada posición se empareja después: quien más debe paga a quien más se le debe, luego al siguiente, hasta que todo queda a cero. Eso produce las transferencias de arriba, en el mínimo de operaciones."
   },
   "home": {
     "greeting": "Hola, {{name}} 👋"

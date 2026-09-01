@@ -58,6 +58,7 @@ export default function GroupDetailPage() {
   const [copied, setCopied] = useState(false)
   const [expandedBalance, setExpandedBalance] = useState<string | null>(null)
   const [showLog, setShowLog] = useState(false)
+  const [showCalc, setShowCalc] = useState(false)
   // Formulaire de remboursement — ouvert depuis une ligne de solde
   const [settleFor, setSettleFor] = useState<Balance | null>(null)
   const [amountInput, setAmountInput] = useState('')
@@ -68,6 +69,10 @@ export default function GroupDetailPage() {
     queryKey: ['group', id],
     queryFn: () => groupsApi.get(id),
     enabled: !!id,
+    // On revient toujours ici après avoir touché à une dépense : les soldes
+    // doivent être recalculés à l'arrivée, sans dépendre des 30 s de cache par
+    // défaut ni du fait qu'un écran ait pensé à invalider.
+    refetchOnMount: 'always',
   })
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['group', id] })
@@ -164,17 +169,22 @@ export default function GroupDetailPage() {
     setNoteInput('')
   }
 
-  // Solde net : ce qu'il a avancé moins ce qu'il doit. Mêmes données que les
-  // remboursements ci-dessous — affichage seul, le calcul n'est pas modifié.
-  const memberNet: Record<string, number> = {}
-  group.members.forEach((m: any) => { memberNet[m.id] = 0 })
-  ;(group.expenses || []).forEach((exp: any) => {
-    const payments = exp.payments?.length > 0
-      ? exp.payments
-      : [{ memberId: exp.paidByMemberId, amount: exp.totalAmount }]
-    payments.forEach((p: any) => { memberNet[p.memberId] = (memberNet[p.memberId] || 0) + p.amount })
-    exp.splits?.forEach((sp: any) => { memberNet[sp.memberId] = (memberNet[sp.memberId] || 0) - sp.amount })
-  })
+  // Position nette de chaque membre — calculée par le backend, qui est le seul
+  // à voir les remboursements. La recalculer ici à partir des seules dépenses
+  // laissait les barres figées sur l'état d'avant remboursement.
+  // Le repli local ne sert qu'aux réponses d'un backend antérieur à ce champ.
+  const memberNet: Record<string, number> = group.netByMember ?? (() => {
+    const net: Record<string, number> = {}
+    group.members.forEach((m: any) => { net[m.id] = 0 })
+    ;(group.expenses || []).forEach((exp: any) => {
+      const payments = exp.payments?.length > 0
+        ? exp.payments
+        : [{ memberId: exp.paidByMemberId, amount: exp.totalAmount }]
+      payments.forEach((p: any) => { net[p.memberId] = (net[p.memberId] || 0) + p.amount })
+      exp.splits?.forEach((sp: any) => { net[sp.memberId] = (net[sp.memberId] || 0) - sp.amount })
+    })
+    return net
+  })()
   const netRows = group.members
     .map((m: any) => ({ member: m, net: Math.round((memberNet[m.id] || 0) * 100) / 100 }))
     .sort((a: any, b: any) => b.net - a.net)
@@ -318,19 +328,9 @@ export default function GroupDetailPage() {
           <>
             <div className="flex items-center justify-between gap-3 mt-2">
               <SectionLabel label={t('settlements.section')} />
-              <div className="flex items-center gap-2 shrink-0">
-                {myPendingCount > 0 && (
-                  <Pill label={t('settlements.pending_badge', { n: myPendingCount })} variant="amber" />
-                )}
-                {/* 44 px de haut : en dessous, la cible est trop petite pour le
-                    doigt sur iPhone. Centre dans la ligne, sans decalage vers le haut. */}
-                <button
-                  onClick={() => setShowLog(true)}
-                  className="shrink-0 flex items-center justify-center text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-4 min-h-[44px] rounded-full"
-                >
-                  📋 Détail
-                </button>
-              </div>
+              {myPendingCount > 0 && (
+                <Pill label={t('settlements.pending_badge', { n: myPendingCount })} variant="amber" />
+              )}
             </div>
             <Card>
               {group.balances?.length === 0 ? (
@@ -464,6 +464,16 @@ export default function GroupDetailPage() {
               </div>
               </>
               )}
+
+              {/* Pleine largeur en bas de carte : dans le coin haut-droit la
+                  cible etait petite et loin du pouce, surtout en PWA iPhone
+                  ou ce coin est le plus difficile a atteindre d'une main. */}
+              <button
+                onClick={() => setShowLog(true)}
+                className="mt-4 w-full flex items-center justify-center gap-2 text-sm font-semibold text-accent2 bg-accent/10 border border-accent/25 min-h-[48px] rounded-xl"
+              >
+                📋 {t('settlements.history_title')}
+              </button>
             </Card>
           </>
         )}
@@ -560,6 +570,86 @@ export default function GroupDetailPage() {
                 )
               })}
             </div>
+
+            {/* Le calcul en clair — replié par défaut : c'est une vérification,
+                pas une lecture quotidienne. Les chiffres viennent du backend,
+                ceux-là mêmes qui produisent les virements affichés. */}
+            <button
+              onClick={() => setShowCalc(v => !v)}
+              className="w-full flex items-center justify-center text-xs font-semibold text-text2 bg-surface2 border border-border min-h-[44px] rounded-xl mb-4"
+            >
+              {showCalc ? t('settlements.calc_hide') : t('settlements.calc_show')}
+            </button>
+
+            {showCalc && (() => {
+              const rows = group.netBreakdown
+              if (!rows) return (
+                <p className="text-xs text-text3 mb-5">
+                  Le détail du calcul arrive avec la prochaine mise à jour du serveur.
+                </p>
+              )
+              const total = Math.round(
+                group.members.reduce((s: number, m: any) => s + (rows[m.id]?.net ?? 0), 0) * 100
+              ) / 100
+              const line = (label: string, value: number, sign: '+' | '−') =>
+                Math.abs(value) < 0.005 ? null : (
+                  <div className="flex justify-between text-[11px] py-0.5">
+                    <span className="text-text3">{sign} {label}</span>
+                    <span className="font-mono text-text2">{formatMoney(value, currency)}</span>
+                  </div>
+                )
+              return (
+                <div className="mb-5">
+                  <p className="text-[11px] uppercase tracking-wide text-text3 font-semibold mb-2">
+                    {t('settlements.calc_title')}
+                  </p>
+                  <div className="space-y-2">
+                    {group.members.map((m: any) => {
+                      const r = rows[m.id]
+                      if (!r) return null
+                      return (
+                        <div key={m.id} className="bg-surface2/60 rounded-lg p-2.5">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
+                            <span className="text-xs font-medium text-text flex-1 truncate">{m.displayName}</span>
+                          </div>
+                          {line(t('settlements.calc_paid'), r.paid, '+')}
+                          {line(t('settlements.calc_share'), r.share, '−')}
+                          {line(t('settlements.calc_settled_own'), r.settledOwn, '+')}
+                          {line(t('settlements.calc_settled_as_payer'), r.settledAsPayer, '−')}
+                          {line(t('settlements.calc_paid_back'), r.settlementsPaid, '+')}
+                          {line(t('settlements.calc_received'), r.settlementsReceived, '−')}
+                          <div className="flex justify-between text-xs pt-1.5 mt-1 border-t border-white/10">
+                            <span className="text-text2 font-semibold">= {t('settlements.calc_net')}</span>
+                            <span className={`font-mono font-semibold ${
+                              r.net > 0.005 ? 'text-green' : r.net < -0.005 ? 'text-amber' : 'text-text3'
+                            }`}>
+                              {r.net > 0 ? '+' : ''}{formatMoney(r.net, currency)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* La vérification : la somme doit tomber à zéro au centime. */}
+                  <div className="flex justify-between items-center text-xs mt-3 px-1">
+                    <span className="text-text2 font-semibold">{t('settlements.calc_total')}</span>
+                    <span className={`font-mono font-bold ${Math.abs(total) < 0.005 ? 'text-green' : 'text-amber'}`}>
+                      {formatMoney(total, currency)}
+                    </span>
+                  </div>
+                  <p className={`text-[11px] mt-1.5 leading-relaxed ${Math.abs(total) < 0.005 ? 'text-green' : 'text-amber'}`}>
+                    {Math.abs(total) < 0.005
+                      ? t('settlements.calc_total_ok')
+                      : t('settlements.calc_total_bad', { amount: formatMoney(total, currency) })}
+                  </p>
+                  <p className="text-[11px] text-text3 mt-3 leading-relaxed">
+                    {t('settlements.calc_explain')}
+                  </p>
+                </div>
+              )
+            })()}
 
             <p className="text-[11px] uppercase tracking-wide text-text3 font-semibold mb-2">
               Par dépense

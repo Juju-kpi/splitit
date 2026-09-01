@@ -52,6 +52,8 @@ export default function ExpenseDetailScreen() {
     mutationFn: () => expensesApi.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group'] });
+      // Le nombre de depenses affiche dans la liste des groupes change aussi.
+      qc.invalidateQueries({ queryKey: ['groups'] });
       router.back();
     },
   });

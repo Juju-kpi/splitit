@@ -23,19 +23,32 @@ export default function ExpenseDetailPage() {
     enabled: !!id,
   })
 
+  // Toucher à une dépense change les soldes du groupe et le compteur de la
+  // liste. Sans ces invalidations, l'écran de groupe restait sur ses chiffres
+  // d'avant pendant les 30 s de fraîcheur du cache — on supprimait une dépense
+  // et le remboursement affiché ne bougeait pas.
+  const refreshGroup = () => {
+    qc.invalidateQueries({ queryKey: ['group'] })
+    qc.invalidateQueries({ queryKey: ['groups'] })
+  }
+
   const settleMutation = useMutation({
     mutationFn: (memberId: string) => expensesApi.settle(id, memberId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['expense', id] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['expense', id] }); refreshGroup() },
   })
 
   const deleteMutation = useMutation({
     mutationFn: () => expensesApi.delete(id),
-    onSuccess: () => router.replace(`/group/${expense?.groupId}`),
+    onSuccess: () => {
+      refreshGroup()
+      qc.removeQueries({ queryKey: ['expense', id] })
+      router.replace(`/group/${expense?.groupId}`)
+    },
   })
 
   const duplicateMutation = useMutation({
     mutationFn: () => expensesApi.duplicate(id),
-    onSuccess: (e: any) => router.replace(`/expense/${e.id}`),
+    onSuccess: (e: any) => { refreshGroup(); router.replace(`/expense/${e.id}`) },
   })
 
   if (isLoading || !expense) return <FullScreenSpinner />

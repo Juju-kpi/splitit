@@ -382,7 +382,21 @@
     "pending_badge": "⏳ {{n}} to confirm",
     "all_settled": "🎉 All settled — nothing left to pay back.",
     "chain_hint": "This balance comes from netting across several people: no expense links you directly, so the reimbursement is recorded on its own.",
-    "guest_auto": "{{name}} has no account: their side is confirmed automatically."
+    "guest_auto": "{{name}} has no account: their side is confirmed automatically.",
+    "calc_show": "🔎 Show the maths",
+    "calc_hide": "Hide the maths",
+    "calc_title": "Where these amounts come from",
+    "calc_paid": "paid out",
+    "calc_share": "their share",
+    "calc_settled_own": "their shares already settled",
+    "calc_settled_as_payer": "settled shares they had fronted",
+    "calc_paid_back": "reimbursements paid",
+    "calc_received": "reimbursements received",
+    "calc_net": "position",
+    "calc_total": "Sum of positions",
+    "calc_total_ok": "✓ the + and − cancel out exactly — nothing went missing",
+    "calc_total_bad": "⚠ off by {{amount}} — please report it, this should never happen",
+    "calc_explain": "Each position is then matched up: whoever owes most pays whoever is owed most, then the next, until everything is at zero. That is what produces the transfers above, in as few moves as possible."
   },
   "home": {
     "greeting": "Hi, {{name}} 👋"

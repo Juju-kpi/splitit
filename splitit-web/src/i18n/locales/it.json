@@ -382,7 +382,21 @@
     "pending_badge": "⏳ {{n}} da confermare",
     "all_settled": "🎉 Tutto saldato — non resta nulla da rimborsare.",
     "chain_hint": "Questo saldo nasce da una compensazione tra più persone: nessuna spesa vi lega direttamente, quindi il rimborso si annota a parte.",
-    "guest_auto": "{{name}} non ha un account: il suo lato è validato d'ufficio."
+    "guest_auto": "{{name}} non ha un account: il suo lato è validato d'ufficio.",
+    "calc_show": "🔎 Vedi il calcolo",
+    "calc_hide": "Nascondi il calcolo",
+    "calc_title": "Da dove vengono questi importi",
+    "calc_paid": "ha anticipato",
+    "calc_share": "la sua parte",
+    "calc_settled_own": "le sue parti già saldate",
+    "calc_settled_as_payer": "parti saldate che aveva anticipato",
+    "calc_paid_back": "rimborsi versati",
+    "calc_received": "rimborsi ricevuti",
+    "calc_net": "posizione",
+    "calc_total": "Somma delle posizioni",
+    "calc_total_ok": "✓ i + e i − si annullano esattamente — non si è perso nulla",
+    "calc_total_bad": "⚠ scarto di {{amount}} — segnalalo, non dovrebbe mai succedere",
+    "calc_explain": "Ogni posizione viene poi abbinata: chi deve di più paga chi è più in credito, poi il successivo, finché tutto è a zero. È ciò che produce i bonifici qui sopra, nel minor numero di operazioni."
   },
   "home": {
     "greeting": "Ciao, {{name}} 👋"

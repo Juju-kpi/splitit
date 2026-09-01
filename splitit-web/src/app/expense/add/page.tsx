@@ -152,7 +152,12 @@ function AddExpenseInner() {
   // Mutations
   const createMutation = useMutation({
     mutationFn: expensesApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['group', groupId] }); router.replace(`/group/${groupId}`) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['group', groupId] })
+      // Le nombre de dépenses affiché dans la liste des groupes change aussi.
+      qc.invalidateQueries({ queryKey: ['groups'] })
+      router.replace(`/group/${groupId}`)
+    },
     onError: (e: any) => setError(e?.response?.data?.error || "Impossible d'ajouter la dépense"),
   })
   // Dépense sans articles : PUT /:id (montant, participants, payeurs).

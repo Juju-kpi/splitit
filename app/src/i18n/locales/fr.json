@@ -382,7 +382,21 @@
     "pending_badge": "⏳ {{n}} à confirmer",
     "all_settled": "🎉 Tout est soldé — plus rien à rembourser.",
     "chain_hint": "Ce solde vient d'une compensation entre plusieurs personnes : aucune dépense ne vous lie directement, le remboursement se note donc à part.",
-    "guest_auto": "{{name}} n'a pas de compte : son accord est validé d'office."
+    "guest_auto": "{{name}} n'a pas de compte : son accord est validé d'office.",
+    "calc_show": "🔎 Voir le calcul",
+    "calc_hide": "Masquer le calcul",
+    "calc_title": "D'où viennent ces montants",
+    "calc_paid": "a avancé",
+    "calc_share": "sa part",
+    "calc_settled_own": "ses parts déjà réglées",
+    "calc_settled_as_payer": "parts réglées qu'il avait avancées",
+    "calc_paid_back": "remboursements versés",
+    "calc_received": "remboursements reçus",
+    "calc_net": "position",
+    "calc_total": "Somme des positions",
+    "calc_total_ok": "✓ les + et les − s'annulent exactement — rien ne s'est perdu",
+    "calc_total_bad": "⚠ écart de {{amount}} — signale-le, ce ne devrait jamais arriver",
+    "calc_explain": "Chaque position est ensuite appariée : le plus endetté verse au plus créditeur, puis au suivant, jusqu'à ce que tout soit à zéro. C'est ce qui donne les virements ci-dessus, en un minimum d'opérations."
   },
   "home": {
     "greeting": "Bonjour, {{name}} 👋"

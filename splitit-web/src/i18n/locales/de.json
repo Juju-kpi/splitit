@@ -382,7 +382,21 @@
     "pending_badge": "⏳ {{n}} zu bestätigen",
     "all_settled": "🎉 Alles beglichen — nichts mehr offen.",
     "chain_hint": "Dieser Saldo entsteht aus einer Verrechnung über mehrere Personen: keine gemeinsame Ausgabe verbindet euch, die Rückzahlung wird deshalb separat erfasst.",
-    "guest_auto": "{{name}} hat kein Konto: diese Seite wird automatisch bestätigt."
+    "guest_auto": "{{name}} hat kein Konto: diese Seite wird automatisch bestätigt.",
+    "calc_show": "🔎 Rechnung anzeigen",
+    "calc_hide": "Rechnung ausblenden",
+    "calc_title": "Woher diese Beträge kommen",
+    "calc_paid": "hat ausgelegt",
+    "calc_share": "sein Anteil",
+    "calc_settled_own": "bereits beglichene Anteile",
+    "calc_settled_as_payer": "beglichene Anteile, die er ausgelegt hatte",
+    "calc_paid_back": "gezahlte Rückzahlungen",
+    "calc_received": "erhaltene Rückzahlungen",
+    "calc_net": "Position",
+    "calc_total": "Summe der Positionen",
+    "calc_total_ok": "✓ Plus und Minus heben sich exakt auf — nichts ist verloren gegangen",
+    "calc_total_bad": "⚠ Abweichung von {{amount}} — bitte melden, das sollte nie passieren",
+    "calc_explain": "Jede Position wird anschließend zugeordnet: wer am meisten schuldet, zahlt an den mit dem größten Guthaben, dann an den nächsten, bis alles auf null steht. Daraus entstehen die Überweisungen oben, mit möglichst wenigen Schritten."
   },
   "home": {
     "greeting": "Hallo, {{name}} 👋"

@@ -53,6 +53,7 @@ export default function GroupDetailScreen() {
 
   const [expandedBalance, setExpandedBalance] = useState<string | null>(null);
   const [showLog, setShowLog] = useState(false);
+  const [showCalc, setShowCalc] = useState(false);
   // Formulaire de remboursement — ouvert depuis une ligne de solde
   const [settleFor, setSettleFor] = useState<Balance | null>(null);
   const [amountInput, setAmountInput] = useState('');
@@ -63,6 +64,10 @@ export default function GroupDetailScreen() {
     queryKey: ['group', id],
     queryFn: () => groupsApi.get(id),
     enabled: !!id,
+    // On revient toujours ici apres avoir touche a une depense : les soldes
+    // doivent etre recalcules a l'arrivee, sans dependre des 30 s de cache par
+    // defaut ni du fait qu'un ecran ait pense a invalider.
+    refetchOnMount: 'always',
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['group', id] });
@@ -123,17 +128,22 @@ export default function GroupDetailScreen() {
   // Compte les dépenses incomplètes
   const incompleteCount = (group.expenses || []).filter(isExpenseIncomplete).length;
 
-  // Solde net : ce qu'il a avancé moins ce qu'il doit. Mêmes données que les
-  // remboursements ci-dessous — affichage seul, le calcul n'est pas modifié.
-  const memberNet: Record<string, number> = {};
-  group.members.forEach((m: any) => { memberNet[m.id] = 0; });
-  (group.expenses || []).forEach((exp: any) => {
-    const payments = exp.payments?.length > 0
-      ? exp.payments
-      : [{ memberId: exp.paidByMemberId, amount: exp.totalAmount }];
-    payments.forEach((p: any) => { memberNet[p.memberId] = (memberNet[p.memberId] || 0) + p.amount; });
-    exp.splits?.forEach((sp: any) => { memberNet[sp.memberId] = (memberNet[sp.memberId] || 0) - sp.amount; });
-  });
+  // Position nette de chaque membre — calculee par le backend, qui est le seul
+  // a voir les remboursements. La recalculer ici a partir des seules depenses
+  // laissait les barres figees sur l'etat d'avant remboursement.
+  // Le repli local ne sert qu'aux reponses d'un backend anterieur a ce champ.
+  const memberNet: Record<string, number> = group.netByMember ?? (() => {
+    const net: Record<string, number> = {};
+    group.members.forEach((m: any) => { net[m.id] = 0; });
+    (group.expenses || []).forEach((exp: any) => {
+      const payments = exp.payments?.length > 0
+        ? exp.payments
+        : [{ memberId: exp.paidByMemberId, amount: exp.totalAmount }];
+      payments.forEach((p: any) => { net[p.memberId] = (net[p.memberId] || 0) + p.amount; });
+      exp.splits?.forEach((sp: any) => { net[sp.memberId] = (net[sp.memberId] || 0) - sp.amount; });
+    });
+    return net;
+  })();
   const netRows = group.members
     .map((m: any) => ({ member: m, net: Math.round((memberNet[m.id] || 0) * 100) / 100 }))
     .sort((a: any, b: any) => b.net - a.net);
@@ -363,22 +373,13 @@ export default function GroupDetailScreen() {
           <>
             <View style={styles.balancesHeader}>
               <SectionLabel label={t('settlements.section')} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {myPendingCount > 0 && (
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>
-                      {t('settlements.pending_badge', { n: myPendingCount })}
-                    </Text>
-                  </View>
-                )}
-                <TouchableOpacity
-                  onPress={() => setShowLog(true)}
-                  style={styles.logBtn}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Text style={styles.logBtnText}>📋 {t('balances.detail')}</Text>
-                </TouchableOpacity>
-              </View>
+              {myPendingCount > 0 && (
+                <View style={styles.pendingBadge}>
+                  <Text style={styles.pendingBadgeText}>
+                    {t('settlements.pending_badge', { n: myPendingCount })}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Card>
@@ -521,6 +522,12 @@ export default function GroupDetailScreen() {
                   </React.Fragment>
                 );
               })}
+
+              {/* Pleine largeur en bas de carte : dans le coin haut-droit la
+                  cible etait petite et loin du pouce. */}
+              <TouchableOpacity style={styles.detailBtn} onPress={() => setShowLog(true)}>
+                <Text style={styles.detailBtnText}>📋 {t('settlements.history_title')}</Text>
+              </TouchableOpacity>
             </Card>
           </>
         )}
@@ -657,6 +664,82 @@ export default function GroupDetailScreen() {
                 </View>
               );
             })}
+
+            {/* Le calcul en clair — replie par defaut : c'est une verification,
+                pas une lecture quotidienne. Les chiffres viennent du backend,
+                ceux-la memes qui produisent les virements affiches. */}
+            <TouchableOpacity style={styles.calcToggle} onPress={() => setShowCalc(v => !v)}>
+              <Text style={styles.calcToggleText}>
+                {showCalc ? t('settlements.calc_hide') : t('settlements.calc_show')}
+              </Text>
+            </TouchableOpacity>
+
+            {showCalc && (() => {
+              const rows = group.netBreakdown;
+              if (!rows) return (
+                <Text style={styles.historyEmpty}>
+                  Le détail du calcul arrive avec la prochaine mise à jour du serveur.
+                </Text>
+              );
+              const total = Math.round(
+                group.members.reduce((s: number, m: any) => s + (rows[m.id]?.net ?? 0), 0) * 100
+              ) / 100;
+              const ok = Math.abs(total) < 0.005;
+              const line = (label: string, value: number, sign: string) =>
+                Math.abs(value) < 0.005 ? null : (
+                  <View style={styles.calcLine} key={label}>
+                    <Text style={styles.calcLabel}>{sign} {label}</Text>
+                    <Text style={styles.calcValue}>{fmt(value)}</Text>
+                  </View>
+                );
+              return (
+                <View style={{ marginBottom: 18 }}>
+                  <Text style={styles.historyLabel}>{t('settlements.calc_title')}</Text>
+                  {group.members.map((m: any) => {
+                    const r = rows[m.id];
+                    if (!r) return null;
+                    return (
+                      <View key={m.id} style={styles.calcCard}>
+                        <View style={styles.calcHead}>
+                          <Avatar initials={m.avatarInitials} color={m.avatarColor} size={20} />
+                          <Text style={styles.calcName} numberOfLines={1}>{m.displayName}</Text>
+                        </View>
+                        {line(t('settlements.calc_paid'), r.paid, '+')}
+                        {line(t('settlements.calc_share'), r.share, '−')}
+                        {line(t('settlements.calc_settled_own'), r.settledOwn, '+')}
+                        {line(t('settlements.calc_settled_as_payer'), r.settledAsPayer, '−')}
+                        {line(t('settlements.calc_paid_back'), r.settlementsPaid, '+')}
+                        {line(t('settlements.calc_received'), r.settlementsReceived, '−')}
+                        <View style={styles.calcTotalLine}>
+                          <Text style={styles.calcNetLabel}>= {t('settlements.calc_net')}</Text>
+                          <Text style={[
+                            styles.calcNetValue,
+                            r.net > 0.005 && { color: colors.green },
+                            r.net < -0.005 && { color: colors.amber },
+                          ]}>
+                            {r.net > 0 ? '+' : ''}{fmt(r.net)}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+
+                  {/* La verification : la somme doit tomber a zero au centime. */}
+                  <View style={[styles.calcLine, { marginTop: 10, paddingHorizontal: 4 }]}>
+                    <Text style={styles.calcNetLabel}>{t('settlements.calc_total')}</Text>
+                    <Text style={[styles.calcNetValue, { color: ok ? colors.green : colors.amber }]}>
+                      {fmt(total)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.calcHint, { color: ok ? colors.green : colors.amber }]}>
+                    {ok
+                      ? t('settlements.calc_total_ok')
+                      : t('settlements.calc_total_bad', { amount: fmt(total) })}
+                  </Text>
+                  <Text style={styles.calcHint}>{t('settlements.calc_explain')}</Text>
+                </View>
+              );
+            })()}
 
             <Text style={[styles.historyLabel, { marginTop: 18 }]}>{t('balances.detail_title')}</Text>
             {Object.values(netLog).map((entry, i) => {
@@ -919,6 +1002,12 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: { fontSize: 10, color: colors.amber, fontWeight: '700' },
   allSettled: { fontSize: 13, color: colors.text2, textAlign: 'center', paddingVertical: 10 },
+  detailBtn: {
+    marginTop: 14, minHeight: 48, borderRadius: radius.md,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
+  },
+  detailBtnText: { fontSize: 14, color: colors.accent2, fontWeight: '600' },
   pendingCard: {
     marginTop: 8, borderRadius: radius.sm, padding: 10,
     backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)',
@@ -940,6 +1029,26 @@ const styles = StyleSheet.create({
   historyAmt: { fontSize: 12, fontFamily: 'monospace', color: colors.text },
   historyStatus: { fontSize: 11, flex: 1 },
   historyNote: { fontSize: 11, color: colors.text3, marginTop: 4 },
+
+  calcToggle: {
+    minHeight: 44, borderRadius: radius.md, marginBottom: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
+  },
+  calcToggleText: { fontSize: 12, color: colors.text2, fontWeight: '600' },
+  calcCard: { backgroundColor: colors.surface2, borderRadius: radius.sm, padding: 10, marginBottom: 8 },
+  calcHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  calcName: { fontSize: 12, color: colors.text, fontWeight: '500', flex: 1 },
+  calcLine: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
+  calcLabel: { fontSize: 11, color: colors.text3, flex: 1 },
+  calcValue: { fontSize: 11, fontFamily: 'monospace', color: colors.text2 },
+  calcTotalLine: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingTop: 6, marginTop: 4, borderTopWidth: 0.5, borderTopColor: colors.border,
+  },
+  calcNetLabel: { fontSize: 12, color: colors.text2, fontWeight: '600' },
+  calcNetValue: { fontSize: 12, fontFamily: 'monospace', fontWeight: '700', color: colors.text3 },
+  calcHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
 
   formDirection: { fontSize: 12, color: colors.text3, marginBottom: 18 },
   formLabel: {

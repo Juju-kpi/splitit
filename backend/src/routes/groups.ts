@@ -10,7 +10,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth';
-import { computeBalances } from '../services/balances';
+import { computeBalances, computeNetBreakdown } from '../services/balances';
 
 const router = Router();
 
@@ -100,7 +100,14 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   if (!isMember) return res.status(403).json({ error: 'Not a member' });
 
   const balances = computeBalances(group.members, group.expenses as any, group.settlements);
-  res.json({ data: { ...group, balances } });
+  // Le detail du calcul, terme par terme. Les ecrans y puisent deux choses :
+  // les barres « qui a avance, qui doit » (le seul `net`), et le panneau qui
+  // explique d'ou vient chaque montant.
+  const netBreakdown = computeNetBreakdown(group.members, group.expenses as any, group.settlements);
+  const netByMember = Object.fromEntries(
+    Object.entries(netBreakdown).map(([id, r]) => [id, r.net])
+  );
+  res.json({ data: { ...group, balances, netByMember, netBreakdown } });
 });
 
 // ── NOUVEAU : GET /api/groups/join-preview/:inviteCode ────────────────────

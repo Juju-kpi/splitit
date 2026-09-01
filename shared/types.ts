@@ -119,6 +119,42 @@ export interface Settlement {
   createdAt: string;
 }
 
+/**
+ * Le detail du calcul pour une personne, ligne a ligne :
+ *   net = paid − share + settledOwn − settledAsPayer
+ *             + settlementsPaid − settlementsReceived
+ * La somme des `net` du groupe vaut toujours 0.
+ */
+export interface NetBreakdown {
+  /** Ce qu'il a avance de sa poche, toutes depenses confondues. */
+  paid: number;
+  /** Sa part totale, qu'elle soit reglee ou non. */
+  share: number;
+  /** Celles de ses parts deja marquees reglees : il ne les doit plus. */
+  settledOwn: number;
+  /** Parts reglees dont il etait le payeur : son credit disparait d'autant. */
+  settledAsPayer: number;
+  /** Remboursements confirmes qu'il a verses. */
+  settlementsPaid: number;
+  /** Remboursements confirmes qu'il a recus. */
+  settlementsReceived: number;
+  /** Positif = on lui doit encore ; negatif = il doit. */
+  net: number;
+}
+
+/**
+ * Reponse de GET /api/groups/:id — le groupe, ses soldes nettes et la position
+ * de chaque membre. `netByMember` est calcule par le serveur : positif = on lui
+ * doit encore, negatif = il doit. Le recalculer cote client reviendrait a
+ * oublier les remboursements.
+ */
+export interface GroupDetail extends Group {
+  balances: Balance[];
+  settlements?: Settlement[];
+  netByMember?: Record<string, number>;
+  netBreakdown?: Record<string, NetBreakdown>;
+}
+
 export interface CreateSettlementInput {
   groupId: string;
   fromMemberId: string;

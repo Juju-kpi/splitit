@@ -35,13 +35,50 @@ export interface Balance {
   amount: number;
 }
 
-export function computeBalances(
+/**
+ * Le detail du calcul, ligne a ligne, pour une personne. Chaque champ est un
+ * terme de l'addition qui donne `net` — c'est ce que les ecrans affichent
+ * quand on demande « pourquoi je dois tant ».
+ *
+ *   net = paid − share + settledOwn − settledAsPayer
+ *             + settlementsPaid − settlementsReceived
+ */
+export interface NetBreakdown {
+  /** Ce qu'il a avance de sa poche, toutes depenses confondues. */
+  paid: number;
+  /** Sa part totale, qu'elle soit reglee ou non. */
+  share: number;
+  /** Celles de ses parts deja marquees reglees : il ne les doit plus. */
+  settledOwn: number;
+  /** Parts reglees dont il etait le payeur : son credit disparait d'autant. */
+  settledAsPayer: number;
+  /** Remboursements confirmes qu'il a verses. */
+  settlementsPaid: number;
+  /** Remboursements confirmes qu'il a recus. */
+  settlementsReceived: number;
+  /** Positif = on lui doit encore ; negatif = il doit. */
+  net: number;
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Decompose la position de chaque membre en ses termes. La somme des `net` est
+ * toujours nulle : rien ne se cree ni ne se perd, ce que les uns ont avance en
+ * trop, les autres le doivent exactement.
+ */
+export function computeNetBreakdown(
   members: GroupMember[],
   expenses: ExpenseWithSplitsAndPayments[],
   settlements: SettlementLike[] = []
-): Balance[] {
-  const net: Record<string, number> = {};
-  members.forEach(m => (net[m.id] = 0));
+): Record<string, NetBreakdown> {
+  const rows: Record<string, NetBreakdown> = {};
+  const blank = (): NetBreakdown => ({
+    paid: 0, share: 0, settledOwn: 0, settledAsPayer: 0,
+    settlementsPaid: 0, settlementsReceived: 0, net: 0,
+  });
+  members.forEach(m => (rows[m.id] = blank()));
+  const row = (id: string) => (rows[id] ||= blank());
 
   for (const expense of expenses) {
     const payments = expense.payments && expense.payments.length > 0
@@ -49,7 +86,7 @@ export function computeBalances(
       : [{ memberId: expense.paidByMemberId, amount: expense.totalAmount } as any];
 
     for (const payment of payments) {
-      net[payment.memberId] = (net[payment.memberId] || 0) + payment.amount;
+      row(payment.memberId).paid += payment.amount;
     }
     // Payeur principal = celui qui a le plus avance, meme regle que l'ecran
     // de remboursement.
@@ -59,13 +96,13 @@ export function computeBalances(
     );
 
     for (const split of expense.splits) {
-      if (!split.settled) {
-        net[split.memberId] = (net[split.memberId] || 0) - split.amount;
-        continue;
+      row(split.memberId).share += split.amount;
+      if (split.settled) {
+        // Remboursement confirme par les deux parties : le debiteur est
+        // quitte, et le credit du payeur diminue d'autant.
+        row(split.memberId).settledOwn += split.amount;
+        row(primaryPayer.memberId).settledAsPayer += split.amount;
       }
-      // Remboursement confirme par les deux parties : le debiteur est quitte,
-      // et le credit du payeur diminue d'autant.
-      net[primaryPayer.memberId] = (net[primaryPayer.memberId] || 0) - split.amount;
     }
   }
 
@@ -74,9 +111,48 @@ export function computeBalances(
   // compte pas — c'est tout l'interet du double accord.
   for (const settlement of settlements) {
     if (!settlement.confirmed || settlement.cancelledAt) continue;
-    net[settlement.fromMemberId] = (net[settlement.fromMemberId] || 0) + settlement.amount;
-    net[settlement.toMemberId] = (net[settlement.toMemberId] || 0) - settlement.amount;
+    row(settlement.fromMemberId).settlementsPaid += settlement.amount;
+    row(settlement.toMemberId).settlementsReceived += settlement.amount;
   }
+
+  for (const r of Object.values(rows)) {
+    r.paid = round2(r.paid);
+    r.share = round2(r.share);
+    r.settledOwn = round2(r.settledOwn);
+    r.settledAsPayer = round2(r.settledAsPayer);
+    r.settlementsPaid = round2(r.settlementsPaid);
+    r.settlementsReceived = round2(r.settlementsReceived);
+    r.net = round2(
+      r.paid - r.share + r.settledOwn - r.settledAsPayer
+      + r.settlementsPaid - r.settlementsReceived
+    );
+  }
+  return rows;
+}
+
+/**
+ * Position nette de chaque membre. Positif = on lui doit encore.
+ *
+ * C'est la matiere premiere des soldes, exposee telle quelle parce que les
+ * ecrans en ont besoin pour les barres « qui a avance, qui doit » : les
+ * recalculer cote client sans les remboursements les laissait figes sur
+ * l'etat d'avant remboursement.
+ */
+export function computeMemberNets(
+  members: GroupMember[],
+  expenses: ExpenseWithSplitsAndPayments[],
+  settlements: SettlementLike[] = []
+): Record<string, number> {
+  const rows = computeNetBreakdown(members, expenses, settlements);
+  return Object.fromEntries(Object.entries(rows).map(([id, r]) => [id, r.net]));
+}
+
+export function computeBalances(
+  members: GroupMember[],
+  expenses: ExpenseWithSplitsAndPayments[],
+  settlements: SettlementLike[] = []
+): Balance[] {
+  const net = computeMemberNets(members, expenses, settlements);
 
   const memberMap = Object.fromEntries(members.map(m => [m.id, m]));
 

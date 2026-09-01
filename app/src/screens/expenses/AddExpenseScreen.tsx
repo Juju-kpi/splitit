@@ -229,6 +229,8 @@ export default function AddExpenseScreen() {
     mutationFn: expensesApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group', groupId] });
+      // Le nombre de dépenses affiché dans la liste des groupes change aussi.
+      qc.invalidateQueries({ queryKey: ['groups'] });
       router.replace(`/group/${groupId}`);
     },
     onError: (e: any) =>
