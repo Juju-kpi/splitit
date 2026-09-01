@@ -29,10 +29,16 @@ const arg = (name: string): string | undefined => {
 const API = (arg('api') || process.env.SPLITIT_API || 'https://splitit-9x32.onrender.com').replace(/\/$/, '');
 const ONLY_GROUP = arg('group');
 
-let passed = 0, failed = 0;
+let passed = 0, failed = 0, skipped = 0;
 function check(ok: boolean, label: string, detail = '') {
   if (ok) { passed++; console.log(`  ✓ ${label}${detail ? ` — ${detail}` : ''}`); }
   else { failed++; console.error(`  ✗ ${label}${detail ? ` — ${detail}` : ''}`); }
+}
+// Un controle qu'on n'a pas pu faire n'est pas un controle rate : le dire
+// autrement eviterait de croire a une panne la ou il manque juste des donnees.
+function skip(label: string, why: string) {
+  skipped++;
+  console.log(`  – ${label} — non concluant : ${why}`);
 }
 
 // Render endort les services gratuits : la premiere requete peut mettre une
@@ -144,9 +150,14 @@ async function main() {
   check(groups.status === 200, 'liste des groupes lisible', `HTTP ${groups.status}`);
   const all: any[] = groups.body?.data || [];
   const targets = ONLY_GROUP ? all.filter(g => g.id === ONLY_GROUP) : all;
-  if (targets.length === 0) {
-    console.error(ONLY_GROUP ? `  ✗ groupe ${ONLY_GROUP} introuvable` : '  ✗ aucun groupe sur ce compte');
-    failed++;
+
+  if (ONLY_GROUP && targets.length === 0) {
+    check(false, `groupe ${ONLY_GROUP} introuvable`, 'ce compte n en est pas membre');
+  } else if (targets.length === 0) {
+    // La route refuse un groupe dont on n'est pas membre AVANT de lire la
+    // table : sans un seul groupe, rien ne permet de prouver la migration.
+    skip('la table settlements repond',
+         'ce compte n appartient a aucun groupe — relance avec un compte qui en a un');
   }
 
   const probe = targets[0];
@@ -196,8 +207,22 @@ async function main() {
     }
   }
 
-  console.log(`\n${passed} verifications reussies, ${failed} echouees\n`);
-  process.exit(failed > 0 ? 1 : 0);
+  console.log(`\n${passed} reussies, ${failed} echouees, ${skipped} non concluantes`);
+
+  if (failed > 0) {
+    console.error('\nVERDICT : quelque chose ne va pas — voir les ✗ ci-dessus.\n');
+    process.exit(1);
+  }
+  if (skipped > 0) {
+    console.log(
+      '\nVERDICT : rien d anormal, mais la verification est INCOMPLETE.\n'
+      + 'Le controle decisif (la table en base) n a pas pu tourner. Relance avec\n'
+      + 'un compte membre d au moins un groupe.\n'
+    );
+    process.exit(3);
+  }
+  console.log('\nVERDICT : les remboursements sont operationnels en production.\n');
+  process.exit(0);
 }
 
 main().catch(e => {
