@@ -20,6 +20,7 @@ import { computeBalances } from './services/balances';
 import { logMailConfig } from './services/mail';
 import { runTrainingPipeline } from './services/trainingPipeline';
 import { sendPushNotification } from './services/notifications';
+import { appVersionInfo } from './services/appVersion';
 import dns from 'dns';
 dns.setDefaultResultOrder('ipv4first');
 
@@ -41,6 +42,17 @@ app.use(express.json({ limit: '10mb' }));
 
 // Public routes
 app.use('/api/auth', authRouter);
+
+// ── GET /api/app-version ─────────────────────────────────────────────────
+// Publique : l'application interroge cette route avant meme la connexion,
+// et un client trop ancien doit pouvoir apprendre qu'il doit se mettre a
+// jour meme si son jeton n'est plus accepte.
+// Les seuils vivent dans l'environnement Render — annoncer une version ne
+// demande aucun redeploiement.
+app.get('/api/app-version', (req, res) => {
+  const current = typeof req.query.version === 'string' ? req.query.version : undefined;
+  res.json({ data: appVersionInfo(current) });
+});
 
 // Protected routes
 app.use('/api/groups', authenticate, groupsRouter);

@@ -9,6 +9,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { useRouter, useSegments } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { colors } from '../src/theme';
+import UpdateGate from '../src/components/UpdateGate';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,6 +74,9 @@ export default function RootLayout() {
           <Stack.Screen name="expense/[id]" options={{ presentation: 'card' }} />
         </Stack>
         <Toast />
+        {/* Au-dessus de tout : le message de mise a jour doit rester visible
+            quel que soit l'ecran ouvert. */}
+        <UpdateGate />
       </QueryClientProvider>
     </SafeAreaProvider>
   );

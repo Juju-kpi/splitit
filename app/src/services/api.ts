@@ -190,6 +190,13 @@ export const expensesApi = {
   }) => api.put(`/expenses/${id}/items`, payload).then(r => r.data.data),
 };
 
+// Quelle version tourne chez l'utilisateur, et faut-il l'inviter a se mettre
+// a jour. Route publique : elle repond meme sans jeton valide.
+export const appApi = {
+  version: (current?: string) =>
+    api.get('/app-version', { params: { version: current } }).then(r => r.data.data),
+};
+
 // Remboursements : un versement de X a Y, valide par les deux. Contrairement
 // a expensesApi.settle, ne depend d'aucune depense — donc capable de solder
 // un solde issu d'une compensation en chaine.
