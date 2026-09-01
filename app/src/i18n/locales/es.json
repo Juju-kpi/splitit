@@ -335,7 +335,13 @@
     "owed_to_them": "le deben",
     "even": "equilibrado",
     "they_owe": "debe",
-    "net_hint": "Verde: esta persona ha adelantado más que su parte, se le debe dinero. Naranja: aún debe su parte. Los reembolsos de abajo lo saldan todo con el mínimo de transferencias."
+    "net_hint": "Verde: esta persona ha adelantado más que su parte, se le debe dinero. Naranja: aún debe su parte. Los reembolsos de abajo lo saldan todo con el mínimo de transferencias.",
+    "i_reimbursed": "He devuelto {{amount}}",
+    "i_was_paid": "Me han pagado {{amount}}",
+    "undo_confirm": "↩ Anular mi confirmación",
+    "waiting_other": "⏳ Has confirmado. A la espera de {{name}} — el saldo solo cambia cuando ambos estáis de acuerdo.",
+    "other_confirmed": "⏳ {{name}} ha confirmado. Te toca validar para saldar.",
+    "both_needed": "Los dos debéis confirmar para que el saldo cambie."
   },
   "home": {
     "greeting": "Hola, {{name}} 👋"

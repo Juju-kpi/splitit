@@ -14,6 +14,8 @@ import expensesRouter from './routes/expenses';
 import ocrRouter from './routes/ocr';
 import usersRouter from './routes/users';
 import { authenticate } from './middleware/auth';
+import { prisma } from './db';
+import { computeBalances } from './services/balances';
 import { logMailConfig } from './services/mail';
 import { runTrainingPipeline } from './services/trainingPipeline';
 import { sendPushNotification } from './services/notifications';
@@ -113,6 +115,58 @@ cron.schedule('0 9 * * *', async () => {
     console.error('[Cron] Reminder push failed:', e);
   }
 });
+
+// ── Cron : rappel des dettes ─────────────────────────────────────────────
+// Hebdomadaire par defaut (lundi 9h). DEBT_REMINDER_CRON permet de passer au
+// quotidien ('0 9 * * *') ou de desactiver ('off') sans toucher au code.
+// Ne notifie que les membres qui doivent encore quelque chose et qui ont
+// active les rappels dans leurs reglages.
+const debtReminderCron = process.env.DEBT_REMINDER_CRON || '0 9 * * 1';
+if (debtReminderCron !== 'off') {
+  cron.schedule(debtReminderCron, async () => {
+    console.log('[Cron] Rappel des dettes...');
+    try {
+      const groups = await prisma.group.findMany({
+        include: {
+          members: { include: { user: true } },
+          expenses: { include: { splits: true, payments: true } },
+        },
+      });
+
+      // Une notification par personne, quel que soit le nombre de groupes
+      const owed = new Map<string, { total: number; groups: number; tokens: string[] }>();
+
+      for (const group of groups) {
+        const balances = computeBalances(group.members, group.expenses as any);
+        for (const balance of balances) {
+          const debtor = group.members.find(m => m.id === balance.fromMemberId);
+          if (!debtor?.user?.notifReminder) continue;
+          const tokens = [debtor.user.pushToken, debtor.user.webPushToken].filter(Boolean) as string[];
+          if (tokens.length === 0) continue;
+
+          const entry = owed.get(debtor.user.id) || { total: 0, groups: 0, tokens };
+          entry.total += balance.amount;
+          entry.groups += 1;
+          owed.set(debtor.user.id, entry);
+        }
+      }
+
+      for (const entry of owed.values()) {
+        await sendPushNotification(entry.tokens, {
+          title: 'SplitIt — Remboursements en attente',
+          body: entry.groups > 1
+            ? `Tu dois ${entry.total.toFixed(2)} au total dans ${entry.groups} groupes.`
+            : `Tu dois encore ${entry.total.toFixed(2)}. Pense a rembourser.`,
+          data: { type: 'debt_reminder' },
+        });
+      }
+
+      console.log(`[Cron] Rappel envoye a ${owed.size} personne(s)`);
+    } catch (e) {
+      console.error('[Cron] Rappel des dettes impossible :', e);
+    }
+  });
+}
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

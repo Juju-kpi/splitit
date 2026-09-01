@@ -1,5 +1,8 @@
 // backend/src/services/balances.ts
-// Computes who owes whom — supports multi-payer expenses via ExpensePayment[]
+// Qui doit quoi a qui — gere les depenses a plusieurs payeurs.
+//
+// Une part marquee `settled` a ete confirmee par le debiteur ET par le
+// creancier : elle n'est plus due, et le credit du payeur diminue d'autant.
 
 import { GroupMember, Expense, ExpenseSplit, ExpensePayment } from '@prisma/client';
 
@@ -24,18 +27,28 @@ export function computeBalances(
   members.forEach(m => (net[m.id] = 0));
 
   for (const expense of expenses) {
-    if (expense.payments && expense.payments.length > 0) {
-      // Multi-payer: credit each payer for what they actually paid
-      for (const payment of expense.payments) {
-        net[payment.memberId] = (net[payment.memberId] || 0) + payment.amount;
-      }
-    } else {
-      // Legacy fallback: single payer credited full amount
-      net[expense.paidByMemberId] = (net[expense.paidByMemberId] || 0) + expense.totalAmount;
+    const payments = expense.payments && expense.payments.length > 0
+      ? expense.payments
+      : [{ memberId: expense.paidByMemberId, amount: expense.totalAmount } as any];
+
+    for (const payment of payments) {
+      net[payment.memberId] = (net[payment.memberId] || 0) + payment.amount;
     }
-    // Debit each member for their share
+    // Payeur principal = celui qui a le plus avance, meme regle que l'ecran
+    // de remboursement.
+    const primaryPayer = payments.reduce(
+      (best: any, p: any) => (p.amount > best.amount ? p : best),
+      payments[0]
+    );
+
     for (const split of expense.splits) {
-      net[split.memberId] = (net[split.memberId] || 0) - split.amount;
+      if (!split.settled) {
+        net[split.memberId] = (net[split.memberId] || 0) - split.amount;
+        continue;
+      }
+      // Remboursement confirme par les deux parties : le debiteur est quitte,
+      // et le credit du payeur diminue d'autant.
+      net[primaryPayer.memberId] = (net[primaryPayer.memberId] || 0) - split.amount;
     }
   }
 

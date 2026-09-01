@@ -335,7 +335,13 @@
     "owed_to_them": "on lui doit",
     "even": "équilibré",
     "they_owe": "il doit",
-    "net_hint": "Vert : cette personne a avancé plus que sa part, on lui doit de l'argent. Orange : elle doit encore sa part. Les remboursements ci-dessous règlent tout en un minimum de virements."
+    "net_hint": "Vert : cette personne a avancé plus que sa part, on lui doit de l'argent. Orange : elle doit encore sa part. Les remboursements ci-dessous règlent tout en un minimum de virements.",
+    "i_reimbursed": "J'ai remboursé {{amount}}",
+    "i_was_paid": "J'ai été payé {{amount}}",
+    "undo_confirm": "↩ Annuler ma confirmation",
+    "waiting_other": "⏳ Tu as confirmé. En attente de {{name}} — le solde ne bougera qu'une fois les deux d'accord.",
+    "other_confirmed": "⏳ {{name}} a confirmé. À toi de valider pour solder.",
+    "both_needed": "Il faut la confirmation des deux pour que le solde change."
   },
   "home": {
     "greeting": "Bonjour, {{name}} 👋"

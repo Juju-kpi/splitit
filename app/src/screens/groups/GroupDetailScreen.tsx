@@ -61,8 +61,8 @@ export default function GroupDetailScreen() {
   });
 
   const settleMutation = useMutation({
-    mutationFn: ({ expenseId, memberId }: { expenseId: string; memberId: string }) =>
-      expensesApi.settle(expenseId, memberId),
+    mutationFn: ({ expenseId, memberId, undo }: { expenseId: string; memberId: string; undo?: boolean }) =>
+      expensesApi.settle(expenseId, memberId, undo),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['group', id] });
       Alert.alert(t('balances.settled_title'), t('balances.settled_saved'));
@@ -121,6 +121,8 @@ export default function GroupDetailScreen() {
     creditorId: string;
     amount: number;
     settled: boolean;
+    byDebtor: boolean;
+    byCreditor: boolean;
   };
 
   const reimbursementLog: LogLine[] = [];
@@ -144,6 +146,8 @@ export default function GroupDetailScreen() {
         creditorId: primaryPayment.memberId,
         amount: split.amount,
         settled: split.settled,
+        byDebtor: !!split.settledByDebtorAt,
+        byCreditor: !!split.settledByCreditorAt,
       });
     });
   });
@@ -300,7 +304,11 @@ export default function GroupDetailScreen() {
             <View style={styles.balancesHeader}>
               <SectionLabel label={t('balances.title')} />
               {Object.keys(netLog).length > 0 && (
-                <TouchableOpacity onPress={() => setShowLog(true)} style={styles.logBtn}>
+                <TouchableOpacity
+                  onPress={() => setShowLog(true)}
+                  style={styles.logBtn}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
                   <Text style={styles.logBtnText}>📋 {t('balances.detail')}</Text>
                 </TouchableOpacity>
               )}
@@ -352,33 +360,49 @@ export default function GroupDetailScreen() {
                             </Text>
                           </View>
                         ))}
-                        {isMeDebtor && (
-                          <TouchableOpacity
-                            style={styles.settleBtn}
-                            onPress={() => {
-                              Alert.alert(
-                                t('balances.mark_settled_q'),
-                                t('balances.settled_confirm', { amount: fmt(b.amount), name: b.toMember.displayName }),
-                                [
-                                  { text: t('common.cancel'), style: 'cancel' },
-                                  {
-                                    text: t('common.confirm'),
-                                    onPress: () => {
-                                      (netLog[key]?.lines || [])
-                                        .filter(l => !l.settled)
-                                        .forEach(l => {
-                                          settleMutation.mutate({ expenseId: l.expenseId, memberId: l.debtorId });
-                                        });
-                                      setExpandedBalance(null);
-                                    },
-                                  },
-                                ]
-                              );
-                            }}
-                          >
-                            <Text style={styles.settleBtnText}>💸 {t('balances.settled_btn', { amount: fmt(b.amount) })}</Text>
-                          </TouchableOpacity>
-                        )}
+                        {(() => {
+                          const lines = (netLog[key]?.lines || []).filter(l => !l.settled);
+                          const isMeCreditor = b.toMember?.userId === user?.id;
+                          if ((!isMeDebtor && !isMeCreditor) || lines.length === 0) return null;
+
+                          // Un remboursement n'est acquis que si les deux parties
+                          // l'ont confirme. On montre donc ce qui manque encore.
+                          const mineDone = lines.every(l => isMeDebtor ? l.byDebtor : l.byCreditor);
+                          const theirsDone = lines.every(l => isMeDebtor ? l.byCreditor : l.byDebtor);
+                          const other = isMeDebtor ? b.toMember.displayName : b.fromMember.displayName;
+                          const label = isMeDebtor
+                            ? t('balances.i_reimbursed', { amount: fmt(b.amount) })
+                            : t('balances.i_was_paid', { amount: fmt(b.amount) });
+
+                          return (
+                            <>
+                              <TouchableOpacity
+                                style={[styles.settleBtn, mineDone && styles.settleBtnDone]}
+                                onPress={() => {
+                                  const undo = mineDone;
+                                  const run = () => lines.forEach(l =>
+                                    settleMutation.mutate({ expenseId: l.expenseId, memberId: l.debtorId, undo }));
+                                  if (undo) { run(); return; }
+                                  Alert.alert(t('balances.mark_settled_q'), label, [
+                                    { text: t('common.cancel'), style: 'cancel' },
+                                    { text: t('common.confirm'), onPress: run },
+                                  ]);
+                                }}
+                              >
+                                <Text style={[styles.settleBtnText, mineDone && { color: colors.text3 }]}>
+                                  {mineDone ? t('balances.undo_confirm') : `💸 ${label}`}
+                                </Text>
+                              </TouchableOpacity>
+                              <Text style={[styles.settleHint, (mineDone !== theirsDone) && { color: colors.amber }]}>
+                                {mineDone && !theirsDone
+                                  ? t('balances.waiting_other', { name: other })
+                                  : !mineDone && theirsDone
+                                    ? t('balances.other_confirmed', { name: other })
+                                    : t('balances.both_needed')}
+                              </Text>
+                            </>
+                          );
+                        })()}
                       </View>
                     )}
 
@@ -550,7 +574,7 @@ const styles = StyleSheet.create({
   incompleteBannerText: { fontSize: 13, color: colors.amber, fontWeight: '600', textAlign: 'center' },
 
   balancesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  logBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border2, marginBottom: 4 },
+  logBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border2 },
   logBtnText: { fontSize: 11, color: colors.text2, fontWeight: '500' },
   netLegend: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   netLegendText: { fontSize: 10, fontWeight: '600' },
@@ -580,6 +604,8 @@ const styles = StyleSheet.create({
   detailDesc: { fontSize: 12, color: colors.text2, flex: 1 },
   detailAmt: { fontSize: 12, fontFamily: 'monospace', color: colors.amber, marginLeft: 8 },
   settleBtn: { marginTop: 8, backgroundColor: colors.accent, borderRadius: radius.sm, padding: 10, alignItems: 'center' },
+  settleBtnDone: { backgroundColor: colors.surface3, borderColor: colors.border },
+  settleHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
   settleBtnText: { fontSize: 13, color: colors.white, fontWeight: '600' },
 
   // Expense items

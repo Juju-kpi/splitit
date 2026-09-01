@@ -266,20 +266,66 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // ── PATCH /api/expenses/:id/settle ───────────────────────────────────────
+// Un remboursement demande l'accord des DEUX parties : celui qui doit
+// ("j'ai rembourse") et celui qui a avance ("j'ai ete paye"). Le drapeau
+// settled, seul pris en compte dans les soldes, ne bascule que lorsque les
+// deux ont confirme. `memberId` designe toujours le debiteur ; le role de
+// l'appelant est deduit de son propre membre dans le groupe.
 router.patch('/:id/settle', async (req: AuthRequest, res: Response) => {
-  const schema = z.object({ memberId: z.string() });
+  const schema = z.object({ memberId: z.string(), undo: z.boolean().optional() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'memberId required' });
 
-  const expense = await prisma.expense.findUnique({ where: { id: req.params.id } });
+  const expense = await prisma.expense.findUnique({
+    where: { id: req.params.id },
+    include: { payments: true, splits: true },
+  });
   if (!expense) return res.status(404).json({ error: 'Not found' });
 
-  await prisma.expenseSplit.updateMany({
-    where: { expenseId: req.params.id, memberId: parsed.data.memberId },
-    data: { settled: true, settledAt: new Date() },
+  const me = await prisma.groupMember.findFirst({
+    where: { groupId: expense.groupId, userId: req.userId },
+  });
+  if (!me) return res.status(403).json({ error: 'Not a group member' });
+
+  const split = expense.splits.find(s => s.memberId === parsed.data.memberId);
+  if (!split) return res.status(404).json({ error: 'Split not found' });
+
+  // Le creancier est le payeur principal de la depense, meme regle que
+  // l'ecran de remboursement.
+  const creditorId = expense.payments.length > 0
+    ? expense.payments.reduce((best, p) => (p.amount > best.amount ? p : best), expense.payments[0]).memberId
+    : expense.paidByMemberId;
+
+  const isDebtor = me.id === split.memberId;
+  const isCreditor = me.id === creditorId;
+  if (!isDebtor && !isCreditor) {
+    return res.status(403).json({ error: 'Seuls le debiteur et le creancier peuvent confirmer' });
+  }
+
+  const now = parsed.data.undo ? null : new Date();
+  const debtorAt = isDebtor ? now : split.settledByDebtorAt;
+  const creditorAt = isCreditor ? now : split.settledByCreditorAt;
+  const bothConfirmed = !!debtorAt && !!creditorAt;
+
+  const updated = await prisma.expenseSplit.update({
+    where: { id: split.id },
+    data: {
+      settledByDebtorAt: debtorAt,
+      settledByCreditorAt: creditorAt,
+      settled: bothConfirmed,
+      settledAt: bothConfirmed ? (split.settledAt ?? new Date()) : null,
+    },
   });
 
-  res.json({ data: { ok: true } });
+  res.json({
+    data: {
+      ok: true,
+      settled: updated.settled,
+      confirmedByDebtor: !!updated.settledByDebtorAt,
+      confirmedByCreditor: !!updated.settledByCreditorAt,
+      creditorId,
+    },
+  });
 });
 
 // ── PUT /api/expenses/:id ─────────────────────────────────────────────────

@@ -335,7 +335,13 @@
     "owed_to_them": "bekommt zurück",
     "even": "ausgeglichen",
     "they_owe": "schuldet",
-    "net_hint": "Grün: diese Person hat mehr als ihren Anteil ausgelegt, sie bekommt Geld zurück. Orange: sie schuldet noch ihren Anteil. Die Rückzahlungen unten gleichen alles mit möglichst wenigen Überweisungen aus."
+    "net_hint": "Grün: diese Person hat mehr als ihren Anteil ausgelegt, sie bekommt Geld zurück. Orange: sie schuldet noch ihren Anteil. Die Rückzahlungen unten gleichen alles mit möglichst wenigen Überweisungen aus.",
+    "i_reimbursed": "Ich habe {{amount}} zurückgezahlt",
+    "i_was_paid": "Ich habe {{amount}} erhalten",
+    "undo_confirm": "↩ Bestätigung zurücknehmen",
+    "waiting_other": "⏳ Du hast bestätigt. Warten auf {{name}} — der Saldo ändert sich erst, wenn ihr beide zustimmt.",
+    "other_confirmed": "⏳ {{name}} hat bestätigt. Jetzt bist du dran.",
+    "both_needed": "Beide müssen bestätigen, damit sich der Saldo ändert."
   },
   "home": {
     "greeting": "Hallo, {{name}} 👋"

@@ -166,8 +166,9 @@ export const expensesApi = {
     api.post('/expenses', payload).then(r => r.data.data),
   get: (id: string) => api.get(`/expenses/${id}`).then(r => r.data.data),
   delete: (id: string) => api.delete(`/expenses/${id}`).then(r => r.data.data),
-  settle: (id: string, memberId: string) =>
-    api.patch(`/expenses/${id}/settle`, { memberId }).then(r => r.data.data),
+  // undo = retirer sa propre confirmation
+  settle: (id: string, memberId: string, undo?: boolean) =>
+    api.patch(`/expenses/${id}/settle`, { memberId, undo }).then(r => r.data.data),
   update: (id: string, payload: any) =>
     api.put(`/expenses/${id}`, payload).then(r => r.data.data),
   duplicate: (id: string) =>

@@ -2,13 +2,8 @@
 // Test autonome du calcul "qui doit quoi" (aucune base de données requise).
 // Lancer avec :  npx tsx src/services/balances.test.ts
 //
-// Ce fichier fige le comportement ACTUEL des soldes, volontairement inchangé.
-//
-// À savoir : computeBalances ne regarde pas le drapeau `settled` des parts.
-// Marquer un remboursement comme réglé n'enlève donc pas la dette du tableau
-// "qui doit quoi" — c'est le comportement en place, pas un effet de bord des
-// corrections de répartition. Les tests ci-dessous le vérifient explicitement
-// pour qu'un changement futur ne passe pas inaperçu.
+// Une part `settled` a été confirmée par le débiteur ET par le créancier :
+// elle disparaît des soldes, et le crédit du payeur diminue d'autant.
 
 import { computeBalances } from './balances';
 import { splitEqually } from './split';
@@ -91,13 +86,32 @@ bal = computeBalances([a, b, c], [expense({
 assert(bal.length === 1 && bal[0].amount === 20,
        'seule la part réellement attribuée est due');
 
-console.log('\n6) comportement actuel du drapeau "réglé" (inchangé)');
+console.log('\n6) remboursement confirmé par les deux parties');
 bal = computeBalances([a, b], [expense({
   total: 100, payments: [{ memberId: 'a', amount: 100 }],
   splits: [{ memberId: 'a', amount: 50 }, { memberId: 'b', amount: 50, settled: true }],
 })]);
-assert(bal.length === 1 && bal[0].amount === 50,
-       'une part marquée réglée reste affichée comme due — comportement en place');
+assert(bal.length === 0, 'part réglée → plus aucune dette');
+
+// Partiellement réglé : seule la part non confirmée subsiste
+bal = computeBalances([a, b, c], [expense({
+  total: 90, payments: [{ memberId: 'a', amount: 90 }],
+  splits: [
+    { memberId: 'a', amount: 30 },
+    { memberId: 'b', amount: 30, settled: true },
+    { memberId: 'c', amount: 30 },
+  ],
+})]);
+assert(bal.length === 1 && bal[0].fromMemberId === 'c' && bal[0].amount === 30,
+       'seule la part non réglée reste due');
+
+// Tout réglé, y compris la part du payeur
+const allSettled = splitEqually(100, ['a', 'b', 'c']);
+bal = computeBalances([a, b, c], [expense({
+  total: 100, payments: [{ memberId: 'a', amount: 100 }],
+  splits: allSettled.map(s => ({ memberId: s.memberId, amount: s.amount, settled: true })),
+})]);
+assert(bal.length === 0, 'tout réglé → aucun solde résiduel');
 
 console.log(`\n${passed} réussis, ${failed} échoués\n`);
 process.exit(failed > 0 ? 1 : 0);

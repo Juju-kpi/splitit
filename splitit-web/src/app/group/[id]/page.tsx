@@ -40,6 +40,8 @@ type LogLine = {
   creditorId: string
   amount: number
   settled: boolean
+  byDebtor: boolean
+  byCreditor: boolean
 }
 
 export default function GroupDetailPage() {
@@ -58,8 +60,8 @@ export default function GroupDetailPage() {
   })
 
   const settleMutation = useMutation({
-    mutationFn: ({ expenseId, memberId }: { expenseId: string; memberId: string }) =>
-      expensesApi.settle(expenseId, memberId),
+    mutationFn: ({ expenseId, memberId, undo }: { expenseId: string; memberId: string; undo?: boolean }) =>
+      expensesApi.settle(expenseId, memberId, undo),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['group', id] }),
   })
 
@@ -94,6 +96,8 @@ export default function GroupDetailPage() {
         creditorId: primaryPayment.memberId,
         amount: split.amount,
         settled: split.settled,
+        byDebtor: !!split.settledByDebtorAt,
+        byCreditor: !!split.settledByCreditorAt,
       })
     })
   })
@@ -256,10 +260,15 @@ export default function GroupDetailPage() {
         {/* Remboursements — basé sur group.balances (calcul backend nettisé) */}
         {group.balances?.length > 0 && (
           <>
-            <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center justify-between gap-3 mt-2">
               <SectionLabel label="Remboursements" />
               {Object.keys(netLog).length > 0 && (
-                <button onClick={() => setShowLog(true)} className="text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-3 py-1 rounded-full mb-2">
+                // 44 px de haut : en dessous, la cible est trop petite pour le
+                // doigt sur iPhone. Centre dans la ligne, sans decalage vers le haut.
+                <button
+                  onClick={() => setShowLog(true)}
+                  className="shrink-0 flex items-center justify-center text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-4 min-h-[44px] rounded-full"
+                >
                   📋 Détail
                 </button>
               )}
@@ -305,20 +314,59 @@ export default function GroupDetailPage() {
                               </span>
                             </div>
                           ))}
-                          {isMeDebtor && (
-                            <button
-                              onClick={() => {
-                                if (!confirm(`Confirmer le remboursement de ${formatMoney(b.amount, currency)} à ${b.toMember?.displayName} ?`)) return
-                                ;(netLog[key]?.lines || [])
-                                  .filter(l => !l.settled)
-                                  .forEach(l => settleMutation.mutate({ expenseId: l.expenseId, memberId: l.debtorId }))
-                                setExpandedBalance(null)
-                              }}
-                              className="mt-2 w-full bg-accent/15 border border-accent/30 text-accent2 text-xs font-semibold rounded-lg py-2"
-                            >
-                              💸 J&apos;ai remboursé {formatMoney(b.amount, currency)}
-                            </button>
-                          )}
+                          {(() => {
+                            const lines = netLog[key]?.lines || []
+                            const open = lines.filter(l => !l.settled)
+                            const isMeCreditor = b.toMember?.userId === user?.id
+                            if (!isMeDebtor && !isMeCreditor) return null
+
+                            // Un remboursement n'est acquis que si les deux parties
+                            // l'ont confirme. On montre donc ce qui manque encore.
+                            const mineDone = open.length > 0 && open.every(l => isMeDebtor ? l.byDebtor : l.byCreditor)
+                            const theirsDone = open.length > 0 && open.every(l => isMeDebtor ? l.byCreditor : l.byDebtor)
+                            const other = isMeDebtor ? b.toMember?.displayName : b.fromMember?.displayName
+                            const label = isMeDebtor
+                              ? `J'ai remboursé ${formatMoney(b.amount, currency)}`
+                              : `J'ai été payé ${formatMoney(b.amount, currency)}`
+
+                            return (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    const undo = mineDone
+                                    if (!undo && !confirm(`${label} — confirmer ?`)) return
+                                    open.forEach(l => settleMutation.mutate({
+                                      expenseId: l.expenseId, memberId: l.debtorId, undo,
+                                    }))
+                                  }}
+                                  className={`mt-2 w-full text-xs font-semibold rounded-lg py-2 border ${
+                                    mineDone
+                                      ? 'bg-surface3 border-border text-text3'
+                                      : 'bg-accent/15 border-accent/30 text-accent2'
+                                  }`}
+                                >
+                                  {mineDone ? '↩ Annuler ma confirmation' : `💸 ${label}`}
+                                </button>
+                                <p className="text-[11px] mt-2 leading-relaxed">
+                                  {mineDone && !theirsDone && (
+                                    <span className="text-amber">
+                                      ⏳ Tu as confirmé. En attente de {other} — le solde ne bougera qu&apos;une fois les deux d&apos;accord.
+                                    </span>
+                                  )}
+                                  {!mineDone && theirsDone && (
+                                    <span className="text-amber">
+                                      ⏳ {other} a confirmé. À toi de valider pour solder.
+                                    </span>
+                                  )}
+                                  {!mineDone && !theirsDone && (
+                                    <span className="text-text3">
+                                      Il faut la confirmation des deux pour que le solde change.
+                                    </span>
+                                  )}
+                                </p>
+                              </>
+                            )
+                          })()}
                         </div>
                       )}
                       {i < group.balances.length - 1 && <div className="h-px bg-white/5" />}

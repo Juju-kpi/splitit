@@ -335,7 +335,13 @@
     "owed_to_them": "is owed",
     "even": "even",
     "they_owe": "owes",
-    "net_hint": "Green: this person paid more than their share, so they are owed money. Orange: they still owe their share. The reimbursements below settle everything in as few transfers as possible."
+    "net_hint": "Green: this person paid more than their share, so they are owed money. Orange: they still owe their share. The reimbursements below settle everything in as few transfers as possible.",
+    "i_reimbursed": "I paid back {{amount}}",
+    "i_was_paid": "I was paid {{amount}}",
+    "undo_confirm": "↩ Undo my confirmation",
+    "waiting_other": "⏳ You confirmed. Waiting for {{name}} — the balance only changes once you both agree.",
+    "other_confirmed": "⏳ {{name}} confirmed. Your turn to validate and settle.",
+    "both_needed": "Both of you must confirm before the balance changes."
   },
   "home": {
     "greeting": "Hi, {{name}} 👋"

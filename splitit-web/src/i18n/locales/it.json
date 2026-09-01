@@ -335,7 +335,13 @@
     "owed_to_them": "gli si deve",
     "even": "in pari",
     "they_owe": "deve",
-    "net_hint": "Verde: questa persona ha anticipato più della sua parte, le si devono dei soldi. Arancione: deve ancora la sua parte. I rimborsi qui sotto saldano tutto con il minor numero di bonifici."
+    "net_hint": "Verde: questa persona ha anticipato più della sua parte, le si devono dei soldi. Arancione: deve ancora la sua parte. I rimborsi qui sotto saldano tutto con il minor numero di bonifici.",
+    "i_reimbursed": "Ho rimborsato {{amount}}",
+    "i_was_paid": "Sono stato pagato {{amount}}",
+    "undo_confirm": "↩ Annulla la mia conferma",
+    "waiting_other": "⏳ Hai confermato. In attesa di {{name}} — il saldo cambia solo quando siete d'accordo entrambi.",
+    "other_confirmed": "⏳ {{name}} ha confermato. Tocca a te validare per saldare.",
+    "both_needed": "Servono le conferme di entrambi perché il saldo cambi."
   },
   "home": {
     "greeting": "Ciao, {{name}} 👋"

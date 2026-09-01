@@ -150,8 +150,13 @@ model ExpenseSplit {
   expenseId String
   memberId  String
   amount    Float
+  // Un remboursement n'est acquis que lorsque les DEUX parties l'ont confirme :
+  // celui qui doit ("j'ai rembourse") et celui qui a avance ("j'ai ete paye").
+  // `settled` reste le drapeau derive des deux, pour le reste du code.
   settled   Boolean     @default(false)
   settledAt DateTime?
+  settledByDebtorAt   DateTime?
+  settledByCreditorAt DateTime?
   createdAt DateTime    @default(now())
   expense   Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   member    GroupMember @relation(fields: [memberId], references: [id])
