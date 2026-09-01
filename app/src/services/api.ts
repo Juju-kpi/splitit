@@ -16,23 +16,25 @@ const BACKENDS = [
   process.env.EXPO_PUBLIC_API_URL_FALLBACK || 'https://splitit-13dz.onrender.com',
 ]
 
-let activeIndex = 0
-let lastFailedAt: number | null = null
-const RETRY_AFTER_MS = 5 * 60 * 10000
+// Le repli ne sert que tant que le primaire est reellement injoignable. On le
+// resonde au bout d'une minute, sur /health (l'ancien code interrogeait
+// /api/health, qui n'existe pas, et restait 50 minutes sur le repli).
+let primaryDownSince: number | null = null;
+const RECHECK_AFTER_MS = 60_000;
+
+function timeoutSignal(ms: number): AbortSignal | undefined {
+  try { return AbortSignal.timeout(ms); } catch { return undefined; }
+}
 
 async function resolveBaseUrl(): Promise<string> {
-  if (activeIndex > 0 && lastFailedAt) {
-    if (Date.now() - lastFailedAt > RETRY_AFTER_MS) {
-      try {
-        await fetch(`${BACKENDS[0]}/api/health`, { signal: AbortSignal.timeout(3000) })
-        activeIndex = 0
-        lastFailedAt = null
-      } catch {
-        lastFailedAt = Date.now()
-      }
-    }
-  }
-  return BACKENDS[activeIndex]
+  if (primaryDownSince === null) return BACKENDS[0];
+  if (Date.now() - primaryDownSince < RECHECK_AFTER_MS) return BACKENDS[1];
+  try {
+    const res = await fetch(`${BACKENDS[0]}/health`, { signal: timeoutSignal(4000) });
+    if (res.ok) { primaryDownSince = null; return BACKENDS[0]; }
+  } catch { /* toujours indisponible */ }
+  primaryDownSince = Date.now();
+  return BACKENDS[1];
 }
 const KEYS = { accessToken: 'splitit_access_token', refreshToken: 'splitit_refresh_token' };
 
@@ -71,13 +73,13 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const original = error.config;
 
-    // Fallback backend
+    // Bascule sur le repli uniquement si la requete visait le primaire
     const isDown = status === 503 || status === 429 || !status;
-    if (isDown && activeIndex < BACKENDS.length - 1 && !original._fallback) {
+    const wasOnPrimary = typeof original?.baseURL === 'string' && original.baseURL.startsWith(BACKENDS[0]);
+    if (isDown && wasOnPrimary && !original._fallback) {
       original._fallback = true;
-      activeIndex++;
-      lastFailedAt = Date.now();
-      original.baseURL = `${BACKENDS[activeIndex]}/api`;
+      primaryDownSince = Date.now();
+      original.baseURL = `${BACKENDS[1]}/api`;
       return api(original);
     }
 
