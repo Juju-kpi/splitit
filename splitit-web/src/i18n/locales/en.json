@@ -406,5 +406,13 @@
     "groups": "Groups",
     "stats": "Stats",
     "settings": "Settings"
+  },
+  "update": {
+    "title": "New version available",
+    "title_required": "Update required",
+    "body": "Splitit {{version}} is out. Install it to get the latest improvements.",
+    "body_required": "This version of Splitit is no longer supported. Install the latest one to carry on.",
+    "cta": "Update",
+    "later": "Later"
   }
 }
