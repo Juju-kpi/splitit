@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    { "file": "Avant.dc.html", "x": 0, "y": 0, "w": 390, "h": 1240, "title": "Avant — aujourd'hui" },
+    { "file": "Main.dc.html", "x": 490, "y": 0, "w": 390, "h": 1240, "title": "Après — écran de groupe" },
+    { "file": "Remboursement.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "title": "Après — enregistrer un remboursement" },
+    { "file": "Detail.dc.html", "x": 1470, "y": 0, "w": 390, "h": 1180, "title": "Après — détail et calcul" },
+    { "file": "Systeme.dc.html", "x": 0, "y": 1380, "w": 900, "h": 1180, "title": "Le système" }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -150, "w": 880, "text": "Nuit premium — mêmes écrans, mêmes gestes, mêmes fonctionnalités.\nSeuls les matériaux changent : profondeur au lieu de bordures, montants en héros, icônes au lieu d'emoji, la couleur réservée au sens de l'argent." },
+    { "id": "note-avant", "x": 0, "y": 1270, "w": 390, "text": "L'écran actuel, reproduit à partir du code : violet #7C6EFA, bordures grises, emoji, titres en capitales espacées." },
+    { "id": "note-mobile", "x": 980, "y": 900, "w": 390, "text": "Les icônes demandent @expo/vector-icons (Feather) côté mobile et donc un nouveau build — Lucide est déjà installé côté web." }
+  ],
+  "launch": { "view": "canvas" }
+}
