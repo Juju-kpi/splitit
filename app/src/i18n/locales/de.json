@@ -314,7 +314,8 @@
     "currency_chf": "CHF — Schweizer Franken",
     "currency_eur": "EUR — Euro",
     "currency_usd": "USD — US-Dollar",
-    "currency_gbp": "GBP — Pfund Sterling"
+    "currency_gbp": "GBP — Pfund Sterling",
+    "notif_unsupported_pref": "Dieser Browser zeigt keine Benachrichtigungen an, die Einstellung gilt aber weiterhin: du erhältst sie in der mobilen App."
   },
   "balances": {
     "title": "Rückzahlungen",
@@ -341,7 +342,8 @@
     "undo_confirm": "↩ Bestätigung zurücknehmen",
     "waiting_other": "⏳ Du hast bestätigt. Warten auf {{name}} — der Saldo ändert sich erst, wenn ihr beide zustimmt.",
     "other_confirmed": "⏳ {{name}} hat bestätigt. Jetzt bist du dran.",
-    "both_needed": "Beide müssen bestätigen, damit sich der Saldo ändert."
+    "both_needed": "Beide müssen bestätigen, damit sich der Saldo ändert.",
+    "undo_warning": "Die Schuld wird wieder fällig, auf beiden Seiten."
   },
   "home": {
     "greeting": "Hallo, {{name}} 👋"

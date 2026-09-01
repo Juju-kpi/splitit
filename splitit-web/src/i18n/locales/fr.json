@@ -314,7 +314,8 @@
     "currency_chf": "CHF — Franc suisse",
     "currency_eur": "EUR — Euro",
     "currency_usd": "USD — Dollar US",
-    "currency_gbp": "GBP — Livre sterling"
+    "currency_gbp": "GBP — Livre sterling",
+    "notif_unsupported_pref": "Ce navigateur n'affiche pas de notifications, mais le réglage reste actif : tu les recevras sur l'application mobile."
   },
   "balances": {
     "title": "Remboursements",
@@ -341,7 +342,8 @@
     "undo_confirm": "↩ Annuler ma confirmation",
     "waiting_other": "⏳ Tu as confirmé. En attente de {{name}} — le solde ne bougera qu'une fois les deux d'accord.",
     "other_confirmed": "⏳ {{name}} a confirmé. À toi de valider pour solder.",
-    "both_needed": "Il faut la confirmation des deux pour que le solde change."
+    "both_needed": "Il faut la confirmation des deux pour que le solde change.",
+    "undo_warning": "La dette redeviendra due, des deux côtés."
   },
   "home": {
     "greeting": "Bonjour, {{name}} 👋"

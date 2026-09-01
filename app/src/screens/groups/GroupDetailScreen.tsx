@@ -504,16 +504,43 @@ export default function GroupDetailScreen() {
                       )}
                     </View>
                   </View>
-                  {entry.lines.map((line, li) => (
-                    <View key={li} style={styles.logLine}>
-                      <Text style={[styles.logLineName, line.settled && { color: colors.text3 }]} numberOfLines={1}>
-                        {line.settled ? '✓' : '•'} {line.expenseDesc}
-                      </Text>
-                      <Text style={[styles.logLineAmt, line.settled && { color: colors.text3 }]}>
-                        {fmt(line.amount)}
-                      </Text>
-                    </View>
-                  ))}
+                  {entry.lines.map((line, li) => {
+                    // Une fois les deux d'accord, la ligne quitte les soldes :
+                    // c'est ici que l'on revient sur un clic malheureux.
+                    const canUndo = line.settled
+                      && (line.debtorId === myMember?.id || line.creditorId === myMember?.id);
+                    return (
+                      <View key={li} style={styles.logLine}>
+                        <Text style={[styles.logLineName, line.settled && { color: colors.text3 }]} numberOfLines={1}>
+                          {line.settled ? '✓' : '•'} {line.expenseDesc}
+                        </Text>
+                        <Text style={[styles.logLineAmt, line.settled && { color: colors.text3 }]}>
+                          {fmt(line.amount)}
+                        </Text>
+                        {canUndo && (
+                          <TouchableOpacity
+                            style={styles.undoBtn}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            onPress={() => Alert.alert(
+                              t('balances.undo_confirm'),
+                              t('balances.undo_warning'),
+                              [
+                                { text: t('common.cancel'), style: 'cancel' },
+                                {
+                                  text: t('common.confirm'),
+                                  onPress: () => settleMutation.mutate({
+                                    expenseId: line.expenseId, memberId: line.debtorId, undo: true,
+                                  }),
+                                },
+                              ],
+                            )}
+                          >
+                            <Text style={styles.undoBtnText}>↩</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               );
             })}
@@ -651,6 +678,11 @@ const styles = StyleSheet.create({
   modalClose: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.surface2, borderRadius: radius.full },
   modalCloseText: { fontSize: 13, color: colors.text2 },
   logEntry: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
+  undoBtn: {
+    marginLeft: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full,
+    backgroundColor: 'rgba(251,191,36,0.10)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)',
+  },
+  undoBtnText: { fontSize: 12, color: colors.amber },
   logEntryMe: { borderColor: colors.accent, backgroundColor: colors.accentBg },
   logEntryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   logEntryTitle: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 1 },

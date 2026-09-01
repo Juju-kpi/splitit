@@ -314,7 +314,8 @@
     "currency_chf": "CHF — Swiss Franc",
     "currency_eur": "EUR — Euro",
     "currency_usd": "USD — US Dollar",
-    "currency_gbp": "GBP — Pound Sterling"
+    "currency_gbp": "GBP — Pound Sterling",
+    "notif_unsupported_pref": "This browser cannot show notifications, but the setting still applies: you will get them on the mobile app."
   },
   "balances": {
     "title": "Repayments",
@@ -341,7 +342,8 @@
     "undo_confirm": "↩ Undo my confirmation",
     "waiting_other": "⏳ You confirmed. Waiting for {{name}} — the balance only changes once you both agree.",
     "other_confirmed": "⏳ {{name}} confirmed. Your turn to validate and settle.",
-    "both_needed": "Both of you must confirm before the balance changes."
+    "both_needed": "Both of you must confirm before the balance changes.",
+    "undo_warning": "The debt will be owed again, on both sides."
   },
   "home": {
     "greeting": "Hi, {{name}} 👋"

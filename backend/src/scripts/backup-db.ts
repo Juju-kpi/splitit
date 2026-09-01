@@ -35,18 +35,23 @@ async function main() {
   const outPath = path.resolve(outArg ? outArg.slice('--out='.length) : defaultName());
   console.log('\n📦 Sauvegarde en cours…\n');
 
+  // SQL brut plutot que le client type : la sauvegarde reste possible meme
+  // quand le schema Prisma a pris de l'avance sur la base (migration en
+  // attente), ce qui est precisement le moment ou l'on en a besoin.
+  const dumpTable = (table: string) => prisma.$queryRawUnsafe<any[]>(`SELECT * FROM "${table}"`);
+
   const [
     users, groups, groupMembers, expenses,
     expenseItems, expenseItemAssignments, expenseSplits, expensePayments,
   ] = await Promise.all([
-    prisma.user.findMany(),
-    prisma.group.findMany(),
-    prisma.groupMember.findMany(),
-    prisma.expense.findMany(),
-    prisma.expenseItem.findMany(),
-    prisma.expenseItemAssignment.findMany(),
-    prisma.expenseSplit.findMany(),
-    prisma.expensePayment.findMany(),
+    dumpTable('users'),
+    dumpTable('groups'),
+    dumpTable('group_members'),
+    dumpTable('expenses'),
+    dumpTable('expense_items'),
+    dumpTable('expense_item_assignments'),
+    dumpTable('expense_splits'),
+    dumpTable('expense_payments'),
   ]);
 
   const dump = {

@@ -212,6 +212,22 @@ export default function SettingsPage() {
 
       let token: string | null = null
 
+      // Sans support navigateur (Safari iOS hors PWA installee, par exemple),
+      // on enregistre quand meme la preference : elle pilote aussi les
+      // notifications recues sur l'application mobile.
+      if (!notifSupported) {
+        const updatedPref = await userApi.updateNotificationPrefs({
+          webPushToken: user?.webPushToken ?? null,
+          notifExpense: type === 'expense' ? value : notifExpense,
+          notifReminder: type === 'reminder' ? value : notifReminder,
+        })
+        setUser(updatedPref)
+        if (type === 'expense') setNotifExpense(value)
+        else setNotifReminder(value)
+        setNotifLoading(false)
+        return
+      }
+
       if (anyEnabled) {
         if (Notification.permission !== 'granted') {
           const perm = await Notification.requestPermission()
@@ -363,15 +379,15 @@ export default function SettingsPage() {
           <Notice variant="amber" text={t('settings.notif_blocked')} />
         )}
         {!notifSupported && (
-          <Notice variant="amber" text={t('settings.notif_unsupported')} />
+          <Notice variant="amber" text={t('settings.notif_unsupported_pref')} />
         )}
-        <div className={`glass-card rounded-2xl overflow-hidden p-0 mb-3 ${!notifSupported ? 'opacity-50' : ''}`}>
+        <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
           <SettingRow icon="🔔" label={t('settings.notif_expense')}
-            right={<Toggle checked={notifExpense} onChange={v => handleNotifToggle('expense', v)} disabled={notifLoading || !notifSupported || !swReady} />}
+            right={<Toggle checked={notifExpense} onChange={v => handleNotifToggle('expense', v)} disabled={notifLoading || (notifSupported && !swReady)} />}
           />
           <RowSep />
           <SettingRow icon="⏰" label={t('settings.notif_reminder')}
-            right={<Toggle checked={notifReminder} onChange={v => handleNotifToggle('reminder', v)} disabled={notifLoading || !notifSupported || !swReady} />}
+            right={<Toggle checked={notifReminder} onChange={v => handleNotifToggle('reminder', v)} disabled={notifLoading || (notifSupported && !swReady)} />}
           />
         </div>
 

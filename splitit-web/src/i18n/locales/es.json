@@ -314,7 +314,8 @@
     "currency_chf": "CHF — Franco suizo",
     "currency_eur": "EUR — Euro",
     "currency_usd": "USD — Dólar estadounidense",
-    "currency_gbp": "GBP — Libra esterlina"
+    "currency_gbp": "GBP — Libra esterlina",
+    "notif_unsupported_pref": "Este navegador no muestra notificaciones, pero el ajuste sigue activo: las recibirás en la aplicación móvil."
   },
   "balances": {
     "title": "Reembolsos",
@@ -341,7 +342,8 @@
     "undo_confirm": "↩ Anular mi confirmación",
     "waiting_other": "⏳ Has confirmado. A la espera de {{name}} — el saldo solo cambia cuando ambos estáis de acuerdo.",
     "other_confirmed": "⏳ {{name}} ha confirmado. Te toca validar para saldar.",
-    "both_needed": "Los dos debéis confirmar para que el saldo cambie."
+    "both_needed": "Los dos debéis confirmar para que el saldo cambie.",
+    "undo_warning": "La deuda volverá a estar pendiente, por ambas partes."
   },
   "home": {
     "greeting": "Hola, {{name}} 👋"

@@ -419,7 +419,12 @@ export default function GroupDetailPage() {
             <div className="space-y-4">
               {Object.entries(netLog).map(([key, entry]) => (
                 <div key={key}>
-                  {entry.lines.map((line, li) => (
+                  {entry.lines.map((line, li) => {
+                    // Une fois les deux d'accord, la ligne quitte les soldes :
+                    // c'est ici que l'on peut revenir sur un clic malheureux.
+                    const canUndo = line.settled
+                      && (line.debtorId === myMember?.id || line.creditorId === myMember?.id)
+                    return (
                     <div key={li} className="flex items-center justify-between text-xs py-1.5 border-b border-white/5 last:border-0">
                       <span className="text-text2 truncate flex-1">
                         {line.settled ? '✓ ' : '• '}{line.expenseDesc}
@@ -427,8 +432,21 @@ export default function GroupDetailPage() {
                       <span className={`font-mono ${line.settled ? 'text-green-400' : 'text-text'}`}>
                         {formatMoney(line.amount, currency)}
                       </span>
+                      {canUndo && (
+                        <button
+                          onClick={() => {
+                            if (!confirm('Annuler ce remboursement ? La dette redeviendra due.')) return
+                            settleMutation.mutate({ expenseId: line.expenseId, memberId: line.debtorId, undo: true })
+                          }}
+                          title="Annuler ce remboursement"
+                          className="ml-2 shrink-0 text-[11px] text-amber bg-amber/10 border border-amber/25 rounded-full px-2 min-h-[32px]"
+                        >
+                          ↩
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ))}
             </div>
