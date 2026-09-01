@@ -13,6 +13,7 @@ import groupsRouter from './routes/groups';
 import expensesRouter from './routes/expenses';
 import ocrRouter from './routes/ocr';
 import usersRouter from './routes/users';
+import settlementsRouter from './routes/settlements';
 import { authenticate } from './middleware/auth';
 import { prisma } from './db';
 import { computeBalances } from './services/balances';
@@ -46,6 +47,7 @@ app.use('/api/groups', authenticate, groupsRouter);
 app.use('/api/expenses', authenticate, expensesRouter);
 app.use('/api/ocr', authenticate, ocrRouter);
 app.use('/api/users', authenticate, usersRouter); // NOUVEAU
+app.use('/api/settlements', authenticate, settlementsRouter);
 
 // Health check
 // commit : Render expose RENDER_GIT_COMMIT — permet de verifier en une
@@ -130,6 +132,7 @@ if (debtReminderCron !== 'off') {
         include: {
           members: { include: { user: true } },
           expenses: { include: { splits: true, payments: true } },
+          settlements: true,
         },
       });
 
@@ -137,7 +140,8 @@ if (debtReminderCron !== 'off') {
       const owed = new Map<string, { total: number; groups: number; tokens: string[] }>();
 
       for (const group of groups) {
-        const balances = computeBalances(group.members, group.expenses as any);
+        // Sans les remboursements, on relancerait des gens deja a jour.
+        const balances = computeBalances(group.members, group.expenses as any, group.settlements);
         for (const balance of balances) {
           const debtor = group.members.find(m => m.id === balance.fromMemberId);
           if (!debtor?.user?.notifReminder) continue;

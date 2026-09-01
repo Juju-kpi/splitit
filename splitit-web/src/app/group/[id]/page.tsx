@@ -9,17 +9,24 @@
 // recalculait elle-même les soldes par dépense sans nettage global ni
 // bidirectionnel, ce qui pouvait afficher les deux dettes simultanément.
 //
-// Le détail dépliable + bouton "marquer comme réglé" sont repris du flux
-// mobile (GroupDetailScreen.tsx) pour un comportement identique.
+// Le détail dépliable est repris du flux mobile (GroupDetailScreen.tsx) pour
+// un comportement identique.
+//
+// Les remboursements passent par la table `settlements` : un versement de X à
+// Y, validé par les deux. C'est ce qui permet de solder un solde né d'une
+// compensation en chaîne (je dois à A parce que A doit à B qui me doit), où
+// aucune part de dépense ne relie directement les deux personnes. Le drapeau
+// `settled` posé sur les parts reste lu et annulable — les remboursements
+// déjà enregistrés de cette manière ne bougent pas.
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { groupsApi, expensesApi } from '@/lib/api'
+import { groupsApi, expensesApi, settlementsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Avatar, Pill, SectionLabel, Card, Button, FullScreenSpinner } from '@/components/ui'
-import { formatMoney } from '@/store/langStore'
-import { Balance } from '@/types'
+import { formatMoney, useT } from '@/store/langStore'
+import { Balance, Settlement } from '@/types'
 
 function isExpenseIncomplete(exp: any): boolean {
   if (typeof exp.isComplete === 'boolean') return !exp.isComplete
@@ -40,8 +47,6 @@ type LogLine = {
   creditorId: string
   amount: number
   settled: boolean
-  byDebtor: boolean
-  byCreditor: boolean
 }
 
 export default function GroupDetailPage() {
@@ -49,9 +54,15 @@ export default function GroupDetailPage() {
   const router = useRouter()
   const qc = useQueryClient()
   const user = useAuthStore(s => s.user)
+  const t = useT()
   const [copied, setCopied] = useState(false)
   const [expandedBalance, setExpandedBalance] = useState<string | null>(null)
   const [showLog, setShowLog] = useState(false)
+  // Formulaire de remboursement — ouvert depuis une ligne de solde
+  const [settleFor, setSettleFor] = useState<Balance | null>(null)
+  const [amountInput, setAmountInput] = useState('')
+  const [methodInput, setMethodInput] = useState('')
+  const [noteInput, setNoteInput] = useState('')
 
   const { data: group, isLoading } = useQuery({
     queryKey: ['group', id],
@@ -59,10 +70,30 @@ export default function GroupDetailPage() {
     enabled: !!id,
   })
 
+  const refresh = () => qc.invalidateQueries({ queryKey: ['group', id] })
+
+  // Ancien mécanisme, conservé pour annuler un remboursement déjà validé sur
+  // une part de dépense. Rien de nouveau ne passe plus par ici.
   const settleMutation = useMutation({
     mutationFn: ({ expenseId, memberId, undo }: { expenseId: string; memberId: string; undo?: boolean }) =>
       expensesApi.settle(expenseId, memberId, undo),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['group', id] }),
+    onSuccess: refresh,
+  })
+
+  const createSettlement = useMutation({
+    mutationFn: (payload: {
+      groupId: string; fromMemberId: string; toMemberId: string
+      amount: number; currency?: string; method?: string; note?: string
+    }) => settlementsApi.create(payload),
+    onSuccess: () => { setSettleFor(null); refresh() },
+  })
+  const confirmSettlement = useMutation({
+    mutationFn: ({ sid, undo }: { sid: string; undo?: boolean }) => settlementsApi.confirm(sid, undo),
+    onSuccess: refresh,
+  })
+  const cancelSettlement = useMutation({
+    mutationFn: ({ sid, undo }: { sid: string; undo?: boolean }) => settlementsApi.cancel(sid, undo),
+    onSuccess: refresh,
   })
 
   if (isLoading || !group) return <FullScreenSpinner />
@@ -96,8 +127,6 @@ export default function GroupDetailPage() {
         creditorId: primaryPayment.memberId,
         amount: split.amount,
         settled: split.settled,
-        byDebtor: !!split.settledByDebtorAt,
-        byCreditor: !!split.settledByCreditorAt,
       })
     })
   })
@@ -107,6 +136,33 @@ export default function GroupDetailPage() {
     if (!netLog[key]) netLog[key] = { lines: [] }
     netLog[key].lines.push(line)
   })
+
+  // ── Remboursements enregistrés ─────────────────────────────────────────
+  const settlements: Settlement[] = group.settlements || []
+  const liveSettlements = settlements.filter(s => !s.cancelledAt)
+  const memberName = (mid: string) =>
+    group.members.find((m: any) => m.id === mid)?.displayName ?? '?'
+  const isGuest = (mid: string) =>
+    !group.members.find((m: any) => m.id === mid)?.userId
+
+  /** Les remboursements en attente entre deux personnes, dans les deux sens. */
+  const pendingBetween = (x: string, y: string) => liveSettlements.filter(s =>
+    !s.confirmed
+    && ((s.fromMemberId === x && s.toMemberId === y) || (s.fromMemberId === y && s.toMemberId === x))
+  )
+  /** Attend-il MA confirmation ? */
+  const needsMyNod = (s: Settlement) =>
+    (s.fromMemberId === myMember?.id && !s.confirmedByFromAt)
+    || (s.toMemberId === myMember?.id && !s.confirmedByToAt)
+
+  const myPendingCount = liveSettlements.filter(s => !s.confirmed && needsMyNod(s)).length
+
+  function openSettleForm(b: Balance) {
+    setSettleFor(b)
+    setAmountInput(b.amount.toFixed(2))
+    setMethodInput('')
+    setNoteInput('')
+  }
 
   // Solde net : ce qu'il a avancé moins ce qu'il doit. Mêmes données que les
   // remboursements ci-dessous — affichage seul, le calcul n'est pas modifié.
@@ -258,23 +314,30 @@ export default function GroupDetailPage() {
         )}
 
         {/* Remboursements — basé sur group.balances (calcul backend nettisé) */}
-        {group.balances?.length > 0 && (
+        {(group.balances?.length > 0 || settlements.length > 0) && (
           <>
             <div className="flex items-center justify-between gap-3 mt-2">
-              <SectionLabel label="Remboursements" />
-              {Object.keys(netLog).length > 0 && (
-                // 44 px de haut : en dessous, la cible est trop petite pour le
-                // doigt sur iPhone. Centre dans la ligne, sans decalage vers le haut.
+              <SectionLabel label={t('settlements.section')} />
+              <div className="flex items-center gap-2 shrink-0">
+                {myPendingCount > 0 && (
+                  <Pill label={t('settlements.pending_badge', { n: myPendingCount })} variant="amber" />
+                )}
+                {/* 44 px de haut : en dessous, la cible est trop petite pour le
+                    doigt sur iPhone. Centre dans la ligne, sans decalage vers le haut. */}
                 <button
                   onClick={() => setShowLog(true)}
                   className="shrink-0 flex items-center justify-center text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-4 min-h-[44px] rounded-full"
                 >
                   📋 Détail
                 </button>
-              )}
+              </div>
             </div>
             <Card>
-              <p className="text-[11px] text-text3 mb-3">Montants nets simplifiés — clique pour marquer comme réglé</p>
+              {group.balances?.length === 0 ? (
+                <p className="text-sm text-text2 text-center py-3">{t('settlements.all_settled')}</p>
+              ) : (
+              <>
+              <p className="text-[11px] text-text3 mb-3">Montants nets simplifiés — clique pour ouvrir</p>
               <div className="space-y-1">
                 {group.balances.map((b: Balance, i: number) => {
                   const isMe = b.fromMember?.userId === user?.id || b.toMember?.userId === user?.id
@@ -314,56 +377,81 @@ export default function GroupDetailPage() {
                               </span>
                             </div>
                           ))}
+                          {/* Aucune dépense commune : le solde vient d'une
+                              compensation en chaîne. Sans remboursement à part
+                              entière, il n'y aurait rien à cocher ici. */}
+                          {(netLog[key]?.lines || []).length === 0 && (
+                            <p className="text-[11px] text-text3 leading-relaxed">{t('settlements.chain_hint')}</p>
+                          )}
+
                           {(() => {
-                            const lines = netLog[key]?.lines || []
-                            const open = lines.filter(l => !l.settled)
                             const isMeCreditor = b.toMember?.userId === user?.id
                             if (!isMeDebtor && !isMeCreditor) return null
 
-                            // Un remboursement n'est acquis que si les deux parties
-                            // l'ont confirme. On montre donc ce qui manque encore.
-                            const mineDone = open.length > 0 && open.every(l => isMeDebtor ? l.byDebtor : l.byCreditor)
-                            const theirsDone = open.length > 0 && open.every(l => isMeDebtor ? l.byCreditor : l.byDebtor)
                             const other = isMeDebtor ? b.toMember?.displayName : b.fromMember?.displayName
-                            const label = isMeDebtor
-                              ? `J'ai remboursé ${formatMoney(b.amount, currency)}`
-                              : `J'ai été payé ${formatMoney(b.amount, currency)}`
+                            const pending = pendingBetween(b.fromMemberId, b.toMemberId)
 
                             return (
                               <>
+                                {pending.map(s => {
+                                  const mine = needsMyNod(s)
+                                  const amount = formatMoney(s.amount, s.currency || currency)
+                                  const iAmPayer = s.fromMemberId === myMember?.id
+                                  return (
+                                    <div key={s.id} className="mt-2 rounded-lg border border-amber/25 bg-amber/5 p-2.5">
+                                      <p className="text-[11px] text-amber leading-relaxed">
+                                        {mine
+                                          ? (iAmPayer
+                                              ? t('settlements.to_confirm_received', { name: memberName(s.toMemberId), amount })
+                                              : t('settlements.to_confirm_paid', { name: memberName(s.fromMemberId), amount }))
+                                          : t('settlements.waiting_other', { name: other })}
+                                      </p>
+                                      <div className="flex gap-2 mt-2">
+                                        {mine && (
+                                          <button
+                                            onClick={() => {
+                                              if (!confirm(t('settlements.confirm_q', { amount }))) return
+                                              confirmSettlement.mutate({ sid: s.id })
+                                            }}
+                                            disabled={confirmSettlement.isPending}
+                                            className="flex-1 text-xs font-semibold rounded-lg min-h-[40px] bg-accent/15 border border-accent/30 text-accent2"
+                                          >
+                                            {t('settlements.confirm_btn')}
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={() => {
+                                            if (!confirm(t('settlements.cancel_q'))) return
+                                            cancelSettlement.mutate({ sid: s.id })
+                                          }}
+                                          disabled={cancelSettlement.isPending}
+                                          className="flex-1 text-xs font-semibold rounded-lg min-h-[40px] bg-surface3 border border-border text-text3"
+                                        >
+                                          {mine ? t('settlements.refuse_btn') : t('settlements.cancel_btn')}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+
+                                {/* Un remboursement déjà en attente couvre sans
+                                    doute cette dette : on garde le bouton, mais
+                                    il cesse d'être l'action évidente — sinon on
+                                    en enregistre deux pour le même versement. */}
                                 <button
-                                  onClick={() => {
-                                    const undo = mineDone
-                                    if (!undo && !confirm(`${label} — confirmer ?`)) return
-                                    open.forEach(l => settleMutation.mutate({
-                                      expenseId: l.expenseId, memberId: l.debtorId, undo,
-                                    }))
-                                  }}
-                                  className={`mt-2 w-full text-xs font-semibold rounded-lg py-2 border ${
-                                    mineDone
+                                  onClick={() => openSettleForm(b)}
+                                  className={`mt-2 w-full text-xs font-semibold rounded-lg min-h-[44px] border ${
+                                    pending.length > 0
                                       ? 'bg-surface3 border-border text-text3'
                                       : 'bg-accent/15 border-accent/30 text-accent2'
                                   }`}
                                 >
-                                  {mineDone ? '↩ Annuler ma confirmation' : `💸 ${label}`}
+                                  {pending.length > 0
+                                    ? t('settlements.record')
+                                    : isMeDebtor
+                                      ? t('settlements.i_paid', { amount: formatMoney(b.amount, currency) })
+                                      : t('settlements.i_received', { amount: formatMoney(b.amount, currency) })}
                                 </button>
-                                <p className="text-[11px] mt-2 leading-relaxed">
-                                  {mineDone && !theirsDone && (
-                                    <span className="text-amber">
-                                      ⏳ Tu as confirmé. En attente de {other} — le solde ne bougera qu&apos;une fois les deux d&apos;accord.
-                                    </span>
-                                  )}
-                                  {!mineDone && theirsDone && (
-                                    <span className="text-amber">
-                                      ⏳ {other} a confirmé. À toi de valider pour solder.
-                                    </span>
-                                  )}
-                                  {!mineDone && !theirsDone && (
-                                    <span className="text-text3">
-                                      Il faut la confirmation des deux pour que le solde change.
-                                    </span>
-                                  )}
-                                </p>
                               </>
                             )
                           })()}
@@ -374,6 +462,8 @@ export default function GroupDetailPage() {
                   )
                 })}
               </div>
+              </>
+              )}
             </Card>
           </>
         )}
@@ -416,6 +506,64 @@ export default function GroupDetailPage() {
               <h2 className="text-base font-bold text-text">Détail des remboursements</h2>
               <button onClick={() => setShowLog(false)} className="bg-surface2 border border-border px-3 py-1.5 rounded-full text-xs text-text2">Fermer</button>
             </div>
+
+            {/* Historique des remboursements enregistrés — y compris annulés,
+                pour qu'un clic malheureux reste rattrapable. */}
+            <p className="text-[11px] uppercase tracking-wide text-text3 font-semibold mb-2">
+              {t('settlements.history_title')}
+            </p>
+            <div className="space-y-2 mb-5">
+              {settlements.length === 0 && (
+                <p className="text-xs text-text3">{t('settlements.none')}</p>
+              )}
+              {settlements.map(s => {
+                const cancelled = !!s.cancelledAt
+                const isParty = s.fromMemberId === myMember?.id || s.toMemberId === myMember?.id
+                const status = cancelled
+                  ? t('settlements.status_cancelled')
+                  : s.confirmed ? t('settlements.status_confirmed') : t('settlements.status_pending')
+                return (
+                  <div key={s.id} className={`rounded-lg border p-2.5 ${
+                    cancelled ? 'border-border/40 bg-surface2/30 opacity-60'
+                      : s.confirmed ? 'border-green/25 bg-green/5' : 'border-amber/25 bg-amber/5'
+                  }`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-xs flex-1 truncate ${cancelled ? 'line-through text-text3' : 'text-text2'}`}>
+                        {memberName(s.fromMemberId)} → {memberName(s.toMemberId)}
+                      </span>
+                      <span className={`font-mono text-xs ${cancelled ? 'text-text3' : 'text-text'}`}>
+                        {formatMoney(s.amount, s.currency || currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <span className={`text-[11px] ${
+                        cancelled ? 'text-text3' : s.confirmed ? 'text-green' : 'text-amber'
+                      }`}>
+                        {status} · {new Date(s.createdAt).toLocaleDateString('fr-FR')}
+                        {s.method ? ` · ${s.method}` : ''}
+                      </span>
+                      {isParty && (
+                        <button
+                          onClick={() => {
+                            if (!cancelled && !confirm(t('settlements.cancel_q'))) return
+                            cancelSettlement.mutate({ sid: s.id, undo: cancelled })
+                          }}
+                          disabled={cancelSettlement.isPending}
+                          className="shrink-0 text-[11px] text-amber bg-amber/10 border border-amber/25 rounded-full px-2.5 min-h-[32px]"
+                        >
+                          {cancelled ? t('settlements.restore_btn') : '↩'}
+                        </button>
+                      )}
+                    </div>
+                    {s.note && <p className="text-[11px] text-text3 mt-1">{s.note}</p>}
+                  </div>
+                )
+              })}
+            </div>
+
+            <p className="text-[11px] uppercase tracking-wide text-text3 font-semibold mb-2">
+              Par dépense
+            </p>
             <div className="space-y-4">
               {Object.entries(netLog).map(([key, entry]) => (
                 <div key={key}>
@@ -453,6 +601,116 @@ export default function GroupDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Saisie d'un remboursement — montant modifiable : on peut rembourser
+          une partie seulement, ce que le drapeau sur les parts ne savait pas
+          exprimer. */}
+      {settleFor && (() => {
+        const b = settleFor
+        const parsed = Number(amountInput.replace(',', '.'))
+        const valid = Number.isFinite(parsed) && parsed >= 0.01
+        const over = valid && parsed > b.amount + 0.005
+        const other = b.fromMemberId === myMember?.id ? b.toMemberId : b.fromMemberId
+        const methods = [
+          t('settlements.method_cash'), t('settlements.method_transfer'),
+          t('settlements.method_app'), t('settlements.method_other'),
+        ]
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+            <div className="absolute inset-0 bg-black/70" onClick={() => setSettleFor(null)} />
+            <div className="relative w-full max-w-sm bg-surface border border-border rounded-t-3xl sm:rounded-3xl p-6 pb-[max(env(safe-area-inset-bottom),24px)] max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-base font-bold text-text">{t('settlements.modal_title')}</h2>
+                <button onClick={() => setSettleFor(null)} className="bg-surface2 border border-border px-3 py-1.5 rounded-full text-xs text-text2">
+                  Fermer
+                </button>
+              </div>
+              <p className="text-xs text-text3 mb-4">
+                {t('settlements.direction', {
+                  from: memberName(b.fromMemberId), to: memberName(b.toMemberId),
+                })}
+              </p>
+
+              <label className="block text-[11px] uppercase tracking-wide text-text3 font-semibold mb-1.5">
+                {t('settlements.amount_label')}
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={amountInput}
+                onChange={e => setAmountInput(e.target.value)}
+                className="w-full bg-surface2 border border-border rounded-xl px-4 min-h-[48px] text-lg font-mono text-text outline-none focus:border-accent/50"
+              />
+              <p className={`text-[11px] mt-1.5 leading-relaxed ${over ? 'text-amber' : 'text-text3'}`}>
+                {!valid
+                  ? t('settlements.amount_invalid')
+                  : over
+                    ? t('settlements.amount_over', { amount: formatMoney(b.amount, currency) })
+                    : t('settlements.amount_hint', { amount: formatMoney(b.amount, currency) })}
+              </p>
+
+              <label className="block text-[11px] uppercase tracking-wide text-text3 font-semibold mt-4 mb-1.5">
+                {t('settlements.method_label')}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {methods.map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setMethodInput(methodInput === m ? '' : m)}
+                    className={`text-xs font-medium rounded-full px-3.5 min-h-[36px] border ${
+                      methodInput === m
+                        ? 'bg-accent/15 border-accent/30 text-accent2'
+                        : 'bg-surface2 border-border/50 text-text2'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+
+              <label className="block text-[11px] uppercase tracking-wide text-text3 font-semibold mt-4 mb-1.5">
+                {t('settlements.note_label')}
+              </label>
+              <input
+                type="text"
+                value={noteInput}
+                onChange={e => setNoteInput(e.target.value)}
+                placeholder={t('settlements.note_placeholder')}
+                className="w-full bg-surface2 border border-border rounded-xl px-4 min-h-[44px] text-sm text-text outline-none focus:border-accent/50 placeholder:text-text3"
+              />
+
+              {/* Un membre sans compte ne peut rien confirmer : on le dit au
+                  lieu de laisser croire à une attente qui n'arrivera jamais. */}
+              <p className="text-[11px] text-text3 mt-4 leading-relaxed">
+                {isGuest(other)
+                  ? t('settlements.guest_auto', { name: memberName(other) })
+                  : t('settlements.waiting_other', { name: memberName(other) })}
+              </p>
+
+              <button
+                onClick={() => createSettlement.mutate({
+                  groupId: group.id,
+                  fromMemberId: b.fromMemberId,
+                  toMemberId: b.toMemberId,
+                  amount: Math.round(parsed * 100) / 100,
+                  currency,
+                  method: methodInput || undefined,
+                  note: noteInput.trim() || undefined,
+                })}
+                disabled={!valid || createSettlement.isPending}
+                className="mt-5 w-full text-sm font-semibold rounded-xl min-h-[48px] bg-accent/20 border border-accent/40 text-accent2 disabled:opacity-40"
+              >
+                {createSettlement.isPending ? '…' : t('settlements.submit')}
+              </button>
+              {createSettlement.isError && (
+                <p className="text-[11px] text-amber mt-2 text-center">
+                  {(createSettlement.error as any)?.response?.data?.error || 'Erreur'}
+                </p>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

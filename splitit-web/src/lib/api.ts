@@ -157,6 +157,24 @@ export const expensesApi = {
   updateItems: (id: string, payload: any) => api.put(`/expenses/${id}/items`, payload).then(r => r.data.data),
 }
 
+// Remboursements : un versement de X a Y, valide par les deux. Contrairement
+// a expensesApi.settle, ne depend d'aucune depense — donc capable de solder
+// un solde issu d'une compensation en chaine.
+export const settlementsApi = {
+  list: (groupId: string) =>
+    api.get('/settlements', { params: { groupId } }).then(r => r.data.data),
+  create: (payload: {
+    groupId: string; fromMemberId: string; toMemberId: string;
+    amount: number; currency?: string; method?: string; note?: string;
+  }) => api.post('/settlements', payload).then(r => r.data.data),
+  // undo = retirer sa propre confirmation
+  confirm: (id: string, undo?: boolean) =>
+    api.post(`/settlements/${id}/confirm`, { undo }).then(r => r.data.data),
+  // undo = remettre en service un remboursement annule
+  cancel: (id: string, undo?: boolean) =>
+    api.post(`/settlements/${id}/cancel`, { undo }).then(r => r.data.data),
+}
+
 export const ocrApi = {
   scan: (file: File) => {
     const form = new FormData()

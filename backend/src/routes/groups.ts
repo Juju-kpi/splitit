@@ -88,6 +88,10 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
         },
         orderBy: { createdAt: 'desc' },
       },
+      settlements: {
+        include: { fromMember: true, toMember: true, createdBy: true },
+        orderBy: { createdAt: 'desc' },
+      },
     },
   });
   if (!group) return res.status(404).json({ error: 'Group not found' });
@@ -95,7 +99,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   const isMember = group.members.some(m => m.userId === req.userId);
   if (!isMember) return res.status(403).json({ error: 'Not a member' });
 
-  const balances = computeBalances(group.members, group.expenses as any);
+  const balances = computeBalances(group.members, group.expenses as any, group.settlements);
   res.json({ data: { ...group, balances } });
 });
 
@@ -248,6 +252,7 @@ router.post('/:id/leave', async (req: AuthRequest, res: Response) => {
     include: {
       members: true,
       expenses: { include: { splits: true, payments: true } },
+      settlements: true,
     },
   });
   if (!group) return res.status(404).json({ error: 'Group not found' });
@@ -256,7 +261,7 @@ router.post('/:id/leave', async (req: AuthRequest, res: Response) => {
   if (!me) return res.status(403).json({ error: 'Not a member' });
 
   // ── Solde encore ouvert ? ───────────────────────────────────────────────
-  const balances = computeBalances(group.members, group.expenses as any);
+  const balances = computeBalances(group.members, group.expenses as any, group.settlements);
   const mine = balances.filter(b => b.fromMemberId === me.id || b.toMemberId === me.id);
   if (mine.length > 0 && !force) {
     const owes = mine.filter(b => b.fromMemberId === me.id).reduce((s, b) => s + b.amount, 0);
@@ -271,14 +276,20 @@ router.post('/:id/leave', async (req: AuthRequest, res: Response) => {
   }
 
   // ── Historique attaché à ce membre ? ────────────────────────────────────
-  const [splits, payments, assignments, paidExpenses, createdExpenses] = await Promise.all([
+  const [splits, payments, assignments, paidExpenses, createdExpenses, settlements] = await Promise.all([
     prisma.expenseSplit.count({ where: { memberId: me.id } }),
     prisma.expensePayment.count({ where: { memberId: me.id } }),
     prisma.expenseItemAssignment.count({ where: { memberId: me.id } }),
     prisma.expense.count({ where: { paidByMemberId: me.id } }),
     prisma.expense.count({ where: { createdByMemberId: me.id } }),
+    // Un remboursement recu ou verse est un historique comme un autre : la
+    // ligne du membre doit survivre a son depart, sinon la trace disparait.
+    prisma.settlement.count({
+      where: { OR: [{ fromMemberId: me.id }, { toMemberId: me.id }] },
+    }),
   ]);
-  const hasHistory = splits + payments + assignments + paidExpenses + createdExpenses > 0;
+  const hasHistory =
+    splits + payments + assignments + paidExpenses + createdExpenses + settlements > 0;
 
   if (hasHistory) {
     // Détache le compte — le membre reste dans le groupe en "placeholder"

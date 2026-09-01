@@ -49,14 +49,15 @@ model RefreshToken {
 }
 
 model Group {
-  id         String        @id @default(cuid())
-  name       String
-  emoji      String        @default("💰")
-  inviteCode String        @unique @default(cuid())
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  expenses   Expense[]
-  members    GroupMember[]
+  id          String        @id @default(cuid())
+  name        String
+  emoji       String        @default("💰")
+  inviteCode  String        @unique @default(cuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  expenses    Expense[]
+  members     GroupMember[]
+  settlements Settlement[]
 
   @@map("groups")
 }
@@ -74,6 +75,9 @@ model GroupMember {
   payments        ExpensePayment[]
   expenses        Expense[]               // relation paidByMemberId
   createdExpenses Expense[]               @relation("createdByMember")  // ← AJOUTER
+  settlementsSent     Settlement[]        @relation("settlementFrom")
+  settlementsReceived Settlement[]        @relation("settlementTo")
+  settlementsCreated  Settlement[]        @relation("settlementCreatedBy")
   group           Group                   @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user            User?                   @relation(fields: [userId], references: [id])
 
@@ -163,6 +167,48 @@ model ExpenseSplit {
 
   @@unique([expenseId, memberId])
   @@map("expense_splits")
+}
+
+// Un remboursement est un objet a part entiere : X verse un montant a Y, a
+// une date, avec deux confirmations. Il ne depend d'aucune depense, ce qui
+// permet de solder un solde ne d'une compensation en chaine (je dois a A
+// parce que A doit a B qui me doit) — impossible avec le seul drapeau
+// `settled` pose sur des parts de depense.
+//
+// Le drapeau `settled` des parts reste en place et continue de fonctionner :
+// les deux mecanismes se cumulent dans les soldes, chacun representant de
+// l'argent reellement deplace.
+model Settlement {
+  id                  String    @id @default(cuid())
+  groupId             String
+  fromMemberId        String    // celui qui verse (le debiteur)
+  toMemberId          String    // celui qui recoit (le creancier)
+  amount              Float
+  currency            String    @default("CHF")
+  method              String?   // especes, Twint, virement… texte libre
+  note                String?
+  // Double accord : le remboursement ne pese sur les soldes que lorsque les
+  // deux parties ont confirme. Un membre sans compte ne pouvant rien
+  // confirmer, son cote est valide d'office a l'enregistrement.
+  confirmedByFromAt   DateTime?
+  confirmedByToAt     DateTime?
+  confirmed           Boolean   @default(false)
+  confirmedAt         DateTime?
+  // Annulation douce : la ligne reste dans l'historique, hors des soldes.
+  cancelledAt         DateTime?
+  cancelledByMemberId String?
+  createdByMemberId   String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  group      Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromMember GroupMember  @relation("settlementFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
+  toMember   GroupMember  @relation("settlementTo", fields: [toMemberId], references: [id], onDelete: Cascade)
+  createdBy  GroupMember? @relation("settlementCreatedBy", fields: [createdByMemberId], references: [id], onDelete: SetNull)
+
+  @@index([groupId])
+  @@index([groupId, confirmed])
+  @@map("settlements")
 }
 
 model OcrCorrection {

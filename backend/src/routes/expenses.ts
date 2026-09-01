@@ -302,9 +302,19 @@ router.patch('/:id/settle', async (req: AuthRequest, res: Response) => {
     return res.status(403).json({ error: 'Seuls le debiteur et le creancier peuvent confirmer' });
   }
 
+  // Un membre sans compte ne pourra jamais confirmer quoi que ce soit : sans
+  // cette regle, une dette envers un invite reste due pour toujours.
+  const counterpartId = isDebtor ? creditorId : split.memberId;
+  const counterpart = await prisma.groupMember.findUnique({ where: { id: counterpartId } });
+  const counterpartIsGuest = !!counterpart && counterpart.userId === null;
+
   const now = parsed.data.undo ? null : new Date();
-  const debtorAt = isDebtor ? now : split.settledByDebtorAt;
-  const creditorAt = isCreditor ? now : split.settledByCreditorAt;
+  let debtorAt = isDebtor ? now : split.settledByDebtorAt;
+  let creditorAt = isCreditor ? now : split.settledByCreditorAt;
+  if (counterpartIsGuest && !parsed.data.undo) {
+    if (isDebtor) creditorAt = creditorAt ?? now;
+    else debtorAt = debtorAt ?? now;
+  }
   const bothConfirmed = !!debtorAt && !!creditorAt;
 
   const updated = await prisma.expenseSplit.update({

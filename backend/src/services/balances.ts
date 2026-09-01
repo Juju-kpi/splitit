@@ -1,14 +1,30 @@
 // backend/src/services/balances.ts
 // Qui doit quoi a qui — gere les depenses a plusieurs payeurs.
 //
-// Une part marquee `settled` a ete confirmee par le debiteur ET par le
-// creancier : elle n'est plus due, et le credit du payeur diminue d'autant.
+// Deux choses reduisent une dette, et elles se cumulent :
+//   - une part marquee `settled`, confirmee par le debiteur ET le creancier :
+//     elle n'est plus due, et le credit du payeur diminue d'autant ;
+//   - un remboursement (table `settlements`) confirme des deux cotes : de
+//     l'argent a reellement change de mains, hors de toute depense.
+//
+// Le second existe parce que le premier ne sait pas solder une compensation
+// en chaine : quand le solde net dit "tu dois a A" alors qu'aucune depense ne
+// vous lie directement, il n'y a aucune part a marquer.
 
 import { GroupMember, Expense, ExpenseSplit, ExpensePayment } from '@prisma/client';
 
 type ExpenseWithSplitsAndPayments = Expense & {
   splits: ExpenseSplit[];
   payments: ExpensePayment[];
+};
+
+/** Ce dont le calcul a besoin — pas le modele Prisma complet, pour rester testable. */
+export type SettlementLike = {
+  fromMemberId: string;
+  toMemberId: string;
+  amount: number;
+  confirmed: boolean;
+  cancelledAt: Date | null;
 };
 
 export interface Balance {
@@ -21,7 +37,8 @@ export interface Balance {
 
 export function computeBalances(
   members: GroupMember[],
-  expenses: ExpenseWithSplitsAndPayments[]
+  expenses: ExpenseWithSplitsAndPayments[],
+  settlements: SettlementLike[] = []
 ): Balance[] {
   const net: Record<string, number> = {};
   members.forEach(m => (net[m.id] = 0));
@@ -50,6 +67,15 @@ export function computeBalances(
       // et le credit du payeur diminue d'autant.
       net[primaryPayer.memberId] = (net[primaryPayer.memberId] || 0) - split.amount;
     }
+  }
+
+  // Remboursements confirmes : celui qui a verse remonte d'autant, celui qui
+  // a recu redescend. Un remboursement annule ou en attente d'un accord ne
+  // compte pas — c'est tout l'interet du double accord.
+  for (const settlement of settlements) {
+    if (!settlement.confirmed || settlement.cancelledAt) continue;
+    net[settlement.fromMemberId] = (net[settlement.fromMemberId] || 0) + settlement.amount;
+    net[settlement.toMemberId] = (net[settlement.toMemberId] || 0) - settlement.amount;
   }
 
   const memberMap = Object.fromEntries(members.map(m => [m.id, m]));

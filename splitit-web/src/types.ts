@@ -92,6 +92,43 @@ export interface Balance {
   amount: number;
 }
 
+// Un remboursement : X verse un montant a Y, avec l'accord des deux.
+// Independant des depenses — c'est ce qui permet de solder un solde ne d'une
+// compensation en chaine, qu'aucune part de depense ne relie directement.
+export interface Settlement {
+  id: string;
+  groupId: string;
+  fromMemberId: string;
+  fromMember?: GroupMember;
+  toMemberId: string;
+  toMember?: GroupMember;
+  amount: number;
+  currency: string;
+  method?: string | null;
+  note?: string | null;
+  /** Confirmations cote a cote — les soldes ne bougent qu'avec les deux. */
+  confirmedByFromAt?: string | null;
+  confirmedByToAt?: string | null;
+  confirmed: boolean;
+  confirmedAt?: string | null;
+  /** Annulation douce : reste dans l'historique, sort des soldes. */
+  cancelledAt?: string | null;
+  cancelledByMemberId?: string | null;
+  createdByMemberId?: string | null;
+  createdBy?: GroupMember | null;
+  createdAt: string;
+}
+
+export interface CreateSettlementInput {
+  groupId: string;
+  fromMemberId: string;
+  toMemberId: string;
+  amount: number;
+  currency?: string;
+  method?: string;
+  note?: string;
+}
+
 export interface OcrResult {
   items: OcrItem[];
   rawText: string;

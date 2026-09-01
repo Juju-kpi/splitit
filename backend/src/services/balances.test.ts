@@ -113,5 +113,76 @@ bal = computeBalances([a, b, c], [expense({
 })]);
 assert(bal.length === 0, 'tout réglé → aucun solde résiduel');
 
+// ── Remboursements de premier ordre (table settlements) ──────────────────
+const settlement = (opts: {
+  from: string; to: string; amount: number;
+  confirmed?: boolean; cancelled?: boolean;
+}) => ({
+  fromMemberId: opts.from,
+  toMemberId: opts.to,
+  amount: opts.amount,
+  confirmed: opts.confirmed ?? true,
+  cancelledAt: opts.cancelled ? new Date() : null,
+});
+
+console.log('\n7) un remboursement confirmé solde la dette');
+const oneExpense = [expense({
+  total: 100, payments: [{ memberId: 'a', amount: 100 }],
+  splits: [{ memberId: 'a', amount: 50 }, { memberId: 'b', amount: 50 }],
+})];
+bal = computeBalances([a, b], oneExpense, [settlement({ from: 'b', to: 'a', amount: 50 })]);
+assert(bal.length === 0, 'b a remboursé 50 à a → plus rien à devoir');
+
+console.log('\n8) un remboursement en attente ne bouge pas les soldes');
+bal = computeBalances([a, b], oneExpense, [settlement({ from: 'b', to: 'a', amount: 50, confirmed: false })]);
+assert(bal.length === 1 && bal[0].amount === 50,
+       'sans le double accord, la dette reste entière');
+
+console.log('\n9) un remboursement annulé ne compte pas');
+bal = computeBalances([a, b], oneExpense, [settlement({ from: 'b', to: 'a', amount: 50, cancelled: true })]);
+assert(bal.length === 1 && bal[0].amount === 50, 'annulé → la dette redevient due');
+
+console.log('\n10) remboursement partiel');
+bal = computeBalances([a, b], oneExpense, [settlement({ from: 'b', to: 'a', amount: 20 })]);
+assert(bal.length === 1 && bal[0].fromMemberId === 'b' && Math.abs(bal[0].amount - 30) < 0.001,
+       'b a versé 20 sur 50 → il reste 30');
+
+console.log('\n11) compensation en chaîne — le cas que les parts ne savaient pas solder');
+// a avance 60 pour a+b, b avance 60 pour b+c : aucune dépense ne lie a et c,
+// pourtant le netting affiche "c doit 30 à a".
+const chain = [
+  expense({ total: 60, payments: [{ memberId: 'a', amount: 60 }],
+            splits: [{ memberId: 'a', amount: 30 }, { memberId: 'b', amount: 30 }] }),
+  expense({ total: 60, payments: [{ memberId: 'b', amount: 60 }],
+            splits: [{ memberId: 'b', amount: 30 }, { memberId: 'c', amount: 30 }] }),
+];
+bal = computeBalances([a, b, c], chain);
+assert(bal.length === 1 && bal[0].fromMemberId === 'c' && bal[0].toMemberId === 'a' && bal[0].amount === 30,
+       'le netting fait apparaître une dette c → a sans dépense commune');
+bal = computeBalances([a, b, c], chain, [settlement({ from: 'c', to: 'a', amount: 30 })]);
+assert(bal.length === 0, 'un remboursement c → a la solde — impossible avec le seul drapeau des parts');
+
+console.log('\n12) les deux mécanismes cohabitent sans se marcher dessus');
+// Part réglée à l'ancienne (b) + remboursement enregistré (c) sur la même dépense.
+bal = computeBalances([a, b, c], [expense({
+  total: 90, payments: [{ memberId: 'a', amount: 90 }],
+  splits: [
+    { memberId: 'a', amount: 30 },
+    { memberId: 'b', amount: 30, settled: true },
+    { memberId: 'c', amount: 30 },
+  ],
+})], [settlement({ from: 'c', to: 'a', amount: 30 })]);
+assert(bal.length === 0, 'ancienne part réglée + nouveau remboursement → tout est soldé');
+
+console.log('\n13) un trop-versé inverse la dette au lieu de la faire disparaître');
+bal = computeBalances([a, b], oneExpense, [settlement({ from: 'b', to: 'a', amount: 80 })]);
+assert(bal.length === 1 && bal[0].fromMemberId === 'a' && Math.abs(bal[0].amount - 30) < 0.001,
+       'b a versé 80 pour une dette de 50 → a lui doit 30');
+
+console.log('\n14) sans remboursements, le résultat est identique à avant');
+assert(JSON.stringify(computeBalances([a, b], oneExpense))
+    === JSON.stringify(computeBalances([a, b], oneExpense, [])),
+       'l argument settlements est bien optionnel et neutre');
+
 console.log(`\n${passed} réussis, ${failed} échoués\n`);
 process.exit(failed > 0 ? 1 : 0);
