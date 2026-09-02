@@ -536,7 +536,7 @@ function AddExpenseInner() {
           {ocrImageUrl && (
             <div className="mb-4">
               <button onClick={() => setShowReceipt(v => !v)} className="w-full glass-card rounded-xl py-2.5 text-sm text-accent2 font-medium text-center">
-                {showReceipt ? '🙈 Masquer le ticket' : '🧾 Voir le ticket scanné'}
+                {showReceipt ? 'Masquer le ticket' : 'Voir le ticket scanné'}
               </button>
               {showReceipt && <img src={ocrImageUrl} alt="Ticket" className="w-full rounded-xl mt-2 object-contain max-h-80" />}
             </div>
@@ -547,7 +547,7 @@ function AddExpenseInner() {
               <Notice variant="amber" text={`${unassignedItems.length} article${unassignedItems.length > 1 ? 's' : ''} sans assignation.`} />
               {myMember && (
                 <button onClick={assignRemainingToMe} className="w-full mb-3 py-2.5 px-4 rounded-xl bg-accent/10 border border-accent/25 text-accent2 text-sm font-semibold">
-                  📌 Assigner les {unassignedItems.length} articles non assignés à moi
+                  Assigner les {unassignedItems.length} articles non assignés à moi
                 </button>
               )}
             </>
@@ -605,8 +605,8 @@ function AddExpenseInner() {
           <div className="flex gap-2 mb-3">
             {([
               ['items', '🧾 Par articles'],
-              ['equal', '⚖️ Équitable'],
-              ['custom', '✏️ Personnalisé'],
+              ['equal', 'Équitable'],
+              ['custom', 'Personnalisé'],
             ] as const).map(([mode, label]) => (
               <button key={mode} onClick={() => {
                   // ocrShares tient encore la repartition du mode courant
@@ -833,7 +833,7 @@ function AddExpenseInner() {
             {(['equal', 'custom'] as SplitMode[]).map(mode => (
               <button key={mode} onClick={() => switchSplitMode(mode, equalShares)}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${splitMode === mode ? 'border-accent bg-accent/10 text-accent2' : 'border-border bg-surface2 text-text2'}`}>
-                {mode === 'equal' ? '⚖️ Équitable' : '✏️ Personnalisé'}
+                {mode === 'equal' ? 'Équitable' : 'Personnalisé'}
               </button>
             ))}
           </div>
@@ -984,7 +984,7 @@ function AddExpenseInner() {
 
         {/* Payé en caisse */}
         <div className="glass-card rounded-xl p-4 mb-3">
-          <p className="text-xs text-text3 font-semibold mb-2">💳 Payé en caisse</p>
+          <p className="text-xs text-text3 font-semibold mb-2">Payé en caisse</p>
           {resolvedPayments.map(p => {
             const m = memberById(p.memberId); if (!m) return null
             return (
@@ -1000,7 +1000,7 @@ function AddExpenseInner() {
         {/* OCR : ce que chacun a pris */}
         {ocrItems.length > 0 && (
           <div className="glass-card rounded-xl p-4 mb-3">
-            <p className="text-xs text-text3 font-semibold mb-2">🍽 Ce que chacun a pris</p>
+            <p className="text-xs text-text3 font-semibold mb-2">Ce que chacun a pris</p>
             {Object.entries(ocrSplitByMember).map(([mid, amt]) => {
               const m = memberById(mid); if (!m) return null
               return (
@@ -1024,7 +1024,7 @@ function AddExpenseInner() {
         {/* Manuel : répartition */}
         {ocrItems.length === 0 && (
           <div className="glass-card rounded-xl p-4 mb-3">
-            <p className="text-xs text-text3 font-semibold mb-2">{splitMode === 'equal' ? '⚖️ Parts égales' : '✏️ Répartition personnalisée'}</p>
+            <p className="text-xs text-text3 font-semibold mb-2">{splitMode === 'equal' ? 'Parts égales' : 'Répartition personnalisée'}</p>
             {manualSplits.map(({ memberId, amount: amt }) => {
               const m = memberById(memberId); if (!m) return null
               return (
@@ -1045,7 +1045,7 @@ function AddExpenseInner() {
         {ocrImageUrl && (
           <div className="mb-3">
             <button onClick={() => setShowReceipt(v => !v)} className="w-full glass-card rounded-xl py-2.5 text-sm text-accent2 font-medium text-center">
-              {showReceipt ? '🙈 Masquer le ticket' : '🧾 Voir le ticket scanné'}
+              {showReceipt ? 'Masquer le ticket' : 'Voir le ticket scanné'}
             </button>
             {showReceipt && <img src={ocrImageUrl} alt="Ticket" className="w-full rounded-xl mt-2 object-contain max-h-80" />}
           </div>

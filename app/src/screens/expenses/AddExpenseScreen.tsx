@@ -19,6 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupsApi, expensesApi } from '../../services/api';
 import { Button, Input, AmountInput, Chip, Notice, Card, Avatar, SectionLabel } from '../../components/ui';
 import OcrScanScreen from './OcrScanScreen';
+import Feather from '@expo/vector-icons/Feather';
 import { colors, spacing, radius, fonts } from '../../theme';
 import { GroupMember } from '../../../../shared/types';
 import { useAuthStore } from '../../store/authStore';
@@ -593,12 +594,12 @@ export default function AddExpenseScreen() {
           <Notice text="Le scan OCR détecte les articles automatiquement. Chacun coche ce qu'il a pris." />
           <View style={styles.modeGrid}>
             <TouchableOpacity style={[styles.modeCard, styles.modeCardFeat]} onPress={() => setStep('ocr')} activeOpacity={0.85}>
-              <Text style={styles.modeIcon}>📷</Text>
-              <Text style={[styles.modeLabel, { color: colors.white }]}>Scanner</Text>
-              <Text style={[styles.modeSub, { color: 'rgba(255,255,255,0.65)' }]}>OCR gratuit</Text>
+              <Feather name="camera" size={26} color={colors.onPrimary} />
+              <Text style={[styles.modeLabel, { color: colors.onPrimary }]}>Scanner</Text>
+              <Text style={[styles.modeSub, { color: 'rgba(11,12,16,0.6)' }]}>OCR gratuit</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modeCard} onPress={() => setStep('manual')} activeOpacity={0.85}>
-              <Text style={styles.modeIcon}>✏️</Text>
+              <Feather name="edit-3" size={26} color={colors.text2} />
               <Text style={styles.modeLabel}>Manuel</Text>
               <Text style={styles.modeSub}>Montant global</Text>
             </TouchableOpacity>
@@ -628,7 +629,7 @@ export default function AddExpenseScreen() {
               <View style={styles.receiptImageBlock}>
                 <TouchableOpacity style={styles.receiptImageBtn} onPress={() => setShowReceiptImage(v => !v)}>
                   <Text style={styles.receiptImageBtnText}>
-                    {showReceiptImage ? '🙈 Masquer le ticket' : '🧾 Voir le ticket scanné'}
+                    {showReceiptImage ? 'Masquer le ticket' : 'Voir le ticket scanné'}
                   </Text>
                 </TouchableOpacity>
                 {showReceiptImage && (
@@ -649,7 +650,7 @@ export default function AddExpenseScreen() {
             {unassignedItems.length > 0 && myMember && (
               <TouchableOpacity style={styles.assignBtn} onPress={assignRemainingToMe} activeOpacity={0.8}>
                 <Text style={styles.assignBtnText}>
-                  📌 Assigner les {unassignedItems.length} articles non assignés à moi
+                  Assigner les {unassignedItems.length} articles non assignés à moi
                 </Text>
               </TouchableOpacity>
             )}
@@ -696,7 +697,7 @@ export default function AddExpenseScreen() {
 
             <SectionLabel label="RÉPARTITION" />
             <View style={styles.modeRow}>
-              {([['items', '🧾 Articles'], ['equal', '⚖️ Équitable'], ['custom', '✏️ Perso']] as const).map(([mode, label]) => (
+              {([['items', 'Articles'], ['equal', 'Équitable'], ['custom', 'Perso']] as const).map(([mode, label]) => (
                 <TouchableOpacity
                   key={mode}
                   style={[styles.modeBtn, ocrSplitMode === mode && styles.modeBtnOn]}
@@ -827,14 +828,14 @@ export default function AddExpenseScreen() {
                         style={styles.itemEditBtn}
                         hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
                       >
-                        <Text style={styles.itemRemoveText}>✏️</Text>
+                        <Feather name="edit-2" size={14} color={colors.text2} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => removeOcrItem(idx)}
                         style={styles.itemRemoveBtn}
                         hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
                       >
-                        <Text style={styles.itemRemoveText}>🗑</Text>
+                        <Feather name="trash-2" size={14} color={colors.red} />
                       </TouchableOpacity>
                     </>
                   )}
@@ -949,7 +950,7 @@ export default function AddExpenseScreen() {
               onPress={() => setSplitMode('equal')}
             >
               <Text style={[styles.splitModeBtnText, splitMode === 'equal' && { color: colors.accent2 }]}>
-                ⚖️ Équitable
+                Équitable
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -957,7 +958,7 @@ export default function AddExpenseScreen() {
               onPress={() => switchSplitMode('custom', equalShares)}
             >
               <Text style={[styles.splitModeBtnText, splitMode === 'custom' && { color: colors.accent2 }]}>
-                ✏️ Personnalisé
+                Personnalisé
               </Text>
             </TouchableOpacity>
           </View>
@@ -1112,7 +1113,7 @@ export default function AddExpenseScreen() {
                   <Text style={styles.payerAmountCurrency}>{cur}</Text>
                   {payers.length > 1 && (
                     <TouchableOpacity onPress={() => removePayer(idx)} style={styles.removePayerBtn}>
-                      <Text style={styles.removePayerText}>✕ Retirer</Text>
+                      <Text style={styles.removePayerText}>Retirer</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1182,7 +1183,7 @@ export default function AddExpenseScreen() {
 
         {/* Payé en caisse */}
         <Card style={{ marginBottom: 12 }}>
-          <Text style={styles.previewTitle}>💳 Payé en caisse</Text>
+          <Text style={styles.previewTitle}>Payé en caisse</Text>
           {resolvedPayments.map(p => {
             const m = memberById(p.memberId);
             if (!m) return null;
@@ -1199,7 +1200,7 @@ export default function AddExpenseScreen() {
         {/* Ce que chacun doit — OCR */}
         {ocrItems.length > 0 && (
           <Card style={{ marginBottom: 12 }}>
-            <Text style={styles.previewTitle}>🍽 Ce que chacun a pris</Text>
+            <Text style={styles.previewTitle}>Ce que chacun a pris</Text>
             {Object.entries(ocrSplitByMember).map(([mid, amt]) => {
               const m = memberById(mid);
               if (!m) return null;
@@ -1229,7 +1230,7 @@ export default function AddExpenseScreen() {
         {ocrItems.length === 0 && (
           <Card style={{ marginBottom: 12 }}>
             <Text style={styles.previewTitle}>
-              {splitMode === 'equal' ? '⚖️ Parts égales' : '✏️ Répartition personnalisée'}
+              {splitMode === 'equal' ? 'Parts égales' : 'Répartition personnalisée'}
             </Text>
             {manualSplits.map(({ memberId, amount: amt }) => {
               const m = memberById(memberId);
@@ -1254,7 +1255,7 @@ export default function AddExpenseScreen() {
           <View style={styles.receiptImageBlock}>
             <TouchableOpacity style={styles.receiptImageBtn} onPress={() => setShowReceiptImage(v => !v)}>
               <Text style={styles.receiptImageBtnText}>
-                {showReceiptImage ? '🙈 Masquer le ticket' : '🧾 Voir le ticket scanné'}
+                {showReceiptImage ? 'Masquer le ticket' : 'Voir le ticket scanné'}
               </Text>
             </TouchableOpacity>
             {showReceiptImage && (
@@ -1323,7 +1324,7 @@ const styles = StyleSheet.create({
 
   modeGrid: { flexDirection: 'row', gap: 10, marginTop: 8 },
   modeCard: { flex: 1, backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 20, alignItems: 'center' },
-  modeCardFeat: { backgroundColor: colors.accent, borderColor: colors.accent },
+  modeCardFeat: { backgroundColor: colors.primary, borderColor: colors.primary },
   modeIcon: { fontFamily: fonts.regular, fontSize: 28, marginBottom: 8 },
   modeLabel: { fontFamily: fonts.semibold, fontSize: 13, fontWeight: '600', color: colors.text },
   modeSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 2 },
