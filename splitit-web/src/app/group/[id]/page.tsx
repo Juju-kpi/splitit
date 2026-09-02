@@ -24,6 +24,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { groupsApi, expensesApi, settlementsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
+import { ChevronLeft, ChevronRight, Users, Share2, Clock, Plus, FileText, Receipt, Check } from 'lucide-react'
 import { Avatar, Pill, SectionLabel, Card, Button, FullScreenSpinner } from '@/components/ui'
 import { formatMoney, useT } from '@/store/langStore'
 import { Balance, Settlement } from '@/types'
@@ -205,108 +206,120 @@ export default function GroupDetailPage() {
   return (
     <div className="min-h-screen pb-28">
       <div className="px-5 pt-[max(env(safe-area-inset-top),20px)] pb-4 sticky top-0 z-20 glass">
-        <div className="flex items-center justify-between mb-1">
-          <button onClick={() => router.push('/groups')} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2">
-            ← Groupes
+        <div className="flex items-center justify-between">
+          <button onClick={() => router.push('/groups')} aria-label="Retour aux groupes"
+            className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-text2 hover:bg-surface3 transition-colors">
+            <ChevronLeft size={18} strokeWidth={1.75} />
           </button>
           <div className="flex items-center gap-2">
-            <button onClick={() => router.push(`/group/members?groupId=${group.id}`)} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2">
-              👥 Membres
+            <button onClick={() => router.push(`/group/members?groupId=${group.id}`)} aria-label="Membres"
+              className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-text2 hover:bg-surface3 transition-colors">
+              <Users size={18} strokeWidth={1.75} />
             </button>
-            <button onClick={handleShare} className="bg-accent/10 border border-accent/25 px-3 py-1.5 rounded-full text-xs font-semibold text-accent2">
-              Inviter
+            <button onClick={handleShare} aria-label="Inviter"
+              className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-text2 hover:bg-surface3 transition-colors">
+              <Share2 size={18} strokeWidth={1.75} />
             </button>
           </div>
         </div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-text mt-3">{group.emoji} {group.name}</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <button onClick={handleShare} className="text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-3 py-1.5 rounded-full">
-            🔗 {copied ? 'Copié !' : `Code ${group.inviteCode}`}
+        <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-text mt-5 leading-[1.1]">
+          {group.emoji} {group.name}
+        </h1>
+        <div className="flex items-center gap-2.5 mt-2.5 text-[13px]">
+          <button onClick={handleShare} className="text-text3 hover:text-text2 transition-colors">
+            {copied ? 'Copié !' : `Code ${group.inviteCode}`}
           </button>
-          {incompleteCount > 0 && <Pill label={`⏳ ${incompleteCount} à compléter`} variant="amber" />}
+          <span className="w-[3px] h-[3px] rounded-full bg-border2" />
+          <span className="text-text3">{group.members.length} membres</span>
+          {incompleteCount > 0 && (
+            <>
+              <span className="w-[3px] h-[3px] rounded-full bg-border2" />
+              <span className="flex items-center gap-1.5 text-amber">
+                <Clock size={13} strokeWidth={2} />
+                {incompleteCount} à compléter
+              </span>
+            </>
+          )}
         </div>
       </div>
 
       <div className="px-5">
-        {/* Membres */}
+        {/* Membres — meme information que sur mobile, rangee compacte */}
         <Card>
-          <p className="text-sm font-semibold text-text mb-3">Membres ({group.members.length})</p>
+          <p className="text-[13px] font-medium text-text3 mb-3.5">Membres ({group.members.length})</p>
           <div className="flex flex-wrap gap-4">
             {group.members.map((m: any) => (
-              <div key={m.id} className="flex flex-col items-center gap-1.5 w-16">
+              <div key={m.id} className="flex flex-col items-center gap-2 w-16">
                 <Avatar initials={m.avatarInitials} color={m.avatarColor} size={40} />
-                <p className="text-[11px] text-text2 text-center truncate w-full">{m.displayName}</p>
-                {m.id === myMember?.id && <p className="text-[9px] text-accent2 font-semibold">moi</p>}
+                <p className="text-xs text-text2 text-center truncate w-full">{m.displayName}</p>
+                {m.id === myMember?.id && <p className="text-[10px] text-text3">moi</p>}
               </div>
             ))}
           </div>
         </Card>
 
-        {/* Résumé du groupe */}
-        {group.expenses?.length > 0 && (
-          <>
-            <SectionLabel label="Résumé du groupe" />
-            <Card>
-              <div className="flex items-center justify-around mb-3">
-                <div className="flex flex-col items-center">
-                  <p className="text-2xl font-light font-mono text-text">{formatMoney(totalSpent, currency)}</p>
-                  <p className="text-[10px] uppercase tracking-wide text-text3 mt-1 font-semibold">Total groupe</p>
+
+        {/* Ta position dans ce groupe — le chiffre qu'on vient chercher */}
+        {group.expenses?.length > 0 && (() => {
+          const myNet = Math.round((memberNet[myMember?.id] || 0) * 100) / 100
+          const even = Math.abs(myNet) < 0.005
+          return (
+            <div className="bg-surface rounded-2xl p-5 mb-3">
+              <p className="text-[13px] font-medium text-text3">
+                {even ? 'Tu es à jour' : myNet > 0 ? 'On te doit' : 'Tu dois'}
+              </p>
+              <p className={`text-[40px] leading-none font-mono font-medium mt-1.5 tracking-[-0.02em] ${
+                even ? 'text-text' : myNet > 0 ? 'text-green' : 'text-amber'
+              }`}>
+                {formatMoney(Math.abs(myNet), currency)}
+              </p>
+              <div className="flex items-center gap-5 mt-6">
+                <div className="flex-1">
+                  <p className="text-xs text-text3">Total du groupe</p>
+                  <p className="font-mono text-[15px] text-text mt-1">{formatMoney(totalSpent, currency)}</p>
                 </div>
-                <div className="w-px h-10 bg-white/10" />
-                <div className="flex flex-col items-center">
-                  <p className="text-2xl font-light font-mono text-accent2">{formatMoney(myShare, currency)}</p>
-                  <p className="text-[10px] uppercase tracking-wide text-text3 mt-1 font-semibold">Ma part</p>
+                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="flex-1">
+                  <p className="text-xs text-text3">Ma part</p>
+                  <p className="font-mono text-[15px] text-text mt-1">{formatMoney(myShare, currency)}</p>
                 </div>
-                <div className="w-px h-10 bg-white/10" />
-                <div className="flex flex-col items-center">
-                  <p className="text-2xl font-light font-mono text-text">{group.expenses.length}</p>
-                  <p className="text-[10px] uppercase tracking-wide text-text3 mt-1 font-semibold">Dépenses</p>
+                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="flex-1">
+                  <p className="text-xs text-text3">Dépenses</p>
+                  <p className="font-mono text-[15px] text-text mt-1">{group.expenses.length}</p>
                 </div>
               </div>
-              {incompleteCount > 0 && (
-                <div className="bg-amber/10 border border-amber/25 rounded-lg px-3 py-2 text-center">
-                  <p className="text-xs font-semibold text-amber">
-                    ⏳ {incompleteCount} dépense{incompleteCount > 1 ? 's' : ''} à compléter
-                  </p>
-                </div>
-              )}
-            </Card>
-          </>
-        )}
+            </div>
+          )
+        })()}
 
         {/* Qui a avancé / qui doit — lecture visuelle des soldes */}
         {group.expenses?.length > 0 && (
           <>
-            <SectionLabel label="Qui a avancé, qui doit" />
+            <SectionLabel label="Positions" />
             <Card>
-              <div className="flex items-center justify-between text-[11px] mb-3">
-                <span className="text-green font-semibold">← on lui doit</span>
-                <span className="text-text3">équilibré</span>
-                <span className="text-amber font-semibold">il doit →</span>
-              </div>
-              <div className="space-y-2.5">
+              <div className="space-y-3.5">
                 {netRows.map(({ member: m, net }: any) => {
                   const isMe = m.userId === user?.id
-                  const width = `${Math.max(Math.abs(net) / maxAbsNet * 50, net === 0 ? 0 : 2)}%`
                   const creditor = net > 0.005
                   const debtor = net < -0.005
+                  const width = `${Math.max(Math.abs(net) / maxAbsNet * 100, net === 0 ? 0 : 3)}%`
                   return (
-                    <div key={m.id} className="flex items-center gap-2.5">
-                      <Avatar initials={m.avatarInitials} color={m.avatarColor} size={26} />
-                      <span className={`text-xs w-20 truncate ${isMe ? 'text-accent2 font-semibold' : 'text-text2'}`}>
-                        {m.displayName}{isMe ? ' (moi)' : ''}
-                      </span>
-                      {/* barre divergente : la ligne du milieu = équilibre */}
-                      <div className="flex-1 flex items-center h-5">
-                        <div className="flex-1 flex justify-end">
-                          {creditor && <div className="h-2.5 rounded-l-full bg-green/70" style={{ width }} />}
-                        </div>
-                        <div className="w-px h-4 bg-white/15" />
-                        <div className="flex-1">
-                          {debtor && <div className="h-2.5 rounded-r-full bg-amber/70" style={{ width }} />}
+                    <div key={m.id} className="flex items-center gap-3">
+                      <Avatar initials={m.avatarInitials} color={m.avatarColor} size={30} />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${isMe ? 'text-text font-medium' : 'text-text2'}`}>
+                          {m.displayName}{isMe ? ' (moi)' : ''}
+                        </p>
+                        {/* Une seule direction : la couleur dit le sens, la
+                            longueur dit l'ampleur. */}
+                        <div className="h-1 rounded-full bg-surface2 mt-[7px] overflow-hidden">
+                          {!!(creditor || debtor) && (
+                            <div className={`h-full rounded-full ${creditor ? 'bg-green' : 'bg-amber'}`} style={{ width }} />
+                          )}
                         </div>
                       </div>
-                      <span className={`font-mono text-xs w-20 text-right font-semibold ${
+                      <span className={`font-mono text-[15px] font-medium shrink-0 ${
                         creditor ? 'text-green' : debtor ? 'text-amber' : 'text-text3'
                       }`}>
                         {net > 0 ? '+' : ''}{formatMoney(net, currency)}
@@ -315,9 +328,9 @@ export default function GroupDetailPage() {
                   )
                 })}
               </div>
-              <p className="text-[11px] text-text3 mt-3 leading-relaxed">
-                Vert : cette personne a avancé plus que sa part, on lui doit de l&apos;argent.
-                Orange : elle doit encore sa part. Les remboursements ci-dessous règlent tout en un minimum de virements.
+              <p className="text-[13px] text-text3 mt-4 leading-relaxed">
+                Vert : cette personne a avancé plus que sa part. Orange : elle doit encore.
+                Les remboursements ci-dessous soldent tout en un minimum de virements.
               </p>
             </Card>
           </>
@@ -472,7 +485,8 @@ export default function GroupDetailPage() {
                 onClick={() => setShowLog(true)}
                 className="mt-4 w-full flex items-center justify-center gap-2 text-sm font-semibold text-accent2 bg-accent/10 border border-accent/25 min-h-[48px] rounded-xl"
               >
-                📋 {t('settlements.history_title')}
+                <FileText size={16} strokeWidth={1.75} />
+                {t('settlements.history_title')}
               </button>
             </Card>
           </>
@@ -486,17 +500,26 @@ export default function GroupDetailPage() {
           )}
           {(group.expenses || []).map((exp: any) => {
             const incomplete = isExpenseIncomplete(exp)
+            const payer = exp.payments?.[0]?.member?.displayName
             return (
               <div key={exp.id} onClick={() => router.push(`/expense/${exp.id}`)}
-                className="glass-card rounded-xl p-4 cursor-pointer hover:border-accent/30 transition-colors flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-text">{exp.description}</p>
-                  <p className="text-xs text-text3 mt-0.5">{new Date(exp.createdAt).toLocaleDateString('fr-FR')}</p>
+                className="bg-surface rounded-2xl p-4 cursor-pointer hover:bg-surface2 transition-colors flex items-center gap-3.5">
+                <div className={`w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0 ${
+                  incomplete ? 'bg-amber/10 text-amber' : 'bg-surface2 text-text2'
+                }`}>
+                  {incomplete
+                    ? <Clock size={17} strokeWidth={1.75} />
+                    : exp.receiptImageUrl ? <Receipt size={17} strokeWidth={1.75} /> : <FileText size={17} strokeWidth={1.75} />}
                 </div>
-                <div className="flex items-center gap-2">
-                  {incomplete && <Pill label="⏳" variant="amber" />}
-                  <span className="font-mono font-semibold text-text">{formatMoney(exp.totalAmount, exp.currency)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-medium text-text truncate">{exp.description}</p>
+                  <p className={`text-xs mt-0.5 ${incomplete ? 'text-amber' : 'text-text3'}`}>
+                    {incomplete
+                      ? 'Répartition à compléter'
+                      : `${payer ? payer + ' a payé · ' : ''}${new Date(exp.createdAt).toLocaleDateString('fr-FR')}`}
+                  </p>
                 </div>
+                <span className="font-mono text-base text-text shrink-0">{formatMoney(exp.totalAmount, exp.currency)}</span>
               </div>
             )
           })}
@@ -504,7 +527,8 @@ export default function GroupDetailPage() {
       </div>
 
       <div className="fixed bottom-[max(env(safe-area-inset-bottom),16px)] left-0 right-0 px-5 max-w-sm mx-auto">
-        <Button label="+ Ajouter une dépense" onClick={() => router.push(`/expense/add?groupId=${group.id}`)} />
+        <Button label="Ajouter une dépense" icon={<Plus size={18} strokeWidth={2} />}
+          onClick={() => router.push(`/expense/add?groupId=${group.id}`)} />
       </div>
 
       {/* Modal détail complet de tous les remboursements */}

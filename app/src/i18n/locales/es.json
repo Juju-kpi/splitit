@@ -243,7 +243,8 @@
     "ocr_training": "Entrenamiento",
     "receipts": "Tickets",
     "next_run": "Próxima ejecución",
-    "before_next_100": "{{n}} / 100 correcciones antes del próximo ajuste"
+    "before_next_100": "{{n}} / 100 correcciones antes del próximo ajuste",
+    "expenses_count": "{{n}} gastos"
   },
   "settings": {
     "title": "Ajustes",

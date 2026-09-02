@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { expensesApi, groupsApi } from '../../src/services/api';
 import { Card, SectionLabel, Divider, Avatar, Button, Chip, AmountInput } from '../../src/components/ui';
-import { colors, spacing, radius } from '../../src/theme';
+import { colors, spacing, radius, fonts } from '../../src/theme';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuthStore } from '../../src/store/authStore';
@@ -198,7 +198,7 @@ export default function ExpenseDetailScreen() {
                   <Avatar initials={p.member.avatarInitials} color={p.member.avatarColor} size={22} />
                   <Text style={styles.metaValue}>{p.member.displayName}</Text>
                   {expense.payments.length > 1 && (
-                    <Text style={{ fontSize: 11, color: colors.text3, fontFamily: 'monospace' }}>
+                    <Text style={{ fontSize: 11, color: colors.text3, fontFamily: fonts.mono }}>
                       {' '}({fmt(p.amount)})
                     </Text>
                   )}
@@ -209,7 +209,7 @@ export default function ExpenseDetailScreen() {
           <Divider />
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Total</Text>
-            <Text style={[styles.metaValue, { fontFamily: 'monospace', fontSize: 20 }]}>
+            <Text style={[styles.metaValue, { fontFamily: fonts.mono, fontSize: 20 }]}>
               {fmt(expense.totalAmount)}
             </Text>
           </View>
@@ -218,7 +218,7 @@ export default function ExpenseDetailScreen() {
               <Divider />
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Ma part</Text>
-                <Text style={[styles.metaValue, { fontFamily: 'monospace', fontSize: 16, color: colors.accent2 }]}>
+                <Text style={[styles.metaValue, { fontFamily: fonts.mono, fontSize: 16, color: colors.accent2 }]}>
                   {fmt(mySplit.amount)}{mySplit.settled ? '  ✓ réglé' : ''}
                 </Text>
               </View>
@@ -342,69 +342,69 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full,
   },
-  backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
+  backText: { color: colors.text2, fontFamily: fonts.medium, fontSize: 12, fontWeight: '500' },
+  title: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   editBtn: {
     backgroundColor: colors.accentBg, borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.3)',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full,
   },
-  editBtnText: { color: colors.accent2, fontSize: 12, fontWeight: '600' },
+  editBtnText: { color: colors.accent2, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' },
   saveBtn: { backgroundColor: colors.accent, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.full },
-  saveBtnText: { color: colors.white, fontSize: 12, fontWeight: '600' },
+  saveBtnText: { color: colors.white, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 80 },
   photoBlock: { marginBottom: 12 },
   photoBtn: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     borderRadius: radius.sm, padding: 12, alignItems: 'center', marginBottom: 2,
   },
-  photoBtnText: { fontSize: 13, color: colors.accent2, fontWeight: '500' },
+  photoBtnText: { fontFamily: fonts.medium, fontSize: 13, color: colors.accent2, fontWeight: '500' },
   photo: { width: '100%', height: 320, borderRadius: radius.sm, backgroundColor: colors.surface3, marginTop: 6 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  metaLabel: { fontSize: 13, color: colors.text3 },
-  metaValue: { fontSize: 13, color: colors.text, fontWeight: '500' },
+  metaLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
+  metaValue: { fontFamily: fonts.medium, fontSize: 13, color: colors.text, fontWeight: '500' },
   // Note
   noteInput: {
     backgroundColor: colors.surface2, borderRadius: radius.sm, padding: 12,
-    color: colors.text, fontSize: 14, minHeight: 80, textAlignVertical: 'top',
+    color: colors.text, fontFamily: fonts.regular, fontSize: 14, minHeight: 80, textAlignVertical: 'top',
   },
   noteActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },
   noteCancelBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full, borderWidth: 0.5, borderColor: colors.border },
-  noteCancelText: { fontSize: 13, color: colors.text3 },
+  noteCancelText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
   noteSaveBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.accent },
-  noteSaveText: { fontSize: 13, color: colors.white, fontWeight: '600' },
-  noteText: { fontSize: 14, color: colors.text, lineHeight: 20 },
-  notePlaceholder: { fontSize: 13, color: colors.text3, fontStyle: 'italic' },
+  noteSaveText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.white, fontWeight: '600' },
+  noteText: { fontFamily: fonts.regular, fontSize: 14, color: colors.text, lineHeight: 20 },
+  notePlaceholder: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, fontStyle: 'italic' },
   // Items
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  itemName: { fontSize: 13, fontWeight: '500', color: colors.text },
-  itemAssigned: { fontSize: 11, color: colors.text3, marginTop: 2 },
-  itemPrice: { fontSize: 13, fontFamily: 'monospace', color: colors.text2 },
+  itemName: { fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: colors.text },
+  itemAssigned: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 2 },
+  itemPrice: { fontSize: 13, fontFamily: fonts.mono, color: colors.text2 },
   // Splits
   splitRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
-  splitName: { flex: 1, fontSize: 14, color: colors.text },
-  splitAmt: { fontSize: 14, fontFamily: 'monospace', color: colors.amber, fontWeight: '500' },
+  splitName: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: colors.text },
+  splitAmt: { fontSize: 14, fontFamily: fonts.mono, color: colors.amber, fontWeight: '500' },
   todoBanner: {
     backgroundColor: 'rgba(251,191,36,0.06)',
     borderWidth: 1, borderColor: 'rgba(251,191,36,0.22)',
     borderRadius: 14, padding: 14, marginBottom: 14,
   },
-  todoTitle: { fontSize: 14, fontWeight: '600', color: colors.amber, marginBottom: 4 },
-  todoText: { fontSize: 12, color: colors.text2, lineHeight: 18, marginBottom: 10 },
+  todoTitle: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '600', color: colors.amber, marginBottom: 4 },
+  todoText: { fontFamily: fonts.regular, fontSize: 12, color: colors.text2, lineHeight: 18, marginBottom: 10 },
   todoBtn: {
     alignSelf: 'flex-start',
     backgroundColor: colors.accentBg,
     borderWidth: 1, borderColor: 'rgba(124,110,250,0.25)',
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
   },
-  todoBtnText: { fontSize: 12, fontWeight: '600', color: colors.accent2 },
-  settledTag: { fontSize: 10, color: colors.green, marginTop: 2 },
+  todoBtnText: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600', color: colors.accent2 },
+  settledTag: { fontFamily: fonts.regular, fontSize: 10, color: colors.green, marginTop: 2 },
   // Edit
-  label: { fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
-  hint: { fontSize: 11, color: colors.text3, marginBottom: 12, marginTop: -4 },
+  label: { fontFamily: fonts.medium, fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
+  hint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginBottom: 12, marginTop: -4 },
   textInput: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 11,
-    fontSize: 14, color: colors.text, marginBottom: 12,
+    fontFamily: fonts.regular, fontSize: 14, color: colors.text, marginBottom: 12,
   },
   payerChip: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
@@ -412,6 +412,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.border,
   },
   payerChipOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },
-  payerChipText: { fontSize: 13, fontWeight: '500', color: colors.text2 },
+  payerChipText: { fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: colors.text2 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap' },
 });

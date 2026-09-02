@@ -10,7 +10,7 @@ import { useAuthStore } from '@/store/authStore'
 import { Card, GlassCard, SectionLabel, MiniBar, FullScreenSpinner, ScreenHeader } from '@/components/ui'
 import { useLangStore, useT, useFormatMoney } from '@/store/langStore'
 
-function StatBox({ value, label, color = '#7C6EFA', sub }: {
+function StatBox({ value, label, color = '#C9CEDA', sub }: {
   value: string | number; label: string; color?: string; sub?: string
 }) {
   return (
@@ -71,7 +71,12 @@ export default function StatsPage() {
     }, 0) ?? 0
     const total = full.expenses?.reduce((s: number, exp: any) => s + exp.totalAmount, 0) ?? 0
     const memberCount = full.members?.length || 0
-    const myBalance = myPaid - myShare
+    // Position reelle, calculee par le serveur : elle tient compte des
+    // remboursements. `myPaid - myShare` restait fige sur l'etat d'avant
+    // remboursement — d'ou un grand chiffre en desaccord avec les soldes
+    // affiches juste en dessous. Le repli ne sert qu'aux reponses d'un
+    // backend anterieur a ce champ.
+    const myBalance = full.netByMember?.[myMember?.id] ?? (myPaid - myShare)
     const incompleteExps = (full.expenses || []).filter(isExpenseIncomplete)
     const incomplete = incompleteExps.length
     const expCount = full.expenses?.length || 0
@@ -81,7 +86,9 @@ export default function StatsPage() {
 
   const myTotalShare = groupStats.reduce((s, gs) => s + (gs.myShare || 0), 0)
   const myTotalPaid = groupStats.reduce((s, gs) => s + (gs.myPaid || 0), 0)
-  const netBalance = myTotalPaid - myTotalShare
+  // Somme des positions reelles : ce qu'on te doit encore, moins ce que tu
+  // dois encore, une fois les remboursements deduits.
+  const netBalance = groupStats.reduce((s: number, gs: any) => s + (gs.myBalance || 0), 0)
 
   const allExpenses = useMemo(() => {
     const exps: any[] = []
@@ -150,18 +157,36 @@ export default function StatsPage() {
       <ScreenHeader title={t('stats.title')} subtitle={t('stats.subtitle')} />
 
       <div className="px-5 pb-28">
-        {/* Hero balance card */}
-        {myTotalPaid > 0 && (
-          <GlassCard glow className="mt-4">
-            <p className="text-[11px] font-bold text-text3 uppercase tracking-widest mb-2">{t('stats.net_balance')}</p>
-            <p className={`text-4xl font-light font-mono ${netBalance >= 0 ? 'text-green' : 'text-red'}`}>
-              {netBalance >= 0 ? '+' : ''}{netBalance.toFixed(2)}
-              <span className="text-lg text-text3"> {currency}</span>
+        {/* Le chiffre qui compte, en premier */}
+        {(myTotalPaid > 0 || Math.abs(netBalance) > 0.01) && (
+          <div className="mt-4 mb-3 bg-surface rounded-2xl p-6">
+            <p className="text-[13px] font-medium text-text3">
+              {Math.abs(netBalance) < 0.01
+                ? t('stats.net_balance')
+                : netBalance > 0 ? t('stats.owed_you_money') : t('stats.you_owe_money')}
             </p>
-            <p className="text-xs text-text3 mt-2 font-medium">
-              {netBalance >= 0 ? t('stats.owed_you_money') : t('stats.you_owe_money')}
+            <p className={`text-[40px] leading-none font-mono font-medium mt-1.5 tracking-[-0.02em] ${
+              Math.abs(netBalance) < 0.01 ? 'text-text' : netBalance > 0 ? 'text-green' : 'text-amber'
+            }`}>
+              {netBalance > 0 ? '+' : ''}{fmt(netBalance)}
             </p>
-          </GlassCard>
+            <div className="flex items-center gap-5 mt-6">
+              <div className="flex-1">
+                <p className="text-xs text-text3">{t('stats.total_expenses')}</p>
+                <p className="font-mono text-base text-text mt-1">{totalExpenses}</p>
+              </div>
+              <div className="w-px h-8 bg-white/[0.06]" />
+              <div className="flex-1">
+                <p className="text-xs text-text3">{t('stats.my_share')}</p>
+                <p className="font-mono text-base text-text mt-1">{fmt(myTotalShare)}</p>
+              </div>
+              <div className="w-px h-8 bg-white/[0.06]" />
+              <div className="flex-1">
+                <p className="text-xs text-text3">{t('stats.total_groups')}</p>
+                <p className="font-mono text-base text-text mt-1">{totalGroups}</p>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Résumé global */}
@@ -182,7 +207,7 @@ export default function StatsPage() {
                 value={`${netBalance.toFixed(0)}`}
                 label={netBalance >= 0 ? t('stats.owed_to_me') : t('stats.i_owe')}
                 sub={currency}
-                color={netBalance >= 0 ? '#34D399' : '#F87171'}
+                color={netBalance >= 0 ? '#3ECF8E' : '#E8A33D'}
               />
               <div className="w-px h-11 bg-white/5" />
               <StatBox value={ocrStats?.totalReceipts ?? 0} label={t('stats.ocr_receipts')} color="#94A3B8" />
@@ -295,13 +320,25 @@ export default function StatsPage() {
               <div
                 key={g.id}
                 onClick={() => router.push(`/group/${g.id}`)}
-                className="flex mb-3 rounded-xl overflow-hidden glass-card cursor-pointer hover:border-accent/30 transition-colors p-0"
+                className="flex mb-2.5 rounded-2xl overflow-hidden bg-surface cursor-pointer hover:bg-surface2 transition-colors p-0"
               >
-                <div className="w-1 bg-accent opacity-60 flex-shrink-0" />
-                <div className="flex-1 p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-text">{g.emoji} {g.name}</span>
-                    <span className="text-[11px] text-text3">{t('stats.members_count', { n: memberCount })}</span>
+                <div className="flex-1 p-5">
+                  {/* Ta position dans ce groupe, en tête : c'est ce qu'on
+                      vient chercher en ouvrant l'écran. */}
+                  <div className="flex items-start justify-between gap-3 mb-3.5">
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold text-text tracking-[-0.01em] truncate">{g.emoji} {g.name}</p>
+                      <p className="text-xs text-text3 mt-0.5">
+                        {t('stats.members_count', { n: memberCount })} · {t('stats.expenses_count', { n: g.expenseCount })}
+                      </p>
+                    </div>
+                    {myBalance !== null && myBalance !== undefined && (
+                      <span className={`font-mono text-xl font-medium shrink-0 ${
+                        Math.abs(myBalance) < 0.01 ? 'text-text3' : myBalance > 0 ? 'text-green' : 'text-amber'
+                      }`}>
+                        {myBalance > 0 ? '+' : ''}{fmt(myBalance)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center">
                     <div className="flex-1 text-center">
@@ -338,13 +375,6 @@ export default function StatsPage() {
                     </div>
                   )}
 
-                  {myBalance !== null && myBalance !== undefined && Math.abs(myBalance) > 0.01 && (
-                    <div className={`mt-3 rounded-lg p-2 text-center border ${myBalance > 0 ? 'bg-green/5 border-green/20' : 'bg-red/5 border-red/20'}`}>
-                      <span className={`text-xs font-bold ${myBalance > 0 ? 'text-green' : 'text-red'}`}>
-                        {myBalance > 0 ? t('stats.owed_amount', { amount: fmt(myBalance) }) : t('stats.owe_amount', { amount: fmt(Math.abs(myBalance)) })}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}

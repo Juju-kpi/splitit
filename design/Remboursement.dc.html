@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #08090C; font-family: Geist, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #EDEAE3; } a:hover { color: #FFFFFF; }
+    .n { font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .lbl { font-size: 13px; font-weight: 500; color: #626977; }
+  </style>
+</helmet>
+
+<div style="background: #08090C; min-height: 100%; display: flex; flex-direction: column;">
+
+  <div style="padding: 22px 20px 0;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="font-size: 20px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.02em;">Enregistrer un remboursement</div>
+      <div style="width: 36px; height: 36px; border-radius: 999px; background: #161920; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA1AF" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; flex: 1;">
+
+    <!-- Le sens du versement, montre plutot qu ecrit -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 16px; background: #0F1116; border-radius: 20px; padding: 20px;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="width: 44px; height: 44px; border-radius: 999px; background: #2E3340; color: #E7E9ED; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center;">MA</div>
+        <div style="font-size: 13px; color: #9AA1AF;">Marc</div>
+      </div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div style="width: 44px; height: 44px; border-radius: 999px; background: #EDEAE3; color: #0B0C10; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center;">JU</div>
+        <div style="font-size: 13px; color: #FFFFFF; font-weight: 500;">Toi</div>
+      </div>
+    </div>
+
+    <!-- Le montant : c'est l'ecran, rien d'autre ne rivalise -->
+    <div>
+      <div class="lbl" style="margin-bottom: 12px;">Montant versé</div>
+      <div style="background: #0F1116; border-radius: 20px; padding: 24px 20px; display: flex; align-items: baseline; justify-content: center; gap: 6px;">
+        <span class="n" style="font-size: 46px; font-weight: 500; color: #FFFFFF; line-height: 1;">78,40</span>
+        <span class="n" style="font-size: 24px; color: #626977;">€</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+        <div style="flex: 1; height: 40px; border-radius: 12px; background: #171B22; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #9AA1AF;">La moitié</div>
+        <div style="flex: 1; height: 40px; border-radius: 12px; background: #1E2530; border: 1px solid rgba(237,234,227,0.18); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #EDEAE3; font-weight: 500;">Tout · 78,40 €</div>
+      </div>
+    </div>
+
+    <!-- Moyen de paiement -->
+    <div>
+      <div class="lbl" style="margin-bottom: 12px;">Comment ?</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 999px; background: #EDEAE3;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0B0C10" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>
+          <span style="font-size: 13px; color: #0B0C10; font-weight: 500;">Espèces</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 999px; background: #171B22;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA1AF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+          <span style="font-size: 13px; color: #9AA1AF;">Virement</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border-radius: 999px; background: #171B22;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA1AF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          <span style="font-size: 13px; color: #9AA1AF;">Appli</span>
+        </div>
+        <div style="display: flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 999px; background: #171B22;">
+          <span style="font-size: 13px; color: #9AA1AF;">Autre</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note -->
+    <div>
+      <div class="lbl" style="margin-bottom: 12px;">Note</div>
+      <div style="height: 48px; border-radius: 14px; background: #0F1116; display: flex; align-items: center; padding: 0 16px;">
+        <span style="font-size: 14px; color: #4A505C;">Ex. virement du 3 mars</span>
+      </div>
+    </div>
+
+    <div style="flex: 1;"></div>
+
+    <!-- Ce qui va se passer, dit avant de cliquer -->
+    <div style="display: flex; gap: 10px; background: rgba(232,163,61,0.08); border-radius: 14px; padding: 14px 16px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div style="font-size: 13px; color: #E8A33D; line-height: 1.45;">Marc devra confirmer de son côté. Le solde ne bougera qu'une fois vous deux d'accord.</div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 16px; background: #EDEAE3;">
+      <span style="font-size: 15px; color: #0B0C10; font-weight: 600;">Enregistrer</span>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

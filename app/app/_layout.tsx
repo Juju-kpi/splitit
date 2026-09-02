@@ -1,7 +1,15 @@
 // app/app/_layout.tsx
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
+import {
+  Geist_400Regular, Geist_500Medium, Geist_600SemiBold,
+} from '@expo-google-fonts/geist';
+import {
+  GeistMono_400Regular, GeistMono_500Medium,
+} from '@expo-google-fonts/geist-mono';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -57,6 +65,19 @@ function AuthGuard() {
 }
 
 export default function RootLayout() {
+  // Geist pour le texte, Geist Mono pour les montants. On attend qu'elles
+  // soient pretes : afficher un ecran en police systeme puis le voir sauter
+  // est plus desagreable qu'un instant de fond noir. `error` est ignore
+  // volontairement — si une police manque, on affiche quand meme.
+  const [fontsLoaded, fontError] = useFonts({
+    Geist_400Regular, Geist_500Medium, Geist_600SemiBold,
+    GeistMono_400Regular, GeistMono_500Medium,
+  });
+
+  if (!fontsLoaded && !fontError) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+  }
+
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>

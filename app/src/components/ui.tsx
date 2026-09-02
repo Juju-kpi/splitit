@@ -5,7 +5,7 @@ import {
   ActivityIndicator, Platform, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, shadows } from '../theme';
+import { colors, radius, spacing, shadows, fonts } from '../theme';
 import { useLangStore } from '../store/langStore';
 
 // ── Button ──────────────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
         activeOpacity={1}
       >
         {loading ? (
-          <ActivityIndicator color={variant === 'ghost' ? colors.text2 : colors.white} size="small" />
+          <ActivityIndicator color={variant === 'primary' ? colors.onPrimary : colors.text2} size="small" />
         ) : (
           <View style={styles.btnInner}>
             {icon && <Text style={styles.btnIcon}>{icon}</Text>}
@@ -123,7 +123,7 @@ export function Avatar({ initials, color, fgColor = '#fff', size = 36, ring = fa
       { width: size + (ring ? 4 : 0), height: size + (ring ? 4 : 0), borderRadius: (size + 4) / 2 },
     ]}>
       <View style={[styles.avatar, { backgroundColor: color, width: size, height: size, borderRadius: size / 2 }]}>
-        <Text style={[styles.avatarText, { color: fgColor, fontSize: size * 0.36 }]}>{initials}</Text>
+        <Text style={[styles.avatarText, { color: fgColor, fontFamily: fonts.regular, fontSize: size * 0.36 }]}>{initials}</Text>
       </View>
     </View>
   );
@@ -133,10 +133,10 @@ export function Avatar({ initials, color, fgColor = '#fff', size = 36, ring = fa
 interface PillProps { label: string; variant?: 'accent' | 'green' | 'amber' | 'red'; }
 export function Pill({ label, variant = 'accent' }: PillProps) {
   const map = {
-    accent: { bg: colors.accentBg,  text: colors.accent2, border: 'rgba(124,110,250,0.25)' },
-    green:  { bg: colors.greenBg,   text: colors.green,   border: 'rgba(52,211,153,0.25)'  },
-    amber:  { bg: colors.amberBg,   text: colors.amber,   border: 'rgba(251,191,36,0.25)'  },
-    red:    { bg: colors.redBg,     text: colors.red,      border: 'rgba(248,113,113,0.25)' },
+    accent: { bg: colors.accentBg, text: colors.accent2, border: 'transparent' },
+    green:  { bg: colors.greenBg,  text: colors.green,   border: 'transparent' },
+    amber:  { bg: colors.amberBg,  text: colors.amber,   border: 'transparent' },
+    red:    { bg: colors.redBg,    text: colors.red,     border: 'transparent' },
   };
   const c = map[variant];
   return (
@@ -165,9 +165,7 @@ export function GlassCard({ children, style, glow = false }: { children: React.R
 export function SectionLabel({ label }: { label: string }) {
   return (
     <View style={styles.sectionLabelRow}>
-      <View style={styles.sectionLabelLine} />
       <Text style={styles.sectionLabel}>{label}</Text>
-      <View style={styles.sectionLabelLine} />
     </View>
   );
 }
@@ -181,9 +179,9 @@ export function Divider({ style }: { style?: ViewStyle }) {
 interface NoticeProps { text: string; variant?: 'accent' | 'amber' | 'green'; }
 export function Notice({ text, variant = 'accent' }: NoticeProps) {
   const map = {
-    accent: { bg: colors.accentBg, border: 'rgba(124,110,250,0.25)', text: colors.accent2, dot: colors.accent },
-    amber:  { bg: colors.amberBg,  border: 'rgba(251,191,36,0.25)',  text: colors.amber,   dot: colors.amber  },
-    green:  { bg: colors.greenBg,  border: 'rgba(52,211,153,0.25)',  text: colors.green,   dot: colors.green  },
+    accent: { bg: colors.accentBg, border: 'transparent', text: colors.accent2, dot: colors.accent2 },
+    amber:  { bg: colors.amberBg,  border: 'transparent', text: colors.amber,   dot: colors.amber  },
+    green:  { bg: colors.greenBg,  border: 'transparent', text: colors.green,   dot: colors.green  },
   };
   const c = map[variant];
   return (
@@ -320,65 +318,65 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
     minHeight: 52, marginVertical: 4,
   },
-  btnPrimary: { backgroundColor: colors.accent, ...shadows.accent },
-  btnDanger: { backgroundColor: 'rgba(248,113,113,0.12)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.3)' },
-  btnGhost: { backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.glassBorder },
+  // L'action principale est le seul bloc clair : c'est le contraste qui
+  // attire l'oeil, plus une couleur saturee.
+  btnPrimary: { backgroundColor: colors.primary },
+  btnDanger: { backgroundColor: colors.redBg },
+  btnGhost: { backgroundColor: colors.surface2 },
   btnDisabled: { opacity: 0.42 },
   btnInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  btnIcon: { fontSize: 16 },
-  btnText: { fontSize: 15, fontWeight: '700', color: colors.white, letterSpacing: 0.1 },
+  btnIcon: { fontFamily: fonts.regular, fontSize: 16 },
+  btnText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.onPrimary },
   btnTextGhost: { color: colors.text2 },
   btnTextDanger: { color: colors.red },
 
   // Input
   inputWrap: { marginBottom: 14 },
-  inputLabel: { fontSize: 11, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1.3, marginBottom: 7 },
+  inputLabel: { fontFamily: fonts.medium, fontSize: 13, color: colors.text3, marginBottom: 8 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface2, borderWidth: 1, borderColor: 'transparent',
     borderRadius: radius.sm, paddingHorizontal: 14,
   },
-  inputRowFocused: { borderColor: colors.accent, backgroundColor: 'rgba(124,110,250,0.07)' },
+  inputRowFocused: { borderColor: 'rgba(237,234,227,0.22)', backgroundColor: colors.surface3 },
   inputRowError: { borderColor: colors.red },
-  input: { paddingVertical: Platform.OS === 'ios' ? 14 : 12, fontSize: 15, color: colors.text },
-  inputMono: { fontFamily: 'monospace', fontSize: 20, fontWeight: '300' },
-  inputError: { fontSize: 11, color: colors.red, marginTop: 5, marginLeft: 2 },
+  input: { paddingVertical: Platform.OS === 'ios' ? 14 : 12, fontFamily: fonts.regular, fontSize: 15, color: colors.text },
+  inputMono: { fontFamily: fonts.monoMedium, fontSize: 20 },
+  inputError: { fontFamily: fonts.regular, fontSize: 11, color: colors.red, marginTop: 5, marginLeft: 2 },
   eyeBtn: { padding: 8 },
-  eyeIcon: { fontSize: 16 },
+  eyeIcon: { fontFamily: fonts.regular, fontSize: 16 },
 
   // Avatar
   avatarRing: { alignItems: 'center', justifyContent: 'center' },
   avatar: { alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontWeight: '700' },
+  avatarText: { fontFamily: fonts.semibold },
 
   // Pill
-  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, alignSelf: 'flex-start', borderWidth: 1 },
-  pillText: { fontSize: 11, fontWeight: '600' },
+  pill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: radius.full, alignSelf: 'flex-start' },
+  pillText: { fontFamily: fonts.medium, fontSize: 12 },
 
   // Card
   card: {
-    backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorder,
-    borderRadius: radius.md, padding: spacing.lg, marginBottom: 12, ...shadows.card,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg, padding: spacing.xl, marginBottom: 12,
   },
 
   // GlassCard
   glassCard: {
-    backgroundColor: 'rgba(22,22,26,0.9)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: colors.surface,
     borderRadius: radius.lg, padding: spacing.xl, marginBottom: 12,
-    overflow: 'hidden', ...shadows.card,
+    overflow: 'hidden',
   },
-  glassCardGlow: { borderColor: 'rgba(124,110,250,0.2)' },
+  glassCardGlow: { borderWidth: 1, borderColor: 'rgba(237,234,227,0.18)' },
   glassCardGlowInner: {
     position: 'absolute', top: -30, right: -30,
     width: 120, height: 120, borderRadius: 60,
-    backgroundColor: 'rgba(124,110,250,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
 
   // Section label
-  sectionLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20, marginBottom: 10 },
-  sectionLabelLine: { flex: 1, height: 0.5, backgroundColor: colors.glassBorder },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1.5 },
+  sectionLabelRow: { marginTop: 22, marginBottom: 10 },
+  sectionLabel: { fontFamily: fonts.medium, fontSize: 13, color: colors.text3 },
 
   // Divider
   divider: { height: 0.5, backgroundColor: colors.glassBorder, marginVertical: 10 },
@@ -386,7 +384,7 @@ const styles = StyleSheet.create({
   // Notice
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderRadius: radius.sm, padding: 12, marginVertical: 6 },
   noticeDot: { width: 6, height: 6, borderRadius: 3, marginTop: 4 },
-  noticeText: { fontSize: 13, lineHeight: 19, flex: 1 },
+  noticeText: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, flex: 1 },
 
   // AvatarRow
   avatarRow: { flexDirection: 'row', marginTop: 12 },
@@ -396,7 +394,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface3, borderWidth: 1, borderColor: colors.glassBorder,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarExtraText: { fontSize: 9, color: colors.text3, fontWeight: '700' },
+  avatarExtraText: { fontFamily: fonts.semibold, fontSize: 9, color: colors.text3, fontWeight: '700' },
 
   // Chip
   chip: {
@@ -406,7 +404,7 @@ const styles = StyleSheet.create({
     marginRight: 6, marginBottom: 6, backgroundColor: colors.surface2,
   },
   chipSelected: { borderColor: colors.accent, backgroundColor: colors.accentBg },
-  chipText: { fontSize: 13, fontWeight: '500', color: colors.text2 },
+  chipText: { fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: colors.text2 },
   chipTextSelected: { color: colors.accent2, fontWeight: '600' },
 
   // AmountInput
@@ -416,9 +414,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, paddingHorizontal: 18, paddingVertical: 14, marginBottom: 14,
   },
   amountWrapFocused: { borderColor: colors.accent, backgroundColor: 'rgba(124,110,250,0.07)' },
-  amountSymbol: { fontSize: 24, color: colors.text3, fontWeight: '300' },
-  amountInput: { flex: 1, fontSize: 36, fontWeight: '200', fontFamily: 'monospace', color: colors.text },
-  amountCurrency: { fontSize: 15, color: colors.accent2, fontWeight: '700', letterSpacing: 0.5 },
+  amountSymbol: { fontFamily: fonts.regular, fontSize: 24, color: colors.text3, fontWeight: '300' },
+  amountInput: { flex: 1, fontSize: 36, fontWeight: '200', fontFamily: fonts.mono, color: colors.text },
+  amountCurrency: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent2, fontWeight: '700', letterSpacing: 0.5 },
 });
 
 // ── Header styles ─────────────────────────────────────────────────────────────
@@ -439,9 +437,9 @@ const headerStyles = StyleSheet.create({
   inner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   left: { flex: 1, marginRight: 10 },
   right: { flexDirection: 'row', gap: 8, alignItems: 'center', paddingBottom: 0 },
-  title: { fontSize: 30, fontWeight: '800', letterSpacing: -1.2, color: colors.text },
+  title: { fontFamily: fonts.semibold, fontSize: 30, fontWeight: '800', letterSpacing: -1.2, color: colors.text },
   titleAccent: { color: colors.accent },
-  subtitle: { fontSize: 12, color: colors.text3, marginTop: 4, fontWeight: '500', letterSpacing: 0.2 },
+  subtitle: { fontFamily: fonts.medium, fontSize: 12, color: colors.text3, marginTop: 4, fontWeight: '500', letterSpacing: 0.2 },
   separator: { height: 1, marginTop: 16, backgroundColor: colors.glassBorder },
 });
 
@@ -459,7 +457,7 @@ const pillStyles = StyleSheet.create({
     borderColor: 'rgba(124,110,250,0.35)',
     ...shadows.accent,
   },
-  icon: { fontSize: 13 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.text2 },
+  icon: { fontFamily: fonts.regular, fontSize: 13 },
+  label: { fontFamily: fonts.semibold, fontSize: 13, fontWeight: '600', color: colors.text2 },
   labelPrimary: { color: colors.accent2 },
 });

@@ -10,7 +10,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '../../store/authStore';
 import { useT } from '../../store/langStore';
 import { Button, Input } from '../../components/ui';
-import { colors, spacing, radius, shadows } from '../../theme';
+import { colors, spacing, radius, shadows, fonts } from '../../theme';
 
 const LAST_EMAIL_KEY = 'splitit_last_email';
 
@@ -156,9 +156,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     ...shadows.accent,
   },
-  logoMarkText: { fontSize: 28, fontWeight: '800', color: colors.accent },
-  logo: { fontSize: 36, fontWeight: '800', letterSpacing: -1.5, color: colors.text },
-  tagline: { fontSize: 13, color: colors.text3, marginTop: 6, fontWeight: '500', letterSpacing: 0.2 },
+  logoMarkText: { fontFamily: fonts.semibold, fontSize: 28, fontWeight: '800', color: colors.accent },
+  logo: { fontFamily: fonts.semibold, fontSize: 36, fontWeight: '800', letterSpacing: -1.5, color: colors.text },
+  tagline: { fontFamily: fonts.medium, fontSize: 13, color: colors.text3, marginTop: 6, fontWeight: '500', letterSpacing: 0.2 },
 
   // Form card
   formCard: {
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   formTitle: {
-    fontSize: 20, fontWeight: '700', color: colors.text,
+    fontFamily: fonts.semibold, fontSize: 20, fontWeight: '700', color: colors.text,
     marginBottom: 20, letterSpacing: -0.3,
   },
 
@@ -186,9 +186,9 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  checkmark: { color: colors.white, fontSize: 12, fontWeight: '800' },
-  rememberText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
-  forgotText: { fontSize: 13, color: colors.accent2, fontWeight: '600', minHeight: 44, textAlignVertical: 'center', lineHeight: 44 },
+  checkmark: { color: colors.white, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '800' },
+  rememberText: { fontFamily: fonts.medium, fontSize: 13, color: colors.text2, fontWeight: '500' },
+  forgotText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.accent2, fontWeight: '600', minHeight: 44, textAlignVertical: 'center', lineHeight: 44 },
 
   // Error
   errorBox: {
@@ -197,13 +197,13 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(248,113,113,0.2)',
     borderRadius: radius.sm, padding: 12, marginBottom: 12,
   },
-  errorDot: { fontSize: 14, color: colors.red },
-  errorText: { fontSize: 13, color: colors.red, flex: 1, lineHeight: 18 },
+  errorDot: { fontFamily: fonts.regular, fontSize: 14, color: colors.red },
+  errorText: { fontFamily: fonts.regular, fontSize: 13, color: colors.red, flex: 1, lineHeight: 18 },
 
   // Switch
   switchWrap: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   switchLine: { flex: 1, height: 0.5, backgroundColor: colors.glassBorder },
-  switchOr: { fontSize: 12, color: colors.text3, fontWeight: '500' },
+  switchOr: { fontFamily: fonts.medium, fontSize: 12, color: colors.text3, fontWeight: '500' },
 
   // Register
   registerBtn: {
@@ -212,5 +212,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, paddingVertical: 15,
     alignItems: 'center', minHeight: 52, justifyContent: 'center',
   },
-  registerBtnText: { fontSize: 15, fontWeight: '600', color: colors.text2 },
+  registerBtnText: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '600', color: colors.text2 },
 });

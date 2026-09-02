@@ -1,0 +1,238 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #08090C; font-family: Geist, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #EDEAE3; } a:hover { color: #FFFFFF; }
+    .n { font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .h { font-size: 13px; font-weight: 500; color: #626977; margin-bottom: 16px; }
+    .card { background: #0F1116; border-radius: 20px; padding: 22px; }
+  </style>
+</helmet>
+
+<div style="background: #08090C; padding: 36px 40px 44px;">
+
+  <div style="font-size: 32px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.03em;">Nuit premium — le système</div>
+  <div style="font-size: 14px; color: #626977; margin-top: 8px; max-width: 620px; line-height: 1.5;">Ce qui change n'est pas la structure : les écrans, les gestes et les fonctionnalités restent identiques. Ce sont les matériaux.</div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 32px;">
+
+    <!-- Palette -->
+    <div class="card">
+      <div class="h">Palette</div>
+
+      <div style="font-size: 12px; color: #4A505C; margin-bottom: 10px;">Fonds — élévation par le remplissage, plus par la bordure</div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 22px;">
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #08090C; border: 1px solid rgba(255,255,255,0.07);"></div>
+          <div class="n" style="font-size: 11px; color: #626977; margin-top: 7px;">#08090C</div>
+        </div>
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #0F1116;"></div>
+          <div class="n" style="font-size: 11px; color: #626977; margin-top: 7px;">#0F1116</div>
+        </div>
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #161920;"></div>
+          <div class="n" style="font-size: 11px; color: #626977; margin-top: 7px;">#161920</div>
+        </div>
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #2E3340;"></div>
+          <div class="n" style="font-size: 11px; color: #626977; margin-top: 7px;">#2E3340</div>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; color: #4A505C; margin-bottom: 10px;">La couleur ne sert qu'à dire le sens de l'argent</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 22px;">
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #3ECF8E;"></div>
+          <div style="font-size: 12px; color: #9AA1AF; margin-top: 7px;">On te doit</div>
+          <div class="n" style="font-size: 11px; color: #626977;">#3ECF8E</div>
+        </div>
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #E8A33D;"></div>
+          <div style="font-size: 12px; color: #9AA1AF; margin-top: 7px;">Tu dois</div>
+          <div class="n" style="font-size: 11px; color: #626977;">#E8A33D</div>
+        </div>
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #E5484D;"></div>
+          <div style="font-size: 12px; color: #9AA1AF; margin-top: 7px;">Danger</div>
+          <div class="n" style="font-size: 11px; color: #626977;">#E5484D</div>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; color: #4A505C; margin-bottom: 10px;">Action principale — la seule surface claire de l'écran</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+        <div>
+          <div style="height: 52px; border-radius: 12px; background: #EDEAE3;"></div>
+          <div class="n" style="font-size: 11px; color: #626977; margin-top: 7px;">#EDEAE3</div>
+        </div>
+        <div style="grid-column: span 2; display: flex; align-items: flex-end;">
+          <div style="font-size: 12px; color: #626977; line-height: 1.5;">Un os chaud plutôt qu'un violet saturé : c'est ce qui distingue une app de finance d'un tableau de bord générique.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typographie -->
+    <div class="card">
+      <div class="h">Typographie — Geist &amp; Geist Mono</div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">30 / 600</div>
+          <div style="font-size: 30px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.03em;">Week-end Zürich</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">20 / 600</div>
+          <div style="font-size: 20px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.02em;">Titre de feuille</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">15 / 500</div>
+          <div style="font-size: 15px; font-weight: 500; color: #FFFFFF;">Ligne principale</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">13 / 500</div>
+          <div style="font-size: 13px; font-weight: 500; color: #626977;">Étiquette de section</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">12 / 400</div>
+          <div style="font-size: 12px; color: #626977;">Note secondaire, contexte, date</div>
+        </div>
+      </div>
+
+      <div style="height: 1px; background: rgba(255,255,255,0.06); margin: 24px 0;"></div>
+
+      <div style="font-size: 12px; color: #4A505C; margin-bottom: 14px;">Les montants ont leur propre échelle, toujours en chiffres tabulaires</div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">46 / héros</div>
+          <div class="n" style="font-size: 46px; font-weight: 500; color: #FFFFFF; line-height: 1;">78,40 €</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">40 / solde</div>
+          <div class="n" style="font-size: 40px; font-weight: 500; color: #3ECF8E; line-height: 1;">121,67 €</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">20 / ligne</div>
+          <div class="n" style="font-size: 20px; font-weight: 500; color: #E7E9ED;">43,27 €</div>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 16px;">
+          <div class="n" style="font-size: 11px; color: #4A505C; width: 76px; flex-shrink: 0;">13 / détail</div>
+          <div class="n" style="font-size: 13px; color: #9AA1AF;">1 234 567,89 €</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Icones -->
+  <div class="card" style="margin-top: 20px;">
+    <div class="h">Icônes — trait de 1,75 px sur une grille de 24, plus aucun emoji</div>
+    <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 18px;">
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E7E9ED" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">Détail<br><span style="color: #3A404D;">avant 📋</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E7E9ED" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">Rembourser<br><span style="color: #3A404D;">avant 💸</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E7E9ED" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">Membres<br><span style="color: #3A404D;">avant 👥</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E7E9ED" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4"/><path d="M15.4 6.5l-6.8 4"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">Inviter<br><span style="color: #3A404D;">avant 🔗</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">À compléter<br><span style="color: #3A404D;">avant ⏳</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">Validé<br><span style="color: #3A404D;">avant ✓</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E7E9ED" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><path d="M6 1v3"/><path d="M10 1v3"/><path d="M14 1v3"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">Restaurant<br><span style="color: #3A404D;">avant 🧾</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #161920; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E7E9ED" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </div>
+        <div style="font-size: 11px; color: #4A505C; text-align: center;">Le calcul<br><span style="color: #3A404D;">avant 🔎</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Les six gestes -->
+  <div class="card" style="margin-top: 20px;">
+    <div class="h">Les six décisions qui font la différence</div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+
+      <div>
+        <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">Plus de bordures sur les cartes</div>
+        <div style="font-size: 13px; color: #626977; line-height: 1.5; margin-top: 6px;">La profondeur vient du remplissage. Une bordure grise autour de chaque bloc est ce qui donne l'air d'une maquette non finie.</div>
+      </div>
+
+      <div>
+        <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">Le montant est le sujet</div>
+        <div style="font-size: 13px; color: #626977; line-height: 1.5; margin-top: 6px;">Le solde qui te concerne passe de 24 px en gris à 40 px coloré. On lit son solde en une fraction de seconde, sans chercher.</div>
+      </div>
+
+      <div>
+        <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">Fini les titres en capitales espacées</div>
+        <div style="font-size: 13px; color: #626977; line-height: 1.5; margin-top: 6px;">Les filets horizontaux et les majuscules à 10 px disparaissent : une étiquette de 13 px alignée à gauche suffit et calme l'écran.</div>
+      </div>
+
+      <div>
+        <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">Une seule surface claire</div>
+        <div style="font-size: 13px; color: #626977; line-height: 1.5; margin-top: 6px;">L'action principale est le seul bloc clair de la page. Plus besoin de violet pour attirer l'œil : le contraste s'en charge.</div>
+      </div>
+
+      <div>
+        <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">La couleur redevient une information</div>
+        <div style="font-size: 13px; color: #626977; line-height: 1.5; margin-top: 6px;">Le violet servait de décoration partout. Désormais seuls le vert et l'orange colorent, et ils veulent dire quelque chose.</div>
+      </div>
+
+      <div>
+        <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">Des icônes, pas des emoji</div>
+        <div style="font-size: 13px; color: #626977; line-height: 1.5; margin-top: 6px;">Lucide sur le web, Feather sur mobile — même famille, même trait. Les emoji changent de dessin selon l'appareil et cassent l'alignement.</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

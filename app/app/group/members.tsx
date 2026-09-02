@@ -13,7 +13,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Avatar, Card, Notice } from '../../src/components/ui';
-import { colors, spacing, radius } from '../../src/theme';
+import { colors, spacing, radius, fonts } from '../../src/theme';
 import { useT, useFormatMoney } from '../../src/store/langStore';
 
 export default function GroupMembersScreen() {
@@ -253,11 +253,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full,
   },
-  backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text },
+  backText: { color: colors.text2, fontFamily: fonts.medium, fontSize: 12, fontWeight: '500' },
+  title: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '600', color: colors.text },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 80 },
   sectionLabel: {
-    fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase',
+    fontFamily: fonts.medium, fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase',
     letterSpacing: 0.8, marginTop: 20, marginBottom: 10,
   },
   memberRow: {
@@ -265,14 +265,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border,
     borderRadius: radius.md, padding: 14, marginBottom: 8,
   },
-  memberName: { fontSize: 14, fontWeight: '500', color: colors.text },
-  memberSub: { fontSize: 11, color: colors.green, marginTop: 2 },
-  selectArrow: { fontSize: 18, color: colors.text3 },
+  memberName: { fontFamily: fonts.medium, fontSize: 14, fontWeight: '500', color: colors.text },
+  memberSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.green, marginTop: 2 },
+  selectArrow: { fontFamily: fonts.regular, fontSize: 18, color: colors.text3 },
   addBtn: {
     borderWidth: 1.5, borderColor: colors.border2, borderStyle: 'dashed',
     borderRadius: radius.md, padding: 16, alignItems: 'center',
   },
-  addBtnText: { fontSize: 14, color: colors.accent2, fontWeight: '500' },
+  addBtnText: { fontFamily: fonts.medium, fontSize: 14, color: colors.accent2, fontWeight: '500' },
   dangerZone: { marginTop: 28, paddingTop: 20, borderTopWidth: 0.5, borderTopColor: colors.border },
-  dangerHint: { fontSize: 12, color: colors.text3, lineHeight: 18, marginBottom: 12 },
+  dangerHint: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, lineHeight: 18, marginBottom: 12 },
 });

@@ -20,7 +20,8 @@ import Constants from 'expo-constants';
 import { useAuthStore } from '../../src/store/authStore';
 import { ocrApi, authApi, userApi } from '../../src/services/api';
 import { Card, GlassCard, SectionLabel, Notice, ScreenHeader, Avatar } from '../../src/components/ui';
-import { colors, spacing, radius } from '../../src/theme';
+import Feather from '@expo/vector-icons/Feather';
+import { colors, spacing, radius, fonts } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -102,7 +103,7 @@ async function registerForPushNotifications(): Promise<string | null> {
 function SettingRow({
   icon, label, value, onPress, destructive = false, rightElement, loading = false,
 }: {
-  icon: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
   label: string;
   value?: string;
   onPress?: () => void;
@@ -118,7 +119,7 @@ function SettingRow({
       disabled={(!onPress && !rightElement) || loading}
     >
       <View style={[styles.settingIconWrap, destructive && styles.settingIconWrapDanger]}>
-        <Text style={styles.settingIcon}>{icon}</Text>
+        <Feather name={icon} size={17} color={destructive ? colors.red : colors.text2} />
       </View>
       <Text style={[styles.settingLabel, destructive && { color: colors.red }]}>{label}</Text>
       {loading && <ActivityIndicator size="small" color={colors.accent} style={{ marginLeft: 'auto' }} />}
@@ -365,7 +366,7 @@ export default function SettingsScreen() {
                 ring
               />
               <View style={styles.editColorBadge}>
-                <Text style={styles.editColorBadgeText}>✏️</Text>
+                <Feather name="edit-2" size={11} color={colors.onPrimary} />
               </View>
             </TouchableOpacity>
             <View style={styles.profileInfo}>
@@ -382,7 +383,7 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.ocr_title')} />
         <Card>
           <View style={styles.ocrHeader}>
-            <Text style={styles.ocrTitle}>🧠 {t('settings.ocr_model')} · v1.4</Text>
+            <Text style={styles.ocrTitle}>{t('settings.ocr_model')} · v1.4</Text>
             <View style={[styles.ocrAccuracyBadge, {
               backgroundColor: accuracy >= 80 ? colors.greenBg : colors.amberBg,
             }]}>
@@ -424,13 +425,13 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.account')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="📅"
+            icon="calendar"
             label={t('settings.member_since')}
             value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="🎨"
+            icon="droplet"
             label={t('settings.profile_color')}
             onPress={() => setColorModalVisible(true)}
             rightElement={
@@ -443,14 +444,14 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.language_currency')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="🌍"
+            icon="globe"
             label={t('settings.language')}
             value={`${currentLang.flag} ${currentLang.label}`}
             onPress={() => setLangModalVisible(true)}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="💱"
+            icon="repeat"
             label={t('settings.currency')}
             value={`${currentCurrency.symbol} ${currentCurrency.code}`}
             onPress={() => setCurrencyModalVisible(true)}
@@ -465,7 +466,7 @@ export default function SettingsScreen() {
         )}
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="🔔"
+            icon="bell"
             label={t('settings.notif_expense')}
             rightElement={
               notifLoading ? (
@@ -483,7 +484,7 @@ export default function SettingsScreen() {
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="⏰"
+            icon="clock"
             label={t('settings.notif_reminder')}
             rightElement={
               notifLoading ? (
@@ -505,20 +506,20 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.privacy')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="📦"
+            icon="download"
             label={t('settings.export_data')}
             onPress={handleExportData}
             loading={exportLoading}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="🔒"
+            icon="lock"
             label={t('settings.privacy_policy')}
             onPress={handlePrivacyPolicy}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="📋"
+            icon="file-text"
             label={t('settings.terms')}
             onPress={() => Linking.openURL('https://juju-kpi.github.io/splitit/privacy-policy.md')}
           />
@@ -527,10 +528,10 @@ export default function SettingsScreen() {
         {/* À propos */}
         <SectionLabel label={t('settings.about')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <SettingRow icon="📱" label={t('settings.version')} value={APP_VERSION} />
+          <SettingRow icon="smartphone" label={t('settings.version')} value={APP_VERSION} />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="⭐️"
+            icon="star"
             label={t('settings.rate')}
             onPress={() => Linking.openURL('market://details?id=com.julien.splitit').catch(() =>
               Linking.openURL('https://play.google.com/store/apps/details?id=com.julien.splitit')
@@ -538,7 +539,7 @@ export default function SettingsScreen() {
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="💬"
+            icon="message-circle"
             label={t('settings.feedback')}
             onPress={() => Linking.openURL('mailto:ares88775@gmail.com?subject=Feedback SplitIt')}
           />
@@ -547,9 +548,9 @@ export default function SettingsScreen() {
         {/* Danger zone */}
         <SectionLabel label={t('settings.danger')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <SettingRow icon="👋" label={t('settings.logout_row')} onPress={handleLogout} />
+          <SettingRow icon="log-out" label={t('settings.logout_row')} onPress={handleLogout} />
           <View style={styles.rowSeparator} />
-          <SettingRow icon="🗑" label={t('settings.delete_account')} destructive onPress={openDeleteModal} />
+          <SettingRow icon="trash-2" label={t('settings.delete_account')} destructive onPress={openDeleteModal} />
         </Card>
 
         <Text style={styles.footer}>SplitIt {APP_VERSION} · {t('settings.made_with')}</Text>
@@ -622,7 +623,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>🌍 {t('settings.language')}</Text>
+            <Text style={styles.modalTitle}>{t('settings.language')}</Text>
             <TouchableOpacity onPress={() => setLangModalVisible(false)} style={styles.modalClose}>
               <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
@@ -665,7 +666,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>💱 {t('settings.currency')}</Text>
+            <Text style={styles.modalTitle}>{t('settings.currency')}</Text>
             <TouchableOpacity onPress={() => setCurrencyModalVisible(false)} style={styles.modalClose}>
               <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
@@ -721,7 +722,7 @@ export default function SettingsScreen() {
             {deleteStep === 'confirm' && (
               <>
                 <View style={styles.deleteWarning}>
-                  <Text style={styles.deleteWarningTitle}>⚠️ {t('settings.delete_warning')}</Text>
+                  <Text style={styles.deleteWarningTitle}>{t('settings.delete_warning')}</Text>
                   <Text style={styles.deleteWarningText}>{t('settings.delete_bullets')}</Text>
                 </View>
                 <Text style={styles.deleteConfirmLabel}>
@@ -751,7 +752,7 @@ export default function SettingsScreen() {
             {deleteStep === 'password' && (
               <>
                 <View style={styles.deleteWarning}>
-                  <Text style={styles.deleteWarningTitle}>🔑 {t('settings.delete_confirm_pw')}</Text>
+                  <Text style={styles.deleteWarningTitle}>{t('settings.delete_confirm_pw')}</Text>
                   <Text style={styles.deleteWarningText}>{t('settings.delete_confirm_pw_sub')}</Text>
                 </View>
                 <Text style={styles.deleteConfirmLabel}>{t('auth.password')}</Text>
@@ -793,34 +794,34 @@ const styles = StyleSheet.create({
   profileCard: { marginTop: 16 },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   profileInfo: { flex: 1 },
-  profileName: { fontSize: 18, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
-  profileEmail: { fontSize: 12, color: colors.text3, marginTop: 3 },
+  profileName: { fontFamily: fonts.semibold, fontSize: 18, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
+  profileEmail: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, marginTop: 3 },
   profileBadge: {
     marginTop: 8, alignSelf: 'flex-start',
     backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.25)',
     paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.full,
   },
-  profileBadgeText: { fontSize: 11, color: colors.accent2, fontWeight: '700' },
+  profileBadgeText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.accent2, fontWeight: '700' },
   editColorBadge: {
     position: 'absolute', bottom: -2, right: -2,
     width: 22, height: 22, borderRadius: 11,
     backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  editColorBadgeText: { fontSize: 11 },
+  editColorBadgeText: { fontFamily: fonts.regular, fontSize: 11 },
 
   ocrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  ocrTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  ocrTitle: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '700', color: colors.text },
   ocrAccuracyBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full },
-  ocrAccuracyText: { fontSize: 12, fontWeight: '700' },
+  ocrAccuracyText: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '700' },
   ocrStatsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginBottom: 16 },
   ocrStat: { flex: 1, alignItems: 'center' },
-  ocrStatNum: { fontSize: 26, fontWeight: '300', fontFamily: 'monospace' },
-  ocrStatLabel: { fontSize: 10, color: colors.text3, marginTop: 3, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
+  ocrStatNum: { fontSize: 26, fontWeight: '300', fontFamily: fonts.mono },
+  ocrStatLabel: { fontFamily: fonts.semibold, fontSize: 10, color: colors.text3, marginTop: 3, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
   ocrStatDivider: { width: 0.5, height: 40, backgroundColor: colors.glassBorder },
   progBarTrack: { height: 4, backgroundColor: colors.surface2, borderRadius: 2, overflow: 'hidden', marginBottom: 8 },
   progBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.accent },
-  progLabel: { fontSize: 11, color: colors.text3, lineHeight: 16 },
+  progLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16 },
 
   settingRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -831,27 +832,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface3, alignItems: 'center', justifyContent: 'center',
   },
   settingIconWrapDanger: { backgroundColor: 'rgba(248,113,113,0.12)' },
-  settingIcon: { fontSize: 15 },
-  settingLabel: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.text },
-  settingValue: { fontSize: 12, color: colors.text3, fontWeight: '500' },
-  settingArrow: { fontSize: 18, color: colors.text3, fontWeight: '300' },
+  settingIcon: { fontFamily: fonts.regular, fontSize: 15 },
+  settingLabel: { flex: 1, fontFamily: fonts.medium, fontSize: 14, fontWeight: '500', color: colors.text },
+  settingValue: { fontFamily: fonts.medium, fontSize: 12, color: colors.text3, fontWeight: '500' },
+  settingArrow: { fontFamily: fonts.regular, fontSize: 18, color: colors.text3, fontWeight: '300' },
   rowSeparator: { height: 0.5, backgroundColor: colors.glassBorder, marginLeft: spacing.lg + 32 + 12 },
   colorDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.border },
 
-  footer: { fontSize: 11, color: colors.text3, textAlign: 'center', marginTop: 24, marginBottom: 8 },
+  footer: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, textAlign: 'center', marginTop: 24, marginBottom: 8 },
 
   modalScreen: { flex: 1, backgroundColor: colors.bg },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: spacing.xl, borderBottomWidth: 0.5, borderBottomColor: colors.border,
   },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  modalTitle: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '700', color: colors.text },
   modalClose: { paddingHorizontal: 14, paddingVertical: 7, backgroundColor: colors.surface2, borderRadius: radius.full },
-  modalCloseText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
+  modalCloseText: { fontFamily: fonts.medium, fontSize: 13, color: colors.text2, fontWeight: '500' },
   modalContent: { padding: spacing.xl, paddingBottom: 60 },
 
   colorPickerContent: { padding: spacing.xl, alignItems: 'center' },
-  colorPickerSub: { fontSize: 14, color: colors.text3, marginBottom: 24, alignSelf: 'flex-start' },
+  colorPickerSub: { fontFamily: fonts.regular, fontSize: 14, color: colors.text3, marginBottom: 24, alignSelf: 'flex-start' },
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center', marginBottom: 32 },
   colorSwatch: {
     width: 54, height: 54, borderRadius: 27,
@@ -859,14 +860,14 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
   },
   colorSwatchSelected: { borderWidth: 3, borderColor: colors.white, shadowOpacity: 0.4, shadowRadius: 8 },
-  colorSwatchCheck: { fontSize: 20, color: colors.white, fontWeight: '800' },
+  colorSwatchCheck: { fontFamily: fonts.semibold, fontSize: 20, color: colors.white, fontWeight: '800' },
   colorPreview: { alignItems: 'center', marginBottom: 32, gap: 12 },
-  colorPreviewName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  colorPreviewName: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '600', color: colors.text },
   colorSaveBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
     paddingVertical: 14, paddingHorizontal: 48, alignItems: 'center', width: '100%',
   },
-  colorSaveBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  colorSaveBtnText: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.white },
 
   // Langue & Devise picker
   pickerContent: { padding: spacing.xl, paddingBottom: 60 },
@@ -876,26 +877,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, marginBottom: 4,
   },
   pickerRowSelected: { backgroundColor: colors.accentBg },
-  pickerFlag: { fontSize: 24 },
-  pickerSymbol: { fontSize: 20, width: 32, textAlign: 'center', color: colors.text, fontWeight: '600' },
-  pickerLabel: { flex: 1, fontSize: 15, color: colors.text },
-  pickerCheck: { fontSize: 16, color: colors.accent2, fontWeight: '700' },
+  pickerFlag: { fontFamily: fonts.regular, fontSize: 24 },
+  pickerSymbol: { fontFamily: fonts.semibold, fontSize: 20, width: 32, textAlign: 'center', color: colors.text, fontWeight: '600' },
+  pickerLabel: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text },
+  pickerCheck: { fontFamily: fonts.semibold, fontSize: 16, color: colors.accent2, fontWeight: '700' },
 
   deleteWarning: {
     backgroundColor: 'rgba(248,113,113,0.06)', borderWidth: 1,
     borderColor: 'rgba(248,113,113,0.2)', borderRadius: radius.md, padding: 16, marginBottom: 24,
   },
-  deleteWarningTitle: { fontSize: 15, fontWeight: '700', color: colors.red, marginBottom: 10 },
-  deleteWarningText: { fontSize: 13, color: colors.text2, lineHeight: 20 },
-  deleteConfirmLabel: { fontSize: 13, color: colors.text2, marginBottom: 10 },
+  deleteWarningTitle: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.red, marginBottom: 10 },
+  deleteWarningText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2, lineHeight: 20 },
+  deleteConfirmLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2, marginBottom: 10 },
   deleteConfirmInput: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(248,113,113,0.4)',
     borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12,
-    color: colors.text, fontSize: 15, marginBottom: 20,
+    color: colors.text, fontFamily: fonts.regular, fontSize: 15, marginBottom: 20,
   },
   deleteBtn: { backgroundColor: colors.red, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center' },
   deleteBtnDisabled: { opacity: 0.35 },
-  deleteBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  deleteBtnText: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.white },
   deleteCancelBtn: { marginTop: 14, alignItems: 'center', paddingVertical: 10 },
-  deleteCancelText: { fontSize: 13, color: colors.text3 },
+  deleteCancelText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
 });

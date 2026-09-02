@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #08090C; font-family: Geist, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #EDEAE3; } a:hover { color: #FFFFFF; }
+    .n { font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .lbl { font-size: 13px; font-weight: 500; color: #626977; }
+  </style>
+</helmet>
+
+<div style="background: #08090C; min-height: 100%; padding-bottom: 28px;">
+
+  <div style="padding: 22px 20px 0; display: flex; align-items: center; justify-content: space-between;">
+    <div style="font-size: 20px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.02em;">Remboursements enregistrés</div>
+    <div style="width: 36px; height: 36px; border-radius: 999px; background: #161920; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA1AF" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+    </div>
+  </div>
+
+  <div style="padding: 22px 20px 0; display: flex; flex-direction: column; gap: 12px;">
+
+    <!-- Historique : le statut se lit a la pastille, pas a la couleur du texte -->
+    <div style="background: #0F1116; border-radius: 18px; padding: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 32px; height: 32px; border-radius: 999px; background: rgba(62,207,142,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">Léa → Julie</div>
+          <div style="font-size: 12px; color: #626977; margin-top: 2px;">Validé · 30 août · Espèces</div>
+        </div>
+        <div class="n" style="font-size: 16px; color: #E7E9ED;">30,00 €</div>
+      </div>
+    </div>
+
+    <div style="background: #0F1116; border-radius: 18px; padding: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 32px; height: 32px; border-radius: 999px; background: rgba(232,163,61,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E8A33D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 14px; color: #FFFFFF; font-weight: 500;">Marc → Julie</div>
+          <div style="font-size: 12px; color: #E8A33D; margin-top: 2px;">En attente de ta confirmation</div>
+        </div>
+        <div class="n" style="font-size: 16px; color: #E7E9ED;">40,00 €</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 14px;">
+        <div style="flex: 1; height: 42px; border-radius: 12px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; gap: 7px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0B0C10" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <span style="font-size: 13px; color: #0B0C10; font-weight: 600;">Confirmer</span>
+        </div>
+        <div style="flex: 1; height: 42px; border-radius: 12px; background: #171B22; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 13px; color: #9AA1AF;">Ce n'est pas arrivé</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background: #0F1116; border-radius: 18px; padding: 16px; opacity: 0.5;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 32px; height: 32px; border-radius: 999px; background: #171B22; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#626977" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 14px; color: #9AA1AF; font-weight: 500; text-decoration: line-through;">Tom → Julie</div>
+          <div style="font-size: 12px; color: #626977; margin-top: 2px;">Annulé · 29 août</div>
+        </div>
+        <div class="n" style="font-size: 16px; color: #626977;">15,00 €</div>
+      </div>
+    </div>
+
+    <!-- Le calcul, replie : la verification que la somme tombe a zero -->
+    <div style="background: #0F1116; border-radius: 18px; padding: 18px 16px; margin-top: 8px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9AA1AF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <span style="font-size: 14px; color: #E7E9ED; font-weight: 500;">D'où viennent ces montants</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#626977" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 18px;">
+
+        <div style="background: #161920; border-radius: 14px; padding: 14px;">
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 999px; background: #2E3340; color: #E7E9ED; font-weight: 600; font-size: 9px; display: flex; align-items: center; justify-content: center;">JU</div>
+            <span style="font-size: 13px; color: #FFFFFF; font-weight: 500;">Julie</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-size: 13px; color: #626977;">+ a avancé</span>
+            <span class="n" style="font-size: 13px; color: #9AA1AF;">240,80 €</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-size: 13px; color: #626977;">− sa part</span>
+            <span class="n" style="font-size: 13px; color: #9AA1AF;">80,70 €</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-size: 13px; color: #626977;">− remboursements reçus</span>
+            <span class="n" style="font-size: 13px; color: #9AA1AF;">38,43 €</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 10px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-size: 13px; color: #E7E9ED; font-weight: 500;">= position</span>
+            <span class="n" style="font-size: 14px; color: #3ECF8E; font-weight: 500;">+121,67 €</span>
+          </div>
+        </div>
+
+        <div style="background: #161920; border-radius: 14px; padding: 14px;">
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 10px;">
+            <div style="width: 22px; height: 22px; border-radius: 999px; background: #2E3340; color: #E7E9ED; font-weight: 600; font-size: 9px; display: flex; align-items: center; justify-content: center;">MA</div>
+            <span style="font-size: 13px; color: #FFFFFF; font-weight: 500;">Marc</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-size: 13px; color: #626977;">+ a avancé</span>
+            <span class="n" style="font-size: 13px; color: #9AA1AF;">42,30 €</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+            <span style="font-size: 13px; color: #626977;">− sa part</span>
+            <span class="n" style="font-size: 13px; color: #9AA1AF;">120,70 €</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 10px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-size: 13px; color: #E7E9ED; font-weight: 500;">= position</span>
+            <span class="n" style="font-size: 14px; color: #E8A33D; font-weight: 500;">−78,40 €</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- La preuve : la somme tombe a zero -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: rgba(62,207,142,0.08);">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <span style="font-size: 13px; color: #3ECF8E; font-weight: 500;">Somme des positions</span>
+        </div>
+        <span class="n" style="font-size: 15px; color: #3ECF8E; font-weight: 500;">0,00 €</span>
+      </div>
+      <div style="font-size: 12px; color: #626977; line-height: 1.5; margin-top: 12px;">Les + et les − s'annulent exactement — rien ne s'est perdu. Chaque position est ensuite appariée : le plus endetté verse au plus créditeur, jusqu'à ce que tout soit à zéro.</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

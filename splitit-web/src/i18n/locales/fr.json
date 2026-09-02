@@ -243,7 +243,8 @@
     "ocr_training": "Entraînement",
     "receipts": "Tickets",
     "next_run": "Prochain run",
-    "before_next_100": "{{n}} / 100 corrections avant le prochain affinement"
+    "before_next_100": "{{n}} / 100 corrections avant le prochain affinement",
+    "expenses_count": "{{n}} dépenses"
   },
   "settings": {
     "title": "Réglages",

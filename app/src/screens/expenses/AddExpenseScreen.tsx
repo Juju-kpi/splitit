@@ -19,7 +19,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupsApi, expensesApi } from '../../services/api';
 import { Button, Input, AmountInput, Chip, Notice, Card, Avatar, SectionLabel } from '../../components/ui';
 import OcrScanScreen from './OcrScanScreen';
-import { colors, spacing, radius } from '../../theme';
+import Feather from '@expo/vector-icons/Feather';
+import { colors, spacing, radius, fonts } from '../../theme';
 import { GroupMember } from '../../../../shared/types';
 import { useAuthStore } from '../../store/authStore';
 import { useFormatMoney, useCurrency } from '../../store/langStore';
@@ -593,12 +594,12 @@ export default function AddExpenseScreen() {
           <Notice text="Le scan OCR détecte les articles automatiquement. Chacun coche ce qu'il a pris." />
           <View style={styles.modeGrid}>
             <TouchableOpacity style={[styles.modeCard, styles.modeCardFeat]} onPress={() => setStep('ocr')} activeOpacity={0.85}>
-              <Text style={styles.modeIcon}>📷</Text>
-              <Text style={[styles.modeLabel, { color: colors.white }]}>Scanner</Text>
-              <Text style={[styles.modeSub, { color: 'rgba(255,255,255,0.65)' }]}>OCR gratuit</Text>
+              <Feather name="camera" size={26} color={colors.onPrimary} />
+              <Text style={[styles.modeLabel, { color: colors.onPrimary }]}>Scanner</Text>
+              <Text style={[styles.modeSub, { color: 'rgba(11,12,16,0.6)' }]}>OCR gratuit</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modeCard} onPress={() => setStep('manual')} activeOpacity={0.85}>
-              <Text style={styles.modeIcon}>✏️</Text>
+              <Feather name="edit-3" size={26} color={colors.text2} />
               <Text style={styles.modeLabel}>Manuel</Text>
               <Text style={styles.modeSub}>Montant global</Text>
             </TouchableOpacity>
@@ -628,7 +629,7 @@ export default function AddExpenseScreen() {
               <View style={styles.receiptImageBlock}>
                 <TouchableOpacity style={styles.receiptImageBtn} onPress={() => setShowReceiptImage(v => !v)}>
                   <Text style={styles.receiptImageBtnText}>
-                    {showReceiptImage ? '🙈 Masquer le ticket' : '🧾 Voir le ticket scanné'}
+                    {showReceiptImage ? 'Masquer le ticket' : 'Voir le ticket scanné'}
                   </Text>
                 </TouchableOpacity>
                 {showReceiptImage && (
@@ -649,7 +650,7 @@ export default function AddExpenseScreen() {
             {unassignedItems.length > 0 && myMember && (
               <TouchableOpacity style={styles.assignBtn} onPress={assignRemainingToMe} activeOpacity={0.8}>
                 <Text style={styles.assignBtnText}>
-                  📌 Assigner les {unassignedItems.length} articles non assignés à moi
+                  Assigner les {unassignedItems.length} articles non assignés à moi
                 </Text>
               </TouchableOpacity>
             )}
@@ -696,7 +697,7 @@ export default function AddExpenseScreen() {
 
             <SectionLabel label="RÉPARTITION" />
             <View style={styles.modeRow}>
-              {([['items', '🧾 Articles'], ['equal', '⚖️ Équitable'], ['custom', '✏️ Perso']] as const).map(([mode, label]) => (
+              {([['items', 'Articles'], ['equal', 'Équitable'], ['custom', 'Perso']] as const).map(([mode, label]) => (
                 <TouchableOpacity
                   key={mode}
                   style={[styles.modeBtn, ocrSplitMode === mode && styles.modeBtnOn]}
@@ -827,14 +828,14 @@ export default function AddExpenseScreen() {
                         style={styles.itemEditBtn}
                         hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
                       >
-                        <Text style={styles.itemRemoveText}>✏️</Text>
+                        <Feather name="edit-2" size={14} color={colors.text2} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => removeOcrItem(idx)}
                         style={styles.itemRemoveBtn}
                         hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
                       >
-                        <Text style={styles.itemRemoveText}>🗑</Text>
+                        <Feather name="trash-2" size={14} color={colors.red} />
                       </TouchableOpacity>
                     </>
                   )}
@@ -949,7 +950,7 @@ export default function AddExpenseScreen() {
               onPress={() => setSplitMode('equal')}
             >
               <Text style={[styles.splitModeBtnText, splitMode === 'equal' && { color: colors.accent2 }]}>
-                ⚖️ Équitable
+                Équitable
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -957,7 +958,7 @@ export default function AddExpenseScreen() {
               onPress={() => switchSplitMode('custom', equalShares)}
             >
               <Text style={[styles.splitModeBtnText, splitMode === 'custom' && { color: colors.accent2 }]}>
-                ✏️ Personnalisé
+                Personnalisé
               </Text>
             </TouchableOpacity>
           </View>
@@ -1112,7 +1113,7 @@ export default function AddExpenseScreen() {
                   <Text style={styles.payerAmountCurrency}>{cur}</Text>
                   {payers.length > 1 && (
                     <TouchableOpacity onPress={() => removePayer(idx)} style={styles.removePayerBtn}>
-                      <Text style={styles.removePayerText}>✕ Retirer</Text>
+                      <Text style={styles.removePayerText}>Retirer</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1182,7 +1183,7 @@ export default function AddExpenseScreen() {
 
         {/* Payé en caisse */}
         <Card style={{ marginBottom: 12 }}>
-          <Text style={styles.previewTitle}>💳 Payé en caisse</Text>
+          <Text style={styles.previewTitle}>Payé en caisse</Text>
           {resolvedPayments.map(p => {
             const m = memberById(p.memberId);
             if (!m) return null;
@@ -1199,7 +1200,7 @@ export default function AddExpenseScreen() {
         {/* Ce que chacun doit — OCR */}
         {ocrItems.length > 0 && (
           <Card style={{ marginBottom: 12 }}>
-            <Text style={styles.previewTitle}>🍽 Ce que chacun a pris</Text>
+            <Text style={styles.previewTitle}>Ce que chacun a pris</Text>
             {Object.entries(ocrSplitByMember).map(([mid, amt]) => {
               const m = memberById(mid);
               if (!m) return null;
@@ -1229,7 +1230,7 @@ export default function AddExpenseScreen() {
         {ocrItems.length === 0 && (
           <Card style={{ marginBottom: 12 }}>
             <Text style={styles.previewTitle}>
-              {splitMode === 'equal' ? '⚖️ Parts égales' : '✏️ Répartition personnalisée'}
+              {splitMode === 'equal' ? 'Parts égales' : 'Répartition personnalisée'}
             </Text>
             {manualSplits.map(({ memberId, amount: amt }) => {
               const m = memberById(memberId);
@@ -1254,7 +1255,7 @@ export default function AddExpenseScreen() {
           <View style={styles.receiptImageBlock}>
             <TouchableOpacity style={styles.receiptImageBtn} onPress={() => setShowReceiptImage(v => !v)}>
               <Text style={styles.receiptImageBtnText}>
-                {showReceiptImage ? '🙈 Masquer le ticket' : '🧾 Voir le ticket scanné'}
+                {showReceiptImage ? 'Masquer le ticket' : 'Voir le ticket scanné'}
               </Text>
             </TouchableOpacity>
             {showReceiptImage && (
@@ -1314,25 +1315,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full, minWidth: 70,
   },
-  backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
+  backText: { color: colors.text2, fontFamily: fonts.medium, fontSize: 12, fontWeight: '500' },
+  title: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 80, paddingTop: 16 },
 
-  fieldLabel: { fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
-  hint: { fontSize: 11, color: colors.text3, marginBottom: 8, marginTop: -4 },
+  fieldLabel: { fontFamily: fonts.medium, fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
+  hint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginBottom: 8, marginTop: -4 },
 
   modeGrid: { flexDirection: 'row', gap: 10, marginTop: 8 },
   modeCard: { flex: 1, backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 20, alignItems: 'center' },
-  modeCardFeat: { backgroundColor: colors.accent, borderColor: colors.accent },
-  modeIcon: { fontSize: 28, marginBottom: 8 },
-  modeLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
-  modeSub: { fontSize: 11, color: colors.text3, marginTop: 2 },
+  modeCardFeat: { backgroundColor: colors.primary, borderColor: colors.primary },
+  modeIcon: { fontFamily: fonts.regular, fontSize: 28, marginBottom: 8 },
+  modeLabel: { fontFamily: fonts.semibold, fontSize: 13, fontWeight: '600', color: colors.text },
+  modeSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 2 },
 
   // Items OCR
   itemCard: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
   itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  itemName: { fontSize: 14, fontWeight: '600', color: colors.text, flex: 1 },
-  itemPrice: { fontSize: 14, fontFamily: 'monospace', color: colors.accent2, fontWeight: '600' },
+  itemName: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '600', color: colors.text, flex: 1 },
+  itemPrice: { fontSize: 14, fontFamily: fonts.mono, color: colors.accent2, fontWeight: '600' },
   itemAvatars: { flexDirection: 'row', marginRight: 8 },
   itemAvatar: { marginLeft: -6, borderWidth: 2, borderColor: colors.surface, borderRadius: 12 },
   itemRemoveBtn: {
@@ -1341,121 +1342,121 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(248,113,113,0.25)',
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
   },
-  itemRemoveText: { fontSize: 12 },
+  itemRemoveText: { fontFamily: fonts.regular, fontSize: 12 },
   itemEditBtn: { marginLeft: 8, paddingHorizontal: 6, paddingVertical: 4 },
   itemEditName: {
     flex: 1, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent,
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, color: colors.text, fontSize: 13,
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, color: colors.text, fontFamily: fonts.regular, fontSize: 13,
   },
   itemEditPrice: {
     width: 74, marginLeft: 6, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.accent,
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, color: colors.text,
-    fontSize: 13, fontFamily: 'monospace', textAlign: 'right',
+    fontSize: 13, fontFamily: fonts.mono, textAlign: 'right',
   },
   itemOkBtn: {
     marginLeft: 6, backgroundColor: colors.accentBg, borderWidth: 1,
     borderColor: 'rgba(124,110,250,0.3)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
   },
-  itemOkText: { fontSize: 12, fontWeight: '600', color: colors.accent2 },
+  itemOkText: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600', color: colors.accent2 },
   addItemBtn: {
     borderWidth: 1.5, borderColor: colors.border2, borderStyle: 'dashed',
     borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', marginTop: 4,
   },
-  addItemText: { fontSize: 14, fontWeight: '600', color: colors.accent2 },
+  addItemText: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '600', color: colors.accent2 },
   receiptTotalInput: {
     backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12,
-    color: colors.text, fontSize: 18, fontFamily: 'monospace', marginBottom: 10,
+    color: colors.text, fontSize: 18, fontFamily: fonts.mono, marginBottom: 10,
   },
   taxRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 },
-  taxLabel: { fontSize: 12, color: colors.text3 },
-  taxValue: { fontSize: 12, fontFamily: 'monospace', color: colors.text2 },
+  taxLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3 },
+  taxValue: { fontSize: 12, fontFamily: fonts.mono, color: colors.text2 },
   taxTotalRow: { borderTopWidth: 0.5, borderTopColor: colors.border, marginTop: 4, paddingTop: 7 },
-  taxTotalLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
-  taxTotalValue: { fontSize: 13, fontWeight: '600', fontFamily: 'monospace', color: colors.accent2 },
-  taxHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
+  taxTotalLabel: { fontFamily: fonts.semibold, fontSize: 13, fontWeight: '600', color: colors.text },
+  taxTotalValue: { fontSize: 13, fontWeight: '600', fontFamily: fonts.mono, color: colors.accent2 },
+  taxHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
   modeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   modeBtn: {
     flex: 1, paddingVertical: 10, borderRadius: radius.md, alignItems: 'center',
     backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
   },
   modeBtnOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },
-  modeBtnText: { fontSize: 12, fontWeight: '600', color: colors.text3 },
+  modeBtnText: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600', color: colors.text3 },
   modeBtnTextOn: { color: colors.accent2 },
   shareRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  shareName: { flex: 1, fontSize: 13, color: colors.text },
-  shareAmount: { fontSize: 13, fontFamily: 'monospace', color: colors.accent2 },
+  shareName: { flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.text },
+  shareAmount: { fontSize: 13, fontFamily: fonts.mono, color: colors.accent2 },
   shareInput: {
     width: 92, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6,
-    color: colors.text, fontSize: 13, fontFamily: 'monospace', textAlign: 'right',
+    color: colors.text, fontSize: 13, fontFamily: fonts.mono, textAlign: 'right',
   },
-  itemLabel: { fontSize: 11, color: colors.text3, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  itemUnassigned: { fontSize: 11, color: colors.amber, marginTop: 6 },
-  itemAssigned: { fontSize: 11, color: colors.green, marginTop: 6 },
+  itemLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  itemUnassigned: { fontFamily: fonts.regular, fontSize: 11, color: colors.amber, marginTop: 6 },
+  itemAssigned: { fontFamily: fonts.regular, fontSize: 11, color: colors.green, marginTop: 6 },
 
   // Assign button
   assignBtn: {
     backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
     borderRadius: radius.sm, padding: 12, marginBottom: 12, alignItems: 'center',
   },
-  assignBtnText: { fontSize: 13, color: colors.accent2, fontWeight: '600' },
+  assignBtnText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.accent2, fontWeight: '600' },
 
   // Unassigned banner in summary
   unassignedBanner: { backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: radius.sm, padding: 10, marginTop: 8 },
-  unassignedBannerText: { fontSize: 11, color: colors.amber, fontWeight: '500' },
+  unassignedBannerText: { fontFamily: fonts.medium, fontSize: 11, color: colors.amber, fontWeight: '500' },
 
   splitModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   splitModeBtn: { flex: 1, paddingVertical: 10, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.surface },
   splitModeBtnOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },
-  splitModeBtnText: { fontSize: 13, fontWeight: '500', color: colors.text2 },
+  splitModeBtnText: { fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: colors.text2 },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
 
-  previewTitle: { fontSize: 12, color: colors.text3, marginBottom: 10, fontWeight: '500' },
+  previewTitle: { fontFamily: fonts.medium, fontSize: 12, color: colors.text3, marginBottom: 10, fontWeight: '500' },
   splitRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-  splitName: { flex: 1, fontSize: 13, color: colors.text },
-  splitAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '500', color: colors.amber },
+  splitName: { flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.text },
+  splitAmt: { fontSize: 13, fontFamily: fonts.mono, fontWeight: '500', color: colors.amber },
 
   customRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
-  customInput: { borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 10, paddingVertical: 6, color: colors.text, fontFamily: 'monospace', fontSize: 14, width: 80, textAlign: 'right' },
-  customCurrency: { fontSize: 12, color: colors.text3, width: 28 },
+  customInput: { borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 10, paddingVertical: 6, color: colors.text, fontFamily: fonts.mono, fontSize: 14, width: 80, textAlign: 'right' },
+  customCurrency: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, width: 28 },
   customTotalRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 0.5, borderTopColor: colors.border2, marginTop: 8, paddingTop: 10 },
-  customTotalLabel: { fontSize: 12, color: colors.text3 },
-  customTotalAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '600' },
+  customTotalLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3 },
+  customTotalAmt: { fontSize: 13, fontFamily: fonts.mono, fontWeight: '600' },
 
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 0.5, borderTopColor: colors.border2, marginTop: 6, paddingTop: 8 },
-  totalLabel: { fontSize: 12, color: colors.text3 },
-  totalAmt: { fontSize: 13, fontFamily: 'monospace', fontWeight: '500', color: colors.text },
+  totalLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3 },
+  totalAmt: { fontSize: 13, fontFamily: fonts.mono, fontWeight: '500', color: colors.text },
 
-  contextTitle: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 4 },
-  contextTotal: { fontSize: 20, fontFamily: 'monospace', fontWeight: '300', color: colors.accent2 },
-  contextSub: { fontSize: 11, color: colors.text3, marginTop: 4 },
+  contextTitle: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 4 },
+  contextTotal: { fontSize: 20, fontFamily: fonts.mono, fontWeight: '300', color: colors.accent2 },
+  contextSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 4 },
 
   payerLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 4 },
   addPayerBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, borderWidth: 1, borderColor: colors.accent },
-  addPayerText: { fontSize: 11, color: colors.accent2, fontWeight: '600' },
+  addPayerText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.accent2, fontWeight: '600' },
   payerCard: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
-  payerCardLabel: { fontSize: 10, color: colors.text3, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
+  payerCardLabel: { fontFamily: fonts.medium, fontSize: 10, color: colors.text3, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
   payerChipList: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
   payerChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.border },
   payerChipOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },
-  payerChipText: { fontSize: 12, fontWeight: '500', color: colors.text2 },
+  payerChipText: { fontFamily: fonts.medium, fontSize: 12, fontWeight: '500', color: colors.text2 },
   payerAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  payerAmountInput: { borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 8, color: colors.text, fontFamily: 'monospace', fontSize: 18, width: 110, textAlign: 'right' },
-  payerAmountCurrency: { fontSize: 13, color: colors.text3 },
+  payerAmountInput: { borderWidth: 0.5, borderColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 8, color: colors.text, fontFamily: fonts.mono, fontSize: 18, width: 110, textAlign: 'right' },
+  payerAmountCurrency: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
   removePayerBtn: { marginLeft: 'auto', paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.sm, borderWidth: 0.5, borderColor: colors.border2 },
-  removePayerText: { fontSize: 11, color: colors.text3 },
+  removePayerText: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3 },
   shortcutBtn: { marginTop: 8, paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.sm, backgroundColor: colors.accentBg, alignSelf: 'flex-start' },
-  shortcutText: { fontSize: 11, color: colors.accent2, fontWeight: '500' },
+  shortcutText: { fontFamily: fonts.medium, fontSize: 11, color: colors.accent2, fontWeight: '500' },
 
   balanceBar: { borderRadius: radius.sm, padding: 10, marginBottom: 12, marginTop: 4 },
   balanceBarOk: { backgroundColor: 'rgba(52,211,153,0.08)' },
   balanceBarWarn: { backgroundColor: 'rgba(251,191,36,0.08)' },
-  balanceBarText: { fontSize: 13, fontFamily: 'monospace', fontWeight: '500', textAlign: 'center' },
+  balanceBarText: { fontSize: 13, fontFamily: fonts.mono, fontWeight: '500', textAlign: 'center' },
 
   receiptImageBlock: { marginBottom: 12 },
   receiptImageBtn: { backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.sm, padding: 12, alignItems: 'center' },
-  receiptImageBtnText: { fontSize: 13, color: colors.accent2, fontWeight: '500' },
+  receiptImageBtnText: { fontFamily: fonts.medium, fontSize: 13, color: colors.accent2, fontWeight: '500' },
   receiptImage: { width: '100%', height: 300, borderRadius: radius.sm, marginTop: 8, backgroundColor: colors.surface3 },
 });

@@ -1,0 +1,215 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #0B0C0F; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+    a { color: #A899FF; } a:hover { color: #7C6EFA; }
+    .num { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="background: #0B0C0F; min-height: 100%; padding-bottom: 24px;">
+
+  <!-- En-tete colle -->
+  <div style="background: #141519; border-bottom: 1px solid #2B2E36; padding: 20px 20px 16px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="background: #1B1D22; border: 1px solid #2B2E36; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; color: #A8AEBC;">← Groupes</div>
+      <div style="display: flex; gap: 8px;">
+        <div style="background: #1B1D22; border: 1px solid #2B2E36; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; color: #A8AEBC;">👥 Membres</div>
+        <div style="background: rgba(124,110,250,0.10); border: 1px solid rgba(124,110,250,0.25); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #A899FF;">Inviter</div>
+      </div>
+    </div>
+    <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #F4F5F7; margin-top: 12px;">💰 Week-end Zürich</div>
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+      <div style="background: rgba(124,110,250,0.10); border: 1px solid rgba(124,110,250,0.25); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #A899FF;">🔗 Code kx91mf</div>
+      <div style="background: rgba(251,191,36,0.10); border: 1px solid rgba(251,191,36,0.25); padding: 4px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #FBBF24;">⏳ 1 à compléter</div>
+    </div>
+  </div>
+
+  <div style="padding: 0 20px;">
+
+    <!-- Membres -->
+    <div style="background: #141519; border: 1px solid #2B2E36; border-radius: 16px; padding: 16px; margin-top: 12px; margin-bottom: 12px;">
+      <div style="font-size: 14px; font-weight: 600; color: #F4F5F7; margin-bottom: 12px;">Membres (4)</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px;">
+          <div style="width: 40px; height: 40px; border-radius: 999px; background: #4F46E5; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center;">JU</div>
+          <div style="font-size: 11px; color: #A8AEBC;">Julie</div>
+          <div style="font-size: 9px; color: #A899FF; font-weight: 600;">moi</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px;">
+          <div style="width: 40px; height: 40px; border-radius: 999px; background: #065F46; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center;">MA</div>
+          <div style="font-size: 11px; color: #A8AEBC;">Marc</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px;">
+          <div style="width: 40px; height: 40px; border-radius: 999px; background: #92400E; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center;">LÉ</div>
+          <div style="font-size: 11px; color: #A8AEBC;">Léa</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px;">
+          <div style="width: 40px; height: 40px; border-radius: 999px; background: #831843; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center;">TO</div>
+          <div style="font-size: 11px; color: #A8AEBC;">Tom</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Label de section -->
+    <div style="display: flex; align-items: center; gap: 12px; margin: 20px 0;">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+      <div style="font-size: 10px; font-weight: 700; color: #79808F; text-transform: uppercase; letter-spacing: 2px;">Résumé du groupe</div>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+    </div>
+
+    <div style="background: #141519; border: 1px solid #2B2E36; border-radius: 16px; padding: 16px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-around;">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div class="num" style="font-size: 24px; font-weight: 300; color: #F4F5F7;">322.80 €</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #79808F; margin-top: 4px; font-weight: 600;">Total groupe</div>
+        </div>
+        <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.10);"></div>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div class="num" style="font-size: 24px; font-weight: 300; color: #A899FF;">80.70 €</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #79808F; margin-top: 4px; font-weight: 600;">Ma part</div>
+        </div>
+        <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.10);"></div>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div class="num" style="font-size: 24px; font-weight: 300; color: #F4F5F7;">3</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #79808F; margin-top: 4px; font-weight: 600;">Dépenses</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin: 20px 0;">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+      <div style="font-size: 10px; font-weight: 700; color: #79808F; text-transform: uppercase; letter-spacing: 2px;">Qui a avancé, qui doit</div>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+    </div>
+
+    <div style="background: #141519; border: 1px solid #2B2E36; border-radius: 16px; padding: 16px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; margin-bottom: 12px;">
+        <span style="color: #34D399; font-weight: 600;">← on lui doit</span>
+        <span style="color: #79808F;">équilibré</span>
+        <span style="color: #FBBF24; font-weight: 600;">il doit →</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 26px; height: 26px; border-radius: 999px; background: #4F46E5; color: #fff; font-weight: 700; font-size: 9px; display: flex; align-items: center; justify-content: center;">JU</div>
+          <div style="width: 76px; font-size: 12px; color: #A899FF; font-weight: 600;">Julie (moi)</div>
+          <div style="flex: 1; display: flex; align-items: center; height: 20px;">
+            <div style="flex: 1; display: flex; justify-content: flex-end;"><div style="height: 10px; width: 50%; border-radius: 5px 0 0 5px; background: rgba(52,211,153,0.7);"></div></div>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15);"></div>
+            <div style="flex: 1;"></div>
+          </div>
+          <div class="num" style="width: 76px; text-align: right; font-size: 11px; font-weight: 600; color: #34D399;">+121.67</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 26px; height: 26px; border-radius: 999px; background: #065F46; color: #fff; font-weight: 700; font-size: 9px; display: flex; align-items: center; justify-content: center;">MA</div>
+          <div style="width: 76px; font-size: 12px; color: #A8AEBC;">Marc</div>
+          <div style="flex: 1; display: flex; align-items: center; height: 20px;">
+            <div style="flex: 1;"></div>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15);"></div>
+            <div style="flex: 1;"><div style="height: 10px; width: 32%; border-radius: 0 5px 5px 0; background: rgba(251,191,36,0.7);"></div></div>
+          </div>
+          <div class="num" style="width: 76px; text-align: right; font-size: 11px; font-weight: 600; color: #FBBF24;">−78.40</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 26px; height: 26px; border-radius: 999px; background: #92400E; color: #fff; font-weight: 700; font-size: 9px; display: flex; align-items: center; justify-content: center;">LÉ</div>
+          <div style="width: 76px; font-size: 12px; color: #A8AEBC;">Léa</div>
+          <div style="flex: 1; display: flex; align-items: center; height: 20px;">
+            <div style="flex: 1;"></div>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15);"></div>
+            <div style="flex: 1;"><div style="height: 10px; width: 18%; border-radius: 0 5px 5px 0; background: rgba(251,191,36,0.7);"></div></div>
+          </div>
+          <div class="num" style="width: 76px; text-align: right; font-size: 11px; font-weight: 600; color: #FBBF24;">−43.27</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 26px; height: 26px; border-radius: 999px; background: #831843; color: #fff; font-weight: 700; font-size: 9px; display: flex; align-items: center; justify-content: center;">TO</div>
+          <div style="width: 76px; font-size: 12px; color: #A8AEBC;">Tom</div>
+          <div style="flex: 1; display: flex; align-items: center; height: 20px;">
+            <div style="flex: 1;"></div>
+            <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15);"></div>
+            <div style="flex: 1;"></div>
+          </div>
+          <div class="num" style="width: 76px; text-align: right; font-size: 11px; font-weight: 600; color: #79808F;">0.00</div>
+        </div>
+      </div>
+      <div style="font-size: 11px; color: #79808F; line-height: 16px; margin-top: 12px;">Vert : cette personne a avancé plus que sa part, on lui doit de l'argent. Orange : elle doit encore sa part. Les remboursements ci-dessous règlent tout en un minimum de virements.</div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin: 20px 0;">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+      <div style="font-size: 10px; font-weight: 700; color: #79808F; text-transform: uppercase; letter-spacing: 2px;">Remboursements</div>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+    </div>
+
+    <div style="background: #141519; border: 1px solid #2B2E36; border-radius: 16px; padding: 16px; margin-bottom: 12px;">
+      <div style="font-size: 11px; color: #79808F; margin-bottom: 12px;">Montants nets simplifiés — appuie pour ouvrir et rembourser</div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 8px; border-radius: 8px; background: rgba(124,110,250,0.05);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 28px; height: 28px; border-radius: 999px; background: #065F46; color: #fff; font-weight: 700; font-size: 10px; display: flex; align-items: center; justify-content: center;">MA</div>
+          <div>
+            <div style="font-size: 14px; font-weight: 500; color: #A899FF;">Marc</div>
+            <div style="font-size: 11px; color: #79808F;">doit rembourser → Julie</div>
+          </div>
+        </div>
+        <div class="num" style="font-size: 14px; font-weight: 600; color: #A899FF;">78.40 €</div>
+      </div>
+      <div style="height: 1px; background: rgba(255,255,255,0.05);"></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 8px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 28px; height: 28px; border-radius: 999px; background: #92400E; color: #fff; font-weight: 700; font-size: 10px; display: flex; align-items: center; justify-content: center;">LÉ</div>
+          <div>
+            <div style="font-size: 14px; font-weight: 500; color: #F4F5F7;">Léa</div>
+            <div style="font-size: 11px; color: #79808F;">doit rembourser → Julie</div>
+          </div>
+        </div>
+        <div class="num" style="font-size: 14px; font-weight: 600; color: #FBBF24;">43.27 €</div>
+      </div>
+      <div style="margin-top: 14px; min-height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(124,110,250,0.10); border: 1px solid rgba(124,110,250,0.25); color: #A899FF; font-size: 14px; font-weight: 600;">📋 Remboursements enregistrés</div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; margin: 20px 0;">
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+      <div style="font-size: 10px; font-weight: 700; color: #79808F; text-transform: uppercase; letter-spacing: 2px;">Dépenses</div>
+      <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.05);"></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="background: #141519; border: 1px solid #2B2E36; border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 14px; font-weight: 600; color: #F4F5F7;">Fondue Adler</div>
+          <div style="font-size: 12px; color: #79808F; margin-top: 2px;">28/08/2026</div>
+        </div>
+        <div class="num" style="font-size: 15px; font-weight: 600; color: #F4F5F7;">96.00 €</div>
+      </div>
+      <div style="background: #141519; border: 1px solid rgba(251,191,36,0.35); border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 14px; font-weight: 600; color: #F4F5F7;">Billets de train</div>
+          <div style="font-size: 12px; color: #79808F; margin-top: 2px;">27/08/2026</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="background: rgba(251,191,36,0.10); border: 1px solid rgba(251,191,36,0.25); padding: 4px 8px; border-radius: 999px; font-size: 12px; color: #FBBF24;">⏳</div>
+          <div class="num" style="font-size: 15px; font-weight: 600; color: #F4F5F7;">184.50 €</div>
+        </div>
+      </div>
+      <div style="background: #141519; border: 1px solid #2B2E36; border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 14px; font-weight: 600; color: #F4F5F7;">Courses Coop</div>
+          <div style="font-size: 12px; color: #79808F; margin-top: 2px;">27/08/2026</div>
+        </div>
+        <div class="num" style="font-size: 15px; font-weight: 600; color: #F4F5F7;">42.30 €</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; background: #7C6EFA; color: #fff; min-height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">+ Ajouter une dépense</div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

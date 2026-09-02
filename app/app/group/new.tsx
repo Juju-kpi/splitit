@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Card } from '../../src/components/ui';
-import { colors, spacing } from '../../src/theme';
+import { colors, spacing, fonts } from '../../src/theme';
 import { useT } from '../../src/store/langStore';
 
 const EMOJIS = ['💰','🍽️','🏔️','🏠','✈️','🎉','🏖️','🚗','🎮','🛒'];
@@ -74,7 +74,7 @@ export default function NewGroupScreen() {
                   onPress={() => setEmoji(e)}
                   style={[styles.emojiBtn, emoji === e && styles.emojiBtnOn]}
                 >
-                  <Text style={{ fontSize: 22 }}>{e}</Text>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 22 }}>{e}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -100,15 +100,15 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xl, paddingTop: 16, paddingBottom: 12 },
   backBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
-  backText: { color: colors.text2, fontSize: 16 },
-  title: { fontSize: 17, fontWeight: '600', color: colors.text },
+  backText: { color: colors.text2, fontFamily: fonts.regular, fontSize: 16 },
+  title: { fontFamily: fonts.semibold, fontSize: 17, fontWeight: '600', color: colors.text },
   tabRow: { flexDirection: 'row', marginHorizontal: spacing.xl, backgroundColor: colors.surface2, borderRadius: 10, padding: 3, marginBottom: 16 },
   tabBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
   tabBtnOn: { backgroundColor: colors.surface3 },
-  tabBtnText: { fontSize: 13, fontWeight: '500', color: colors.text3 },
+  tabBtnText: { fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: colors.text3 },
   tabBtnTextOn: { color: colors.text },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 60 },
-  emojiLabel: { fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
+  emojiLabel: { fontFamily: fonts.medium, fontSize: 11, fontWeight: '500', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
   emojiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   emojiBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border },
   emojiBtnOn: { borderColor: colors.accent, backgroundColor: colors.accentBg },

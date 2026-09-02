@@ -17,7 +17,8 @@ import { groupsApi, expensesApi, settlementsApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useFormatMoney, useCurrency, useT } from '../../store/langStore';
 import { Avatar, Card, SectionLabel, Divider, Button } from '../../components/ui';
-import { colors, spacing, shadows, radius } from '../../theme';
+import Feather from '@expo/vector-icons/Feather';
+import { colors, spacing, shadows, radius, fonts, money } from '../../theme';
 import { Expense, Balance, Settlement } from '../../../../shared/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -238,28 +239,31 @@ export default function GroupDetailScreen() {
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.iconBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={t('common.back')}
         >
-          <Text style={styles.backText}>{t('common.back')}</Text>
+          <Feather name="chevron-left" size={18} color={colors.text2} />
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>{group.emoji} {group.name}</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
-            style={styles.membersBtn}
+            style={styles.iconBtn}
             onPress={() => router.push(`/group/members?groupId=${id}`)}
             activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={t('groups.members')}
           >
-            <Text style={styles.membersBtnText}>👥 {t('groups.members')}</Text>
+            <Feather name="users" size={18} color={colors.text2} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.shareBtn}
+            style={styles.iconBtn}
             onPress={handleShare}
             activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={t('groups.invite')}
           >
-            <Text style={styles.shareBtnText}>{t('groups.invite')}</Text>
+            <Feather name="share-2" size={18} color={colors.text2} />
           </TouchableOpacity>
         </View>
       </View>
@@ -321,12 +325,6 @@ export default function GroupDetailScreen() {
           <>
             <SectionLabel label={t('balances.who_advanced')} />
             <Card>
-              <View style={styles.netLegend}>
-                <Text style={[styles.netLegendText, { color: colors.green }]}>← {t('balances.owed_to_them')}</Text>
-                <Text style={styles.netLegendMid}>{t('balances.even')}</Text>
-                <Text style={[styles.netLegendText, { color: colors.amber }]}>{t('balances.they_owe')} →</Text>
-              </View>
-
               {netRows.map(({ member: m, net }: any) => {
                 const isMe = m.userId === user?.id;
                 const creditor = net > 0.005;
@@ -334,22 +332,21 @@ export default function GroupDetailScreen() {
                 const ratio = Math.min(Math.abs(net) / maxAbsNet, 1);
                 return (
                   <View key={m.id} style={styles.netRow}>
-                    <Avatar initials={m.avatarInitials} color={m.avatarColor} size={26} />
-                    <Text style={[styles.netName, isMe && { color: colors.accent2, fontWeight: '600' }]} numberOfLines={1}>
-                      {m.displayName}
-                    </Text>
-                    {/* barre divergente : la ligne du milieu = équilibre */}
-                    <View style={styles.netBarWrap}>
-                      <View style={styles.netBarSide}>
-                        {creditor && (
-                          <View style={[styles.netBar, styles.netBarLeft, { flex: ratio, backgroundColor: colors.green }]} />
+                    <Avatar initials={m.avatarInitials} color={m.avatarColor} size={30} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.netName, isMe && { color: colors.text }]} numberOfLines={1}>
+                        {m.displayName}
+                      </Text>
+                      {/* Une seule direction : la couleur dit le sens, la
+                          longueur dit l'ampleur. Plus de legende a lire. */}
+                      <View style={styles.netBarTrack}>
+                        {(creditor || debtor) && (
+                          <View style={[styles.netBarFill, {
+                            flex: Math.max(ratio, 0.03),
+                            backgroundColor: creditor ? colors.green : colors.amber,
+                          }]} />
                         )}
-                      </View>
-                      <View style={styles.netAxis} />
-                      <View style={styles.netBarSide}>
-                        {debtor && (
-                          <View style={[styles.netBar, styles.netBarRight, { flex: ratio, backgroundColor: colors.amber }]} />
-                        )}
+                        <View style={{ flex: Math.max(1 - ratio, 0) }} />
                       </View>
                     </View>
                     <Text style={[
@@ -550,7 +547,7 @@ export default function GroupDetailScreen() {
             >
               <View style={[styles.expenseItem, incomplete && styles.expenseItemIncomplete]}>
                 <View style={[styles.expIcon, { backgroundColor: incomplete ? 'rgba(251,191,36,0.12)' : colors.accentBg }]}>
-                  <Text style={{ fontSize: 18 }}>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 18 }}>
                     {incomplete ? '⏳' : exp.receiptImageUrl ? '🧾' : '✏️'}
                   </Text>
                 </View>
@@ -922,35 +919,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     borderBottomWidth: 0.5, borderBottomColor: colors.border,
   },
-  backBtn: {
-    backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
+  iconBtn: {
+    width: 40, height: 40, borderRadius: radius.full,
+    backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center',
   },
-  backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
-  membersBtn: {
-    backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border2,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
+  title: {
+    fontFamily: fonts.semibold, fontSize: 17, color: colors.text,
+    flex: 1, textAlign: 'center', marginHorizontal: 8, letterSpacing: -0.2,
   },
-  membersBtnText: { color: colors.text2, fontSize: 11, fontWeight: '600' },
-  shareBtn: {
-    backgroundColor: colors.accentBg, borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.3)',
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
-  },
-  shareBtnText: { color: colors.accent2, fontSize: 12, fontWeight: '600' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 120 },
 
-  cardTitle: { fontSize: 13, fontWeight: '500', color: colors.text2, marginBottom: 14 },
+  cardTitle: { fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: colors.text2, marginBottom: 14 },
   memberRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   memberItem: { alignItems: 'center', gap: 4 },
-  memberName: { fontSize: 11, color: colors.text3, marginTop: 2 },
-  meTag: { fontSize: 9, color: colors.accent2, fontWeight: '600', textTransform: 'uppercase' },
+  memberName: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 2 },
+  meTag: { fontFamily: fonts.semibold, fontSize: 9, color: colors.accent2, fontWeight: '600', textTransform: 'uppercase' },
 
   summaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 4 },
   summaryItem: { alignItems: 'center', flex: 1 },
-  summaryNum: { fontSize: 22, fontWeight: '300', fontFamily: 'monospace', color: colors.text },
-  summaryCurrency: { fontSize: 11, color: colors.text3, marginTop: -2 },
-  summaryLabel: { fontSize: 11, color: colors.text3, marginTop: 4, fontWeight: '500' },
+  summaryNum: { fontSize: 22, fontWeight: '300', fontFamily: fonts.mono, color: colors.text },
+  summaryCurrency: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: -2 },
+  summaryLabel: { fontFamily: fonts.medium, fontSize: 11, color: colors.text3, marginTop: 4, fontWeight: '500' },
   summaryDivider: { width: 0.5, height: 40, backgroundColor: colors.border },
 
   // Bannière dépenses à compléter dans le résumé
@@ -958,113 +947,109 @@ const styles = StyleSheet.create({
     marginTop: 14, backgroundColor: 'rgba(251,191,36,0.08)',
     borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)',
   },
-  incompleteBannerText: { fontSize: 13, color: colors.amber, fontWeight: '600', textAlign: 'center' },
+  incompleteBannerText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.amber, fontWeight: '600', textAlign: 'center' },
 
   balancesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   logBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border2 },
-  logBtnText: { fontSize: 11, color: colors.text2, fontWeight: '500' },
-  netLegend: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  netLegendText: { fontSize: 10, fontWeight: '600' },
-  netLegendMid: { fontSize: 10, color: colors.text3 },
-  netRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
-  netName: { width: 66, fontSize: 11, color: colors.text2 },
-  netBarWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', height: 18 },
-  netBarSide: { flex: 1, flexDirection: 'row', height: 10 },
-  netBar: { height: 10 },
-  netBarLeft: { borderTopLeftRadius: 5, borderBottomLeftRadius: 5, marginLeft: 'auto' },
-  netBarRight: { borderTopRightRadius: 5, borderBottomRightRadius: 5 },
-  netAxis: { width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.15)' },
-  netAmount: { width: 76, textAlign: 'right', fontSize: 11, fontFamily: 'monospace', fontWeight: '600', color: colors.text3 },
-  netHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 10 },
-  balanceHint: { fontSize: 11, color: colors.text3, marginBottom: 12 },
+  logBtnText: { fontFamily: fonts.medium, fontSize: 11, color: colors.text2, fontWeight: '500' },
+  netRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 7 },
+  netName: { fontFamily: fonts.regular, fontSize: 14, color: colors.text2 },
+  netBarTrack: {
+    flexDirection: 'row', height: 4, borderRadius: 999,
+    backgroundColor: colors.surface2, marginTop: 7, overflow: 'hidden',
+  },
+  netBarFill: { height: 4, borderRadius: 999 },
+  netAmount: { ...money.large, textAlign: 'right', color: colors.text3 },
+  netHint: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, lineHeight: 19, marginTop: 14 },
+  balanceHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginBottom: 12 },
   balanceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   balanceRowMe: { backgroundColor: colors.accentBg, borderRadius: 8, paddingHorizontal: 8, marginHorizontal: -8 },
   balanceLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   balanceNames: { flex: 1 },
-  balanceName: { fontSize: 13, color: colors.text, fontWeight: '500' },
+  balanceName: { fontFamily: fonts.medium, fontSize: 13, color: colors.text, fontWeight: '500' },
   balanceNameMe: { color: colors.accent2 },
-  balanceArrowLabel: { fontSize: 11, color: colors.text3, marginTop: 1 },
-  balanceAmt: { fontSize: 14, fontFamily: 'monospace', color: colors.amber, fontWeight: '600' },
+  balanceArrowLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 1 },
+  balanceAmt: { fontSize: 14, fontFamily: fonts.mono, color: colors.amber, fontWeight: '600' },
   balanceAmtMe: { color: colors.accent2 },
   balanceDetail: { backgroundColor: colors.surface2, borderRadius: radius.sm, padding: 12, marginBottom: 8, gap: 6 },
   detailLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  detailDesc: { fontSize: 12, color: colors.text2, flex: 1 },
-  detailAmt: { fontSize: 12, fontFamily: 'monospace', color: colors.amber, marginLeft: 8 },
+  detailDesc: { fontFamily: fonts.regular, fontSize: 12, color: colors.text2, flex: 1 },
+  detailAmt: { fontSize: 12, fontFamily: fonts.mono, color: colors.amber, marginLeft: 8 },
   settleBtn: { marginTop: 8, backgroundColor: colors.accent, borderRadius: radius.sm, padding: 10, alignItems: 'center' },
   settleBtnDone: { backgroundColor: colors.surface3, borderColor: colors.border },
-  settleHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
-  settleBtnText: { fontSize: 13, color: colors.white, fontWeight: '600', textAlign: 'center' },
+  settleHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
+  settleBtnText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.white, fontWeight: '600', textAlign: 'center' },
 
   // ── Remboursements ─────────────────────────────────────────────────────
   pendingBadge: {
     backgroundColor: 'rgba(251,191,36,0.12)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)',
     borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6,
   },
-  pendingBadgeText: { fontSize: 10, color: colors.amber, fontWeight: '700' },
-  allSettled: { fontSize: 13, color: colors.text2, textAlign: 'center', paddingVertical: 10 },
+  pendingBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.amber, fontWeight: '700' },
+  allSettled: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2, textAlign: 'center', paddingVertical: 10 },
   detailBtn: {
     marginTop: 14, minHeight: 48, borderRadius: radius.md,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
   },
-  detailBtnText: { fontSize: 14, color: colors.accent2, fontWeight: '600' },
+  detailBtnText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent2, fontWeight: '600' },
   pendingCard: {
     marginTop: 8, borderRadius: radius.sm, padding: 10,
     backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)',
   },
-  pendingText: { fontSize: 11, color: colors.amber, lineHeight: 16 },
+  pendingText: { fontFamily: fonts.regular, fontSize: 11, color: colors.amber, lineHeight: 16 },
   pendingActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
 
   historyLabel: {
-    fontSize: 11, color: colors.text3, fontWeight: '700',
+    fontFamily: fonts.semibold, fontSize: 11, color: colors.text3, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
   },
-  historyEmpty: { fontSize: 12, color: colors.text3, marginBottom: 8 },
+  historyEmpty: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, marginBottom: 8 },
   historyCard: { borderRadius: radius.sm, borderWidth: 1, padding: 10, marginBottom: 8 },
   historyConfirmed: { borderColor: 'rgba(52,211,153,0.25)', backgroundColor: 'rgba(52,211,153,0.05)' },
   historyPending: { borderColor: 'rgba(251,191,36,0.25)', backgroundColor: 'rgba(251,191,36,0.05)' },
   historyCancelled: { borderColor: colors.border, backgroundColor: colors.surface2, opacity: 0.6 },
   historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  historyWho: { fontSize: 12, color: colors.text2, flex: 1 },
-  historyAmt: { fontSize: 12, fontFamily: 'monospace', color: colors.text },
-  historyStatus: { fontSize: 11, flex: 1 },
-  historyNote: { fontSize: 11, color: colors.text3, marginTop: 4 },
+  historyWho: { fontFamily: fonts.regular, fontSize: 12, color: colors.text2, flex: 1 },
+  historyAmt: { fontSize: 12, fontFamily: fonts.mono, color: colors.text },
+  historyStatus: { fontFamily: fonts.regular, fontSize: 11, flex: 1 },
+  historyNote: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 4 },
 
   calcToggle: {
     minHeight: 44, borderRadius: radius.md, marginBottom: 16,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
   },
-  calcToggleText: { fontSize: 12, color: colors.text2, fontWeight: '600' },
+  calcToggleText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.text2, fontWeight: '600' },
   calcCard: { backgroundColor: colors.surface2, borderRadius: radius.sm, padding: 10, marginBottom: 8 },
   calcHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  calcName: { fontSize: 12, color: colors.text, fontWeight: '500', flex: 1 },
+  calcName: { fontFamily: fonts.medium, fontSize: 12, color: colors.text, fontWeight: '500', flex: 1 },
   calcLine: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
-  calcLabel: { fontSize: 11, color: colors.text3, flex: 1 },
-  calcValue: { fontSize: 11, fontFamily: 'monospace', color: colors.text2 },
+  calcLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, flex: 1 },
+  calcValue: { fontSize: 11, fontFamily: fonts.mono, color: colors.text2 },
   calcTotalLine: {
     flexDirection: 'row', justifyContent: 'space-between',
     paddingTop: 6, marginTop: 4, borderTopWidth: 0.5, borderTopColor: colors.border,
   },
-  calcNetLabel: { fontSize: 12, color: colors.text2, fontWeight: '600' },
-  calcNetValue: { fontSize: 12, fontFamily: 'monospace', fontWeight: '700', color: colors.text3 },
-  calcHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
+  calcNetLabel: { fontFamily: fonts.semibold, fontSize: 12, color: colors.text2, fontWeight: '600' },
+  calcNetValue: { fontSize: 12, fontFamily: fonts.mono, fontWeight: '700', color: colors.text3 },
+  calcHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
 
-  formDirection: { fontSize: 12, color: colors.text3, marginBottom: 18 },
+  formDirection: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, marginBottom: 18 },
   formLabel: {
-    fontSize: 11, color: colors.text3, fontWeight: '700',
+    fontFamily: fonts.semibold, fontSize: 11, color: colors.text3, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 18, marginBottom: 8,
   },
-  formHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
+  formHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
   amountInput: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     borderRadius: radius.md, paddingHorizontal: 16, minHeight: 52,
-    fontSize: 20, fontFamily: 'monospace', color: colors.text,
+    fontSize: 20, fontFamily: fonts.mono, color: colors.text,
   },
   noteInput: {
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     borderRadius: radius.md, paddingHorizontal: 16, minHeight: 48,
-    fontSize: 14, color: colors.text,
+    fontFamily: fonts.regular, fontSize: 14, color: colors.text,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
@@ -1072,13 +1057,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.full, paddingHorizontal: 14, minHeight: 40, justifyContent: 'center',
   },
   chipActive: { backgroundColor: colors.accentBg, borderColor: colors.accent },
-  chipText: { fontSize: 12, color: colors.text2, fontWeight: '500' },
+  chipText: { fontFamily: fonts.medium, fontSize: 12, color: colors.text2, fontWeight: '500' },
   chipTextActive: { color: colors.accent2, fontWeight: '600' },
   submitBtn: {
     marginTop: 24, backgroundColor: colors.accent, borderRadius: radius.md,
     minHeight: 52, alignItems: 'center', justifyContent: 'center',
   },
-  submitBtnText: { fontSize: 15, color: colors.white, fontWeight: '600' },
+  submitBtnText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.white, fontWeight: '600' },
 
   // Expense items
   expenseItem: {
@@ -1093,47 +1078,47 @@ const styles = StyleSheet.create({
   expIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   expInfo: { flex: 1 },
   expNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  expName: { fontSize: 14, fontWeight: '500', color: colors.text },
+  expName: { fontFamily: fonts.medium, fontSize: 14, fontWeight: '500', color: colors.text },
   incompleteBadge: {
     backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: radius.full,
     paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)',
   },
-  incompleteBadgeText: { fontSize: 10, color: colors.amber, fontWeight: '700' },
-  expSub: { fontSize: 11, color: colors.text3, marginTop: 2 },
-  expCompleteHint: { fontSize: 10, color: colors.amber, marginTop: 3, fontWeight: '500' },
+  incompleteBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.amber, fontWeight: '700' },
+  expSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 2 },
+  expCompleteHint: { fontFamily: fonts.medium, fontSize: 10, color: colors.amber, marginTop: 3, fontWeight: '500' },
   expRight: { alignItems: 'flex-end' },
-  expAmt: { fontSize: 15, fontWeight: '500', fontFamily: 'monospace', color: colors.text },
+  expAmt: { fontSize: 15, fontWeight: '500', fontFamily: fonts.mono, color: colors.text },
 
   emptyExp: { alignItems: 'center', paddingVertical: 40 },
-  emptyEmoji: { fontSize: 40, marginBottom: 12 },
-  emptyText: { fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: 4 },
-  emptySubText: { fontSize: 13, color: colors.text3 },
+  emptyEmoji: { fontFamily: fonts.regular, fontSize: 40, marginBottom: 12 },
+  emptyText: { fontFamily: fonts.medium, fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: 4 },
+  emptySubText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
 
   fab: {
     position: 'absolute', right: 20,
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
     ...shadows.accent,
   },
-  fabText: { color: colors.white, fontSize: 28, lineHeight: 32 },
+  fabText: { color: colors.onPrimary, fontFamily: fonts.regular, fontSize: 28, lineHeight: 32 },
 
   modalScreen: { flex: 1, backgroundColor: colors.bg },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.xl, borderBottomWidth: 0.5, borderBottomColor: colors.border },
-  modalTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  modalTitle: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '600', color: colors.text },
   modalClose: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.surface2, borderRadius: radius.full },
-  modalCloseText: { fontSize: 13, color: colors.text2 },
+  modalCloseText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2 },
   logEntry: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
   undoBtn: {
     marginLeft: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full,
     backgroundColor: 'rgba(251,191,36,0.10)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)',
   },
-  undoBtnText: { fontSize: 12, color: colors.amber },
+  undoBtnText: { fontFamily: fonts.regular, fontSize: 12, color: colors.amber },
   logEntryMe: { borderColor: colors.accent, backgroundColor: colors.accentBg },
   logEntryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  logEntryTitle: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 1 },
-  logEntryTotal: { fontSize: 13, fontFamily: 'monospace', color: colors.amber, fontWeight: '600', textAlign: 'right' },
-  logEntrySettled: { fontSize: 11, color: colors.green, textAlign: 'right', marginTop: 2 },
+  logEntryTitle: { fontFamily: fonts.semibold, fontSize: 13, fontWeight: '600', color: colors.text, flex: 1 },
+  logEntryTotal: { fontSize: 13, fontFamily: fonts.mono, color: colors.amber, fontWeight: '600', textAlign: 'right' },
+  logEntrySettled: { fontFamily: fonts.regular, fontSize: 11, color: colors.green, textAlign: 'right', marginTop: 2 },
   logLine: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
-  logLineName: { fontSize: 12, color: colors.text2, flex: 1 },
-  logLineAmt: { fontSize: 12, fontFamily: 'monospace', color: colors.amber },
+  logLineName: { fontFamily: fonts.regular, fontSize: 12, color: colors.text2, flex: 1 },
+  logLineAmt: { fontSize: 12, fontFamily: fonts.mono, color: colors.amber },
 });
