@@ -2,31 +2,29 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, shadows } from '../../src/theme';
+import Feather from '@expo/vector-icons/Feather';
+import { colors, radius, fonts } from '../../src/theme';
 import { useT } from '../../src/store/langStore';
 
-const TABS = [
-  { name: 'index',    emoji: '⬡',  emojiActive: '⬡',  label: 'Accueil' },
-  { name: 'groups',   emoji: '◎',  emojiActive: '◎',  label: 'Groupes' },
-  { name: 'stats',    emoji: '⌇',  emojiActive: '⌇',  label: 'Stats'   },
-  { name: 'settings', emoji: '⊙',  emojiActive: '⊙',  label: 'Réglages'},
-];
+// Feather est la famille dont Lucide, utilise cote web, est issu : meme
+// dessin, meme trait, d'une plateforme a l'autre.
+const TAB_ICONS = {
+  index: 'home',
+  groups: 'users',
+  stats: 'bar-chart-2',
+  settings: 'settings',
+} as const;
 
-// Real emoji version for clarity
-const TAB_ICONS: Record<string, string> = {
-  index: '🏠',
-  groups: '👥',
-  stats: '📊',
-  settings: '⚙️',
-};
-
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+function TabIcon({ name, focused }: { name: keyof typeof TAB_ICONS; focused: boolean }) {
   const t = useT();
   return (
     <View style={styles.tabItem}>
-      {focused && <View style={styles.tabActiveGlow} />}
-      <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
-        <Text style={styles.tabEmoji}>{TAB_ICONS[name]}</Text>
+      <View style={styles.tabIconWrap}>
+        <Feather
+          name={TAB_ICONS[name]}
+          size={21}
+          color={focused ? colors.text : colors.text3}
+        />
       </View>
       <Text style={[styles.tabLabel, focused && styles.tabLabelOn]}>{t(`tabs.${name === 'index' ? 'home' : name}`)}</Text>
     </View>
@@ -43,15 +41,14 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.glass,
-          borderTopColor: colors.glassBorder,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           height: tabBarHeight,
           paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          ...shadows.tabBar,
         },
-        tabBarActiveTintColor: colors.accent2,
+        tabBarActiveTintColor: colors.text,
         tabBarInactiveTintColor: colors.text3,
         tabBarShowLabel: false,
       }}
@@ -95,25 +92,11 @@ const styles = StyleSheet.create({
   },
   tabIconWrap: {
     width: 40,
-    height: 32,
+    height: 30,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabIconWrapActive: {
-    backgroundColor: colors.accentBg,
-    borderWidth: 1,
-    borderColor: 'rgba(124,110,250,0.2)',
-  },
-  tabActiveGlow: {
-    position: 'absolute',
-    top: 0,
-    width: 24,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.accent,
-  },
-  tabEmoji: { fontSize: 20 },
-  tabLabel: { fontSize: 10, fontWeight: '600', color: colors.text3, letterSpacing: 0.3 },
-  tabLabelOn: { color: colors.accent2 },
+  tabLabel: { fontFamily: fonts.medium, fontSize: 11, color: colors.text3 },
+  tabLabelOn: { color: colors.text },
 });
