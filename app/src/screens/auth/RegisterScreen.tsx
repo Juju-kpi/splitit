@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   logoMark: {
     width: 60, height: 60, borderRadius: 18,
     backgroundColor: colors.accentBg,
-    borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 14, ...shadows.accent,
   },
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   formTitle: { fontFamily: fonts.semibold, fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 20, letterSpacing: -0.3 },
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.redBg, borderWidth: 1, borderColor: 'rgba(248,113,113,0.2)',
+    backgroundColor: colors.redBg, borderWidth: 1, borderColor: 'rgba(236,93,98,0.2)',
     borderRadius: radius.sm, padding: 12, marginBottom: 12,
   },
   errorDot: { fontFamily: fonts.regular, fontSize: 14, color: colors.red },

@@ -546,7 +546,7 @@ export default function GroupDetailScreen() {
               onPress={() => router.push(`/expense/${exp.id}`)}
             >
               <View style={[styles.expenseItem, incomplete && styles.expenseItemIncomplete]}>
-                <View style={[styles.expIcon, { backgroundColor: incomplete ? 'rgba(251,191,36,0.12)' : colors.accentBg }]}>
+                <View style={[styles.expIcon, { backgroundColor: incomplete ? 'rgba(232,163,61,0.12)' : colors.accentBg }]}>
                   <Text style={{ fontFamily: fonts.regular, fontSize: 18 }}>
                     {incomplete ? '⏳' : exp.receiptImageUrl ? '🧾' : '✏️'}
                   </Text>
@@ -944,8 +944,8 @@ const styles = StyleSheet.create({
 
   // Bannière dépenses à compléter dans le résumé
   incompleteBanner: {
-    marginTop: 14, backgroundColor: 'rgba(251,191,36,0.08)',
-    borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)',
+    marginTop: 14, backgroundColor: 'rgba(232,163,61,0.08)',
+    borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(232,163,61,0.2)',
   },
   incompleteBannerText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.amber, fontWeight: '600', textAlign: 'center' },
 
@@ -982,7 +982,7 @@ const styles = StyleSheet.create({
 
   // ── Remboursements ─────────────────────────────────────────────────────
   pendingBadge: {
-    backgroundColor: 'rgba(251,191,36,0.12)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)',
+    backgroundColor: 'rgba(232,163,61,0.12)', borderWidth: 1, borderColor: 'rgba(232,163,61,0.3)',
     borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6,
   },
   pendingBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.amber, fontWeight: '700' },
@@ -990,12 +990,12 @@ const styles = StyleSheet.create({
   detailBtn: {
     marginTop: 14, minHeight: 48, borderRadius: radius.md,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
+    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
   },
   detailBtnText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent2, fontWeight: '600' },
   pendingCard: {
     marginTop: 8, borderRadius: radius.sm, padding: 10,
-    backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)',
+    backgroundColor: 'rgba(232,163,61,0.06)', borderWidth: 1, borderColor: 'rgba(232,163,61,0.25)',
   },
   pendingText: { fontFamily: fonts.regular, fontSize: 11, color: colors.amber, lineHeight: 16 },
   pendingActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
@@ -1006,8 +1006,8 @@ const styles = StyleSheet.create({
   },
   historyEmpty: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, marginBottom: 8 },
   historyCard: { borderRadius: radius.sm, borderWidth: 1, padding: 10, marginBottom: 8 },
-  historyConfirmed: { borderColor: 'rgba(52,211,153,0.25)', backgroundColor: 'rgba(52,211,153,0.05)' },
-  historyPending: { borderColor: 'rgba(251,191,36,0.25)', backgroundColor: 'rgba(251,191,36,0.05)' },
+  historyConfirmed: { borderColor: 'rgba(62,207,142,0.25)', backgroundColor: 'rgba(62,207,142,0.05)' },
+  historyPending: { borderColor: 'rgba(232,163,61,0.25)', backgroundColor: 'rgba(232,163,61,0.05)' },
   historyCancelled: { borderColor: colors.border, backgroundColor: colors.surface2, opacity: 0.6 },
   historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   historyWho: { fontFamily: fonts.regular, fontSize: 12, color: colors.text2, flex: 1 },
@@ -1072,16 +1072,16 @@ const styles = StyleSheet.create({
     borderRadius: 14, padding: 14, marginBottom: 8,
   },
   expenseItemIncomplete: {
-    borderColor: 'rgba(251,191,36,0.35)',
-    backgroundColor: 'rgba(251,191,36,0.03)',
+    borderColor: 'rgba(232,163,61,0.35)',
+    backgroundColor: 'rgba(232,163,61,0.03)',
   },
   expIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   expInfo: { flex: 1 },
   expNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   expName: { fontFamily: fonts.medium, fontSize: 14, fontWeight: '500', color: colors.text },
   incompleteBadge: {
-    backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: radius.full,
-    paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(251,191,36,0.3)',
+    backgroundColor: 'rgba(232,163,61,0.15)', borderRadius: radius.full,
+    paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(232,163,61,0.3)',
   },
   incompleteBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.amber, fontWeight: '700' },
   expSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 2 },
@@ -1110,7 +1110,7 @@ const styles = StyleSheet.create({
   logEntry: { backgroundColor: colors.surface, borderWidth: 0.5, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 },
   undoBtn: {
     marginLeft: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.full,
-    backgroundColor: 'rgba(251,191,36,0.10)', borderWidth: 1, borderColor: 'rgba(251,191,36,0.25)',
+    backgroundColor: 'rgba(232,163,61,0.10)', borderWidth: 1, borderColor: 'rgba(232,163,61,0.25)',
   },
   undoBtnText: { fontFamily: fonts.regular, fontSize: 12, color: colors.amber },
   logEntryMe: { borderColor: colors.accent, backgroundColor: colors.accentBg },

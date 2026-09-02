@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   globalSeparator: { height: 0.5, backgroundColor: colors.glassBorder, marginVertical: 8 },
 
   // Incomplete alert
-  incompleteAlert: { marginTop: 12, backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)' },
+  incompleteAlert: { marginTop: 12, backgroundColor: 'rgba(232,163,61,0.08)', borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(232,163,61,0.2)' },
   incompleteAlertText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.amber, fontWeight: '600', textAlign: 'center' },
 
   // Debts

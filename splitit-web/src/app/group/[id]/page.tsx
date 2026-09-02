@@ -365,7 +365,7 @@ export default function GroupDetailPage() {
                         className={`w-full flex items-center justify-between gap-3 py-2.5 rounded-lg px-2 -mx-2 transition-colors ${isMe ? 'bg-accent/5' : ''} hover:bg-surface3/40`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <Avatar initials={b.fromMember?.avatarInitials ?? '?'} color={b.fromMember?.avatarColor ?? '#7C6EFA'} size={28} />
+                          <Avatar initials={b.fromMember?.avatarInitials ?? '?'} color={b.fromMember?.avatarColor ?? '#C9CEDA'} size={28} />
                           <div className="text-left">
                             <p className={`text-sm font-medium ${isMe ? 'text-accent2' : 'text-text'}`}>
                               {b.fromMember?.displayName}{isMeDebtor ? ' (moi)' : ''}

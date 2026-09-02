@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   backText: { color: colors.text2, fontFamily: fonts.medium, fontSize: 12, fontWeight: '500' },
   title: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   editBtn: {
-    backgroundColor: colors.accentBg, borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.3)',
+    backgroundColor: colors.accentBg, borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.3)',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full,
   },
   editBtnText: { color: colors.accent2, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' },
@@ -384,8 +384,8 @@ const styles = StyleSheet.create({
   splitName: { flex: 1, fontFamily: fonts.regular, fontSize: 14, color: colors.text },
   splitAmt: { fontSize: 14, fontFamily: fonts.mono, color: colors.amber, fontWeight: '500' },
   todoBanner: {
-    backgroundColor: 'rgba(251,191,36,0.06)',
-    borderWidth: 1, borderColor: 'rgba(251,191,36,0.22)',
+    backgroundColor: 'rgba(232,163,61,0.06)',
+    borderWidth: 1, borderColor: 'rgba(232,163,61,0.22)',
     borderRadius: 14, padding: 14, marginBottom: 14,
   },
   todoTitle: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '600', color: colors.amber, marginBottom: 4 },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   todoBtn: {
     alignSelf: 'flex-start',
     backgroundColor: colors.accentBg,
-    borderWidth: 1, borderColor: 'rgba(124,110,250,0.25)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
   },
   todoBtnText: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600', color: colors.accent2 },

@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start', backgroundColor: colors.accentBg,
-    borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 14,
   },
   badgeText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.accent2, fontWeight: '700' },

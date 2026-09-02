@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   groupBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.accentBg,
-    borderWidth: 1, borderColor: 'rgba(124,110,250,0.2)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
     borderRadius: radius.md, padding: 12, marginBottom: 20,
   },
   groupBadgeEmoji: { fontFamily: fonts.regular, fontSize: 24 },
@@ -302,8 +302,8 @@ const styles = StyleSheet.create({
   radioSelected: { borderColor: colors.accent },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
   claimNotice: {
-    backgroundColor: 'rgba(52,211,153,0.08)',
-    borderWidth: 1, borderColor: 'rgba(52,211,153,0.2)',
+    backgroundColor: 'rgba(62,207,142,0.08)',
+    borderWidth: 1, borderColor: 'rgba(62,207,142,0.2)',
     borderRadius: radius.sm, padding: 12, marginTop: 12,
   },
   claimNoticeText: { fontFamily: fonts.regular, fontSize: 12, color: colors.green, lineHeight: 18 },
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   skipText: { fontFamily: fonts.medium, fontSize: 13, color: colors.accent2, fontWeight: '500', textAlign: 'center' },
   notice: {
     backgroundColor: colors.accentBg,
-    borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.2)',
+    borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.2)',
     borderRadius: 10, padding: 12, marginVertical: 8,
   },
   noticeText: { fontFamily: fonts.regular, fontSize: 12, color: colors.accent2, lineHeight: 18 },

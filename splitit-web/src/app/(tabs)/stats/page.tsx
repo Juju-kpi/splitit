@@ -193,11 +193,11 @@ export default function StatsPage() {
         <SectionLabel label={t('stats.global_summary')} />
         <Card>
           <div className="flex items-center justify-around py-2 border-b border-white/5 mb-2">
-            <StatBox value={totalGroups} label={t('stats.total_groups')} color="#7C6EFA" />
+            <StatBox value={totalGroups} label={t('stats.total_groups')} color="#C9CEDA" />
             <div className="w-px h-11 bg-white/5" />
-            <StatBox value={totalExpenses} label={t('stats.total_expenses')} color="#34D399" />
+            <StatBox value={totalExpenses} label={t('stats.total_expenses')} color="#3ECF8E" />
             <div className="w-px h-11 bg-white/5" />
-            <StatBox value={myTotalShare.toFixed(0)} label={t('stats.my_share')} sub={currency} color="#FBBF24" />
+            <StatBox value={myTotalShare.toFixed(0)} label={t('stats.my_share')} sub={currency} color="#E8A33D" />
           </div>
           {myTotalPaid > 0 && (
             <div className="flex items-center justify-around py-2">
@@ -228,9 +228,9 @@ export default function StatsPage() {
             <SectionLabel label={t('stats.this_month')} />
             <Card>
               <div className="flex items-center justify-around py-2">
-                <StatBox value={thisMonthExps.length} label={t('stats.total_expenses')} color="#7C6EFA" />
+                <StatBox value={thisMonthExps.length} label={t('stats.total_expenses')} color="#C9CEDA" />
                 <div className="w-px h-11 bg-white/5" />
-                <StatBox value={thisMonthTotal.toFixed(0)} label={`${t('stats.my_share_short')} ${currency}`} sub={currency} color="#FBBF24" />
+                <StatBox value={thisMonthTotal.toFixed(0)} label={`${t('stats.my_share_short')} ${currency}`} sub={currency} color="#E8A33D" />
                 <div className="w-px h-11 bg-white/5" />
                 <StatBox value={avgExpense.toFixed(0)} label={t('stats.avg_expense')} sub={currency} color="#94A3B8" />
               </div>
@@ -282,7 +282,7 @@ export default function StatsPage() {
                   <span className="text-sm font-mono text-amber font-medium">{fmt(p.total)}</span>
                 </div>
               ))}
-              <MiniBar value={topPayers[0]?.total || 0} max={topPayers[0]?.total || 1} color="#FBBF24" />
+              <MiniBar value={topPayers[0]?.total || 0} max={topPayers[0]?.total || 1} color="#E8A33D" />
             </Card>
           </>
         )}
@@ -359,14 +359,14 @@ export default function StatsPage() {
 
                   {total !== null && total > 0 && myShare !== null && (
                     <div className="mt-3">
-                      <MiniBar value={myShare} max={total} color="#7C6EFA" />
+                      <MiniBar value={myShare} max={total} color="#C9CEDA" />
                       <p className="text-[10px] text-text3 mt-1">{t('stats.my_share_pct', { pct: ((myShare / total) * 100).toFixed(0) })}</p>
                     </div>
                   )}
 
                   {g.expenseCount > 0 && (
                     <div className="mt-2">
-                      <MiniBar value={completionRate ?? 100} max={100} color={completionRate === 100 ? '#34D399' : '#FBBF24'} />
+                      <MiniBar value={completionRate ?? 100} max={100} color={completionRate === 100 ? '#3ECF8E' : '#E8A33D'} />
                       <p className="text-[10px] text-text3 mt-1">
                         {completionRate === 100
                           ? t('stats.all_complete')
@@ -391,13 +391,13 @@ export default function StatsPage() {
                 <span className="text-xs text-accent2 font-mono">{ocrStats.modelVersion ?? 'v1.0'}</span>
               </div>
               <div className="flex items-center justify-around py-2">
-                <StatBox value={ocrStats.totalCorrections ?? 0} label={t('settings.ocr_corrections')} color="#7C6EFA" />
+                <StatBox value={ocrStats.totalCorrections ?? 0} label={t('settings.ocr_corrections')} color="#C9CEDA" />
                 <div className="w-px h-11 bg-white/5" />
-                <StatBox value={ocrStats.totalReceipts ?? 0} label={t('stats.receipts')} color="#34D399" />
+                <StatBox value={ocrStats.totalReceipts ?? 0} label={t('stats.receipts')} color="#3ECF8E" />
                 <div className="w-px h-11 bg-white/5" />
-                <StatBox value={`${Math.round((ocrStats.progressToNextRun ?? 0) * 100)}%`} label={t('stats.next_run')} color="#FBBF24" />
+                <StatBox value={`${Math.round((ocrStats.progressToNextRun ?? 0) * 100)}%`} label={t('stats.next_run')} color="#E8A33D" />
               </div>
-              <MiniBar value={ocrStats.progressToNextRun ?? 0} max={1} color="#FBBF24" />
+              <MiniBar value={ocrStats.progressToNextRun ?? 0} max={1} color="#E8A33D" />
               <p className="text-[10px] text-text3 mt-1">{t('stats.before_next_100', { n: ocrStats.untrainedCount ?? 0 })}</p>
             </Card>
           </>

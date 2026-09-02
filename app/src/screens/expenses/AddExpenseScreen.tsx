@@ -1338,8 +1338,8 @@ const styles = StyleSheet.create({
   itemAvatar: { marginLeft: -6, borderWidth: 2, borderColor: colors.surface, borderRadius: 12 },
   itemRemoveBtn: {
     marginLeft: 10,
-    backgroundColor: 'rgba(248,113,113,0.10)',
-    borderWidth: 1, borderColor: 'rgba(248,113,113,0.25)',
+    backgroundColor: 'rgba(236,93,98,0.10)',
+    borderWidth: 1, borderColor: 'rgba(236,93,98,0.25)',
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
   },
   itemRemoveText: { fontFamily: fonts.regular, fontSize: 12 },
@@ -1355,7 +1355,7 @@ const styles = StyleSheet.create({
   },
   itemOkBtn: {
     marginLeft: 6, backgroundColor: colors.accentBg, borderWidth: 1,
-    borderColor: 'rgba(124,110,250,0.3)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+    borderColor: 'rgba(255,255,255,0.3)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
   },
   itemOkText: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600', color: colors.accent2 },
   addItemBtn: {
@@ -1397,13 +1397,13 @@ const styles = StyleSheet.create({
 
   // Assign button
   assignBtn: {
-    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
+    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: radius.sm, padding: 12, marginBottom: 12, alignItems: 'center',
   },
   assignBtnText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.accent2, fontWeight: '600' },
 
   // Unassigned banner in summary
-  unassignedBanner: { backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: radius.sm, padding: 10, marginTop: 8 },
+  unassignedBanner: { backgroundColor: 'rgba(232,163,61,0.08)', borderRadius: radius.sm, padding: 10, marginTop: 8 },
   unassignedBannerText: { fontFamily: fonts.medium, fontSize: 11, color: colors.amber, fontWeight: '500' },
 
   splitModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
@@ -1451,8 +1451,8 @@ const styles = StyleSheet.create({
   shortcutText: { fontFamily: fonts.medium, fontSize: 11, color: colors.accent2, fontWeight: '500' },
 
   balanceBar: { borderRadius: radius.sm, padding: 10, marginBottom: 12, marginTop: 4 },
-  balanceBarOk: { backgroundColor: 'rgba(52,211,153,0.08)' },
-  balanceBarWarn: { backgroundColor: 'rgba(251,191,36,0.08)' },
+  balanceBarOk: { backgroundColor: 'rgba(62,207,142,0.08)' },
+  balanceBarWarn: { backgroundColor: 'rgba(232,163,61,0.08)' },
   balanceBarText: { fontSize: 13, fontFamily: fonts.mono, fontWeight: '500', textAlign: 'center' },
 
   receiptImageBlock: { marginBottom: 12 },

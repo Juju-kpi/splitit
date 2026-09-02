@@ -317,7 +317,7 @@ export default function SettingsPage() {
         <div className="glass-card rounded-2xl p-5 mt-4 mb-3 relative overflow-hidden">
           <div className="flex items-center gap-4">
             <button onClick={() => setColorModal(true)} className="relative">
-              <Avatar initials={(user?.username ?? '??').slice(0, 2).toUpperCase()} color={user?.avatarColor || '#7C6EFA'} size={60} ring />
+              <Avatar initials={(user?.username ?? '??').slice(0, 2).toUpperCase()} color={user?.avatarColor || '#C9CEDA'} size={60} ring />
               <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-surface border border-border flex items-center justify-center text-xs">✏️</div>
             </button>
             <div>
@@ -362,7 +362,7 @@ export default function SettingsPage() {
           <SettingRow icon={Calendar} label={t('settings.member_since')} value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'} />
           <RowSep />
           <SettingRow icon={Droplet} label={t('settings.profile_color')} onClick={() => setColorModal(true)}
-            right={<div className="w-6 h-6 rounded-full border-2 border-border flex-shrink-0" style={{ backgroundColor: user?.avatarColor || '#7C6EFA' }} />}
+            right={<div className="w-6 h-6 rounded-full border-2 border-border flex-shrink-0" style={{ backgroundColor: user?.avatarColor || '#C9CEDA' }} />}
           />
         </div>
 

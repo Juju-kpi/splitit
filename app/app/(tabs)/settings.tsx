@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   profileEmail: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, marginTop: 3 },
   profileBadge: {
     marginTop: 8, alignSelf: 'flex-start',
-    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.25)',
+    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.full,
   },
   profileBadgeText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.accent2, fontWeight: '700' },
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
     width: 32, height: 32, borderRadius: 9,
     backgroundColor: colors.surface3, alignItems: 'center', justifyContent: 'center',
   },
-  settingIconWrapDanger: { backgroundColor: 'rgba(248,113,113,0.12)' },
+  settingIconWrapDanger: { backgroundColor: 'rgba(236,93,98,0.12)' },
   settingIcon: { fontFamily: fonts.regular, fontSize: 15 },
   settingLabel: { flex: 1, fontFamily: fonts.medium, fontSize: 14, fontWeight: '500', color: colors.text },
   settingValue: { fontFamily: fonts.medium, fontSize: 12, color: colors.text3, fontWeight: '500' },
@@ -883,14 +883,14 @@ const styles = StyleSheet.create({
   pickerCheck: { fontFamily: fonts.semibold, fontSize: 16, color: colors.accent2, fontWeight: '700' },
 
   deleteWarning: {
-    backgroundColor: 'rgba(248,113,113,0.06)', borderWidth: 1,
-    borderColor: 'rgba(248,113,113,0.2)', borderRadius: radius.md, padding: 16, marginBottom: 24,
+    backgroundColor: 'rgba(236,93,98,0.06)', borderWidth: 1,
+    borderColor: 'rgba(236,93,98,0.2)', borderRadius: radius.md, padding: 16, marginBottom: 24,
   },
   deleteWarningTitle: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.red, marginBottom: 10 },
   deleteWarningText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2, lineHeight: 20 },
   deleteConfirmLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2, marginBottom: 10 },
   deleteConfirmInput: {
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(248,113,113,0.4)',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(236,93,98,0.4)',
     borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12,
     color: colors.text, fontFamily: fonts.regular, fontSize: 15, marginBottom: 20,
   },
