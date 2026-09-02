@@ -17,7 +17,8 @@ import { groupsApi, expensesApi, settlementsApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useFormatMoney, useCurrency, useT } from '../../store/langStore';
 import { Avatar, Card, SectionLabel, Divider, Button } from '../../components/ui';
-import { colors, spacing, shadows, radius } from '../../theme';
+import Feather from '@expo/vector-icons/Feather';
+import { colors, spacing, shadows, radius, fonts, money } from '../../theme';
 import { Expense, Balance, Settlement } from '../../../../shared/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -238,28 +239,31 @@ export default function GroupDetailScreen() {
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.iconBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={t('common.back')}
         >
-          <Text style={styles.backText}>{t('common.back')}</Text>
+          <Feather name="chevron-left" size={18} color={colors.text2} />
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>{group.emoji} {group.name}</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
-            style={styles.membersBtn}
+            style={styles.iconBtn}
             onPress={() => router.push(`/group/members?groupId=${id}`)}
             activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={t('groups.members')}
           >
-            <Text style={styles.membersBtnText}>👥 {t('groups.members')}</Text>
+            <Feather name="users" size={18} color={colors.text2} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.shareBtn}
+            style={styles.iconBtn}
             onPress={handleShare}
             activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={t('groups.invite')}
           >
-            <Text style={styles.shareBtnText}>{t('groups.invite')}</Text>
+            <Feather name="share-2" size={18} color={colors.text2} />
           </TouchableOpacity>
         </View>
       </View>
@@ -321,12 +325,6 @@ export default function GroupDetailScreen() {
           <>
             <SectionLabel label={t('balances.who_advanced')} />
             <Card>
-              <View style={styles.netLegend}>
-                <Text style={[styles.netLegendText, { color: colors.green }]}>← {t('balances.owed_to_them')}</Text>
-                <Text style={styles.netLegendMid}>{t('balances.even')}</Text>
-                <Text style={[styles.netLegendText, { color: colors.amber }]}>{t('balances.they_owe')} →</Text>
-              </View>
-
               {netRows.map(({ member: m, net }: any) => {
                 const isMe = m.userId === user?.id;
                 const creditor = net > 0.005;
@@ -334,22 +332,21 @@ export default function GroupDetailScreen() {
                 const ratio = Math.min(Math.abs(net) / maxAbsNet, 1);
                 return (
                   <View key={m.id} style={styles.netRow}>
-                    <Avatar initials={m.avatarInitials} color={m.avatarColor} size={26} />
-                    <Text style={[styles.netName, isMe && { color: colors.accent2, fontWeight: '600' }]} numberOfLines={1}>
-                      {m.displayName}
-                    </Text>
-                    {/* barre divergente : la ligne du milieu = équilibre */}
-                    <View style={styles.netBarWrap}>
-                      <View style={styles.netBarSide}>
-                        {creditor && (
-                          <View style={[styles.netBar, styles.netBarLeft, { flex: ratio, backgroundColor: colors.green }]} />
+                    <Avatar initials={m.avatarInitials} color={m.avatarColor} size={30} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.netName, isMe && { color: colors.text }]} numberOfLines={1}>
+                        {m.displayName}
+                      </Text>
+                      {/* Une seule direction : la couleur dit le sens, la
+                          longueur dit l'ampleur. Plus de legende a lire. */}
+                      <View style={styles.netBarTrack}>
+                        {(creditor || debtor) && (
+                          <View style={[styles.netBarFill, {
+                            flex: Math.max(ratio, 0.03),
+                            backgroundColor: creditor ? colors.green : colors.amber,
+                          }]} />
                         )}
-                      </View>
-                      <View style={styles.netAxis} />
-                      <View style={styles.netBarSide}>
-                        {debtor && (
-                          <View style={[styles.netBar, styles.netBarRight, { flex: ratio, backgroundColor: colors.amber }]} />
-                        )}
+                        <View style={{ flex: Math.max(1 - ratio, 0) }} />
                       </View>
                     </View>
                     <Text style={[
@@ -922,22 +919,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     borderBottomWidth: 0.5, borderBottomColor: colors.border,
   },
-  backBtn: {
-    backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
+  iconBtn: {
+    width: 40, height: 40, borderRadius: radius.full,
+    backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center',
   },
-  backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center', marginHorizontal: 8 },
-  membersBtn: {
-    backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border2,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
+  title: {
+    fontFamily: fonts.semibold, fontSize: 17, color: colors.text,
+    flex: 1, textAlign: 'center', marginHorizontal: 8, letterSpacing: -0.2,
   },
-  membersBtnText: { color: colors.text2, fontSize: 11, fontWeight: '600' },
-  shareBtn: {
-    backgroundColor: colors.accentBg, borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.3)',
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, minHeight: 36, justifyContent: 'center',
-  },
-  shareBtnText: { color: colors.accent2, fontSize: 12, fontWeight: '600' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 120 },
 
   cardTitle: { fontSize: 13, fontWeight: '500', color: colors.text2, marginBottom: 14 },
@@ -963,19 +952,15 @@ const styles = StyleSheet.create({
   balancesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   logBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border2 },
   logBtnText: { fontSize: 11, color: colors.text2, fontWeight: '500' },
-  netLegend: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  netLegendText: { fontSize: 10, fontWeight: '600' },
-  netLegendMid: { fontSize: 10, color: colors.text3 },
-  netRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
-  netName: { width: 66, fontSize: 11, color: colors.text2 },
-  netBarWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', height: 18 },
-  netBarSide: { flex: 1, flexDirection: 'row', height: 10 },
-  netBar: { height: 10 },
-  netBarLeft: { borderTopLeftRadius: 5, borderBottomLeftRadius: 5, marginLeft: 'auto' },
-  netBarRight: { borderTopRightRadius: 5, borderBottomRightRadius: 5 },
-  netAxis: { width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.15)' },
-  netAmount: { width: 76, textAlign: 'right', fontSize: 11, fontFamily: 'monospace', fontWeight: '600', color: colors.text3 },
-  netHint: { fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 10 },
+  netRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 7 },
+  netName: { fontFamily: fonts.regular, fontSize: 14, color: colors.text2 },
+  netBarTrack: {
+    flexDirection: 'row', height: 4, borderRadius: 999,
+    backgroundColor: colors.surface2, marginTop: 7, overflow: 'hidden',
+  },
+  netBarFill: { height: 4, borderRadius: 999 },
+  netAmount: { ...money.large, textAlign: 'right', color: colors.text3 },
+  netHint: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, lineHeight: 19, marginTop: 14 },
   balanceHint: { fontSize: 11, color: colors.text3, marginBottom: 12 },
   balanceRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   balanceRowMe: { backgroundColor: colors.accentBg, borderRadius: 8, paddingHorizontal: 8, marginHorizontal: -8 },
@@ -1112,10 +1097,10 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute', right: 20,
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
     ...shadows.accent,
   },
-  fabText: { color: colors.white, fontSize: 28, lineHeight: 32 },
+  fabText: { color: colors.onPrimary, fontSize: 28, lineHeight: 32 },
 
   modalScreen: { flex: 1, backgroundColor: colors.bg },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.xl, borderBottomWidth: 0.5, borderBottomColor: colors.border },
