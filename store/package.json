@@ -1,0 +1,14 @@
+{
+  "name": "splitit-store-tools",
+  "private": true,
+  "type": "module",
+  "description": "Publication des fiches Play Store via l'API Google Play Developer",
+  "scripts": {
+    "build": "node build-metadata.mjs",
+    "check": "node publish-listings.mjs",
+    "publish:listings": "node publish-listings.mjs --commit"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

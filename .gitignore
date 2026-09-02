@@ -25,3 +25,15 @@ backend/ml/*.pyc
 # Sauvegardes de base produites par backend/src/scripts/backup-db.ts
 # — elles contiennent des donnees personnelles, ne JAMAIS les commiter
 splitit-backup-*.json
+
+# Cle du compte de service Google Play — elle autorise a publier sur la fiche
+# et sur la piste de production. A NE JAMAIS commiter.
+play-service-account*.json
+google-play-key*.json
+service-account*.json
+store/*.key.json
+
+# Signature Android — un keystore fuite permet de signer une fausse mise a jour
+*.jks
+*.keystore
+app/credentials/
