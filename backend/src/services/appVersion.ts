@@ -67,12 +67,28 @@ export interface AppVersionInfo {
 export function appVersionInfo(current: string | undefined, env = process.env): AppVersionInfo {
   const latest = (env.APP_LATEST_VERSION || '').trim();
   const minimum = (env.APP_MIN_VERSION || '').trim();
+  const android = (env.APP_ANDROID_URL || '').trim() || null;
+  const ios = (env.APP_IOS_URL || '').trim() || null;
+
+  let status = checkVersion(current, latest, minimum);
+
+  // Un blocage sans lien vers le store enferme l'utilisateur : l'ecran n'a
+  // alors aucun bouton et le retour Android est neutralise. Tant qu'aucune
+  // adresse de store n'est renseignee, on se contente de proposer.
+  // Cette garde vit cote serveur a dessein : c'est le seul levier qui
+  // atteigne les applications deja installees.
+  if (status === 'update-required' && !android && !ios) {
+    status = isVersion(latest) && compareVersions(current!, latest) < 0
+      ? 'update-available'
+      : 'ok';
+  }
+
   return {
-    status: checkVersion(current, latest, minimum),
+    status,
     latest: isVersion(latest) ? latest : null,
     minimum: isVersion(minimum) ? minimum : null,
-    android: (env.APP_ANDROID_URL || '').trim() || null,
-    ios: (env.APP_IOS_URL || '').trim() || null,
+    android,
+    ios,
     notes: (env.APP_UPDATE_NOTES || '').trim() || null,
   };
 }

@@ -63,5 +63,33 @@ info = appVersionInfo(undefined, { APP_LATEST_VERSION: '9.9.9', APP_MIN_VERSION:
 assert(info.status === 'ok',
        'un client qui n envoie pas sa version n est jamais bloque');
 
+console.log('');
+console.log('6) un blocage sans lien vers le store enfermerait l utilisateur');
+// L ecran de mise a jour obligatoire n affiche aucun bouton quand il n a pas
+// d adresse ou envoyer : le retour Android est neutralise, l app devient
+// inutilisable. Tant qu aucun store n est renseigne, on se contente de
+// proposer. La garde vit cote serveur : c est le seul levier qui atteigne
+// les applications deja installees.
+info = appVersionInfo('1.0.0', { APP_LATEST_VERSION: '1.3.0', APP_MIN_VERSION: '1.2.0' } as any);
+assert(info.status === 'update-available',
+       'seuil bloquant mais aucun store : on propose au lieu d enfermer');
+
+info = appVersionInfo('1.0.0', {
+  APP_LATEST_VERSION: '1.3.0', APP_MIN_VERSION: '1.2.0',
+  APP_ANDROID_URL: 'https://play.google.com/store/apps/details?id=com.julien.splitit',
+} as any);
+assert(info.status === 'update-required',
+       'avec un lien Play Store, le blocage reprend ses droits');
+
+info = appVersionInfo('1.0.0', {
+  APP_LATEST_VERSION: '1.3.0', APP_MIN_VERSION: '1.2.0',
+  APP_IOS_URL: 'https://apps.apple.com/app/id000000',
+} as any);
+assert(info.status === 'update-required', 'un lien App Store suffit aussi');
+
+info = appVersionInfo('1.3.0', { APP_LATEST_VERSION: '1.3.0', APP_MIN_VERSION: '9.9.9' } as any);
+assert(info.status === 'ok',
+       'a jour mais sous un minimum absurde et sans store : on ne dit rien');
+
 console.log(`\n${passed} réussis, ${failed} échoués\n`);
 process.exit(failed > 0 ? 1 : 0);

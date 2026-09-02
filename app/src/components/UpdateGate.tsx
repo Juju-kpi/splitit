@@ -80,9 +80,12 @@ export default function UpdateGate() {
   }, []);
 
   if (!info) return null;
-  const required = info.status === 'update-required';
 
   const storeUrl = Platform.OS === 'ios' ? info.ios : info.android;
+  // Sans lien vers le store, un blocage n'offrirait aucune porte de sortie :
+  // on retombe sur une simple proposition. Le serveur applique deja la meme
+  // garde ; celle-ci protege les versions ou il ne l'appliquait pas encore.
+  const required = info.status === 'update-required' && !!storeUrl;
 
   async function openStore() {
     if (!storeUrl) return;
