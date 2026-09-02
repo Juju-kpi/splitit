@@ -310,7 +310,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
-      <div className="px-5 pt-[max(env(safe-area-inset-top),20px)] pb-4 sticky top-0 z-20 glass border-b border-white/5">
+      <div className="px-5 pt-[max(env(safe-area-inset-top),28px)] pb-4 sticky top-0 z-20 glass border-b border-white/5">
         <h1 className="text-2xl font-extrabold tracking-tight text-text">{t('settings.title')}</h1>
         <p className="text-sm text-text3 mt-0.5">{t('settings.subtitle')}</p>
       </div>

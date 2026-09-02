@@ -236,7 +236,7 @@ export default function GroupDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.iconBtn}
@@ -1103,7 +1103,13 @@ const styles = StyleSheet.create({
   fabText: { color: colors.onPrimary, fontFamily: fonts.regular, fontSize: 28, lineHeight: 32 },
 
   modalScreen: { flex: 1, backgroundColor: colors.bg },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.xl, borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  // Une fenetre plein ecran sur Android passe sous la barre d'etat :
+  // sans ce retrait, le titre lui rentrait dedans.
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: spacing.xl, paddingBottom: spacing.lg, paddingTop: 52,
+    borderBottomWidth: 0.5, borderBottomColor: colors.border,
+  },
   modalTitle: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '600', color: colors.text },
   modalClose: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.surface2, borderRadius: radius.full },
   modalCloseText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2 },

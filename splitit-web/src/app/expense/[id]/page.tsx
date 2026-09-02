@@ -60,7 +60,7 @@ export default function ExpenseDetailPage() {
   return (
     <div className="min-h-screen pb-[max(env(safe-area-inset-bottom),40px)]">
       {/* Header sticky */}
-      <div className="px-5 pt-[max(env(safe-area-inset-top),16px)] pb-4 sticky top-0 z-20 glass border-b border-white/5">
+      <div className="px-5 pt-[max(env(safe-area-inset-top),28px)] pb-4 sticky top-0 z-20 glass border-b border-white/5">
         <div className="flex items-center justify-between">
           <button onClick={() => router.push(`/group/${expense.groupId}`)}
             className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2">
@@ -79,7 +79,7 @@ export default function ExpenseDetailPage() {
 
         {/* Montant */}
         <div className="glass-card rounded-2xl p-5 mb-4">
-          <p className="text-[11px] uppercase tracking-widest text-text3 font-semibold mb-1">Montant total</p>
+          <p className="text-[13px] font-medium text-text3 mb-1">Montant total</p>
           <p className="text-3xl font-light text-text font-mono">{formatMoney(expense.totalAmount, expense.currency)}</p>
         </div>
 
@@ -94,17 +94,17 @@ export default function ExpenseDetailPage() {
             </p>
             <button
               onClick={() => router.push(`/expense/add?groupId=${expense.groupId}&expenseId=${expense.id}&edit=true`)}
-              className="text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-4 py-2 rounded-full">
+              className="text-xs font-semibold text-text bg-surface3 ring-1 ring-white/[0.08] hover:bg-surface2 transition-colors px-4 py-2 rounded-full">
               {expense.items?.length > 0 ? 'Assigner les articles →' : 'Choisir les participants →'}
             </button>
           </div>
         )}
 
         {/* Payé par */}
-        <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Payé par</p>
+        <p className="text-[13px] font-medium text-text3 mb-2">Payé par</p>
         <div className="space-y-2 mb-5">
           {(expense.payments || []).map((p: any) => (
-            <div key={p.id} className="flex items-center gap-3 glass-card rounded-xl p-3">
+            <div key={p.id} className="flex items-center gap-3 bg-surface rounded-2xl p-3.5">
               <Avatar initials={p.member?.avatarInitials || '?'} color={p.member?.avatarColor || '#666'} size={32} />
               <span className="flex-1 text-sm text-text">{p.member?.displayName}</span>
               <span className="font-mono text-sm font-semibold text-text">{formatMoney(p.amount, expense.currency)}</span>
@@ -113,10 +113,10 @@ export default function ExpenseDetailPage() {
         </div>
 
         {/* Répartition */}
-        <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Répartition</p>
+        <p className="text-[13px] font-medium text-text3 mb-2">Répartition</p>
         <div className="space-y-2 mb-5">
           {(expense.splits || []).map((s: any) => (
-            <div key={s.id} className="flex items-center gap-3 glass-card rounded-xl p-3">
+            <div key={s.id} className="flex items-center gap-3 bg-surface rounded-2xl p-3.5">
               <Avatar initials={s.member?.avatarInitials || '?'} color={s.member?.avatarColor || '#666'} size={32} />
               <span className="flex-1 text-sm text-text">{s.member?.displayName}</span>
               <span className="font-mono text-sm font-semibold text-text mr-2">{formatMoney(s.amount, expense.currency)}</span>
@@ -126,7 +126,7 @@ export default function ExpenseDetailPage() {
                 <button
                   onClick={() => settleMutation.mutate(s.memberId)}
                   disabled={settleMutation.isPending}
-                  className="text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-2.5 py-1 rounded-full">
+                  className="text-xs font-semibold text-text bg-surface3 ring-1 ring-white/[0.08] hover:bg-surface2 transition-colors px-2.5 py-1 rounded-full">
                   Marquer réglé
                 </button>
               )}
@@ -137,12 +137,12 @@ export default function ExpenseDetailPage() {
         {/* Articles OCR avec assignation */}
         {expense.items && expense.items.length > 0 && (
           <>
-            <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Articles scannés</p>
+            <p className="text-[13px] font-medium text-text3 mb-2">Articles scannés</p>
             <div className="space-y-2 mb-5">
               {expense.items.map((it: any) => {
                 const assigned: any[] = it.assignedTo || []
                 return (
-                  <div key={it.id} className="glass-card rounded-xl p-3">
+                  <div key={it.id} className="bg-surface rounded-2xl p-3.5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-text">{it.name}</span>
                       <span className="font-mono text-sm text-text">{formatMoney(it.price, expense.currency)}</span>

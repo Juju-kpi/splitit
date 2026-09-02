@@ -1288,7 +1288,7 @@ function Header({ title, onBack, insets }: {
   insets: { top: number; bottom: number };
 }) {
   return (
-    <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+    <View style={[styles.header, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
       <TouchableOpacity
         onPress={onBack}
         style={styles.backBtn}

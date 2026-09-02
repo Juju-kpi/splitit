@@ -209,7 +209,7 @@ export function ScreenHeader({ title, accentWord, subtitle, rightContent }: {
 }) {
   const base = accentWord ? title.replace(accentWord, '') : title
   return (
-    <div className="px-5 pt-[max(env(safe-area-inset-top),20px)] pb-4 sticky top-0 z-20 glass">
+    <div className="px-5 pt-[max(env(safe-area-inset-top),28px)] pb-4 sticky top-0 z-20 glass">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-text leading-[1.1]">

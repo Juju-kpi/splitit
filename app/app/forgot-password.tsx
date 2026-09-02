@@ -69,7 +69,7 @@ export default function ForgotPasswordScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: Math.max(insets.top, 20), paddingBottom: Math.max(insets.bottom, 24) },
+          { paddingTop: Math.max(insets.top, 20) + 8, paddingBottom: Math.max(insets.bottom, 24) },
         ]}
         keyboardShouldPersistTaps="handled"
       >

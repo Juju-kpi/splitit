@@ -30,7 +30,7 @@ interface OcrItemLocal {
 // ── Step header ───────────────────────────────────────────────────────────────
 function StepHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
-    <div className="px-5 pt-[max(env(safe-area-inset-top),16px)] pb-4 sticky top-0 z-20 glass border-b border-white/5 mb-1">
+    <div className="px-5 pt-[max(env(safe-area-inset-top),28px)] pb-4 sticky top-0 z-20 glass border-b border-white/5 mb-1">
       <div className="flex items-center gap-3">
         <button onClick={onBack} className="bg-surface2 px-3 py-1.5 rounded-full text-xs font-medium text-text2 shrink-0 hover:bg-surface3 transition-colors">
           ← Retour
@@ -562,7 +562,7 @@ function AddExpenseInner() {
 
           {/* Total réellement payé (TTC). Les lignes d'un ticket sont souvent
               HT : l'écart couvre les taxes, le service, l'arrondi de caisse. */}
-          <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Total payé sur le ticket</p>
+          <p className="text-[13px] font-medium text-text3 mb-2">Total payé sur le ticket</p>
           <div className="relative mb-2">
             <input
               type="text" inputMode="decimal"
@@ -574,7 +574,7 @@ function AddExpenseInner() {
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text3 text-sm font-mono">CHF</span>
           </div>
 
-          <div className="glass-card rounded-xl p-3 mb-4 space-y-1">
+          <div className="bg-surface rounded-2xl p-3.5 mb-4 space-y-1">
             <div className="flex justify-between text-xs">
               <span className="text-text3">Somme des articles</span>
               <span className="font-mono text-text2">{itemsTotal.toFixed(2)}</span>
@@ -807,7 +807,7 @@ function AddExpenseInner() {
         <StepHeader title="Saisie manuelle" onBack={() => editMode ? router.back() : setStep('select')} />
         <div className="px-5 py-4">
           <Input label="Description" placeholder="Dîner restaurant, courses…" value={description} onChange={setDescription} autoFocus />
-          <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">Montant total</p>
+          <p className="text-[13px] font-medium text-text3 mb-2">Montant total</p>
           <div className="relative mb-4">
             <input
               type="text" inputMode="decimal" placeholder="0.00" value={amount}
@@ -904,10 +904,10 @@ function AddExpenseInner() {
           <Notice text="Indique qui a physiquement payé et combien. Plusieurs personnes peuvent avoir payé des parts différentes." />
 
           <div className="flex items-center justify-between mb-3 mt-4">
-            <p className="text-xs font-semibold text-text3 uppercase tracking-widest">Payeurs</p>
+            <p className="text-[13px] font-medium text-text3">Payeurs</p>
             {payers.length < members.length && (
               <button onClick={() => setPayers(prev => [...prev, { memberId: '', amount: '' }])}
-                className="text-xs font-semibold text-accent2 bg-accent/10 border border-accent/25 px-3 py-1 rounded-full">
+                className="text-xs font-semibold text-text bg-surface3 ring-1 ring-white/[0.08] hover:bg-surface2 transition-colors px-3 py-1 rounded-full">
                 + Ajouter payeur
               </button>
             )}

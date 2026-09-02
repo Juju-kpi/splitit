@@ -79,7 +79,7 @@ function MembersInner() {
 
       <div className="space-y-2 mb-6">
         {!isLoading && group?.members?.map((m: any) => (
-          <div key={m.id} className="glass-card rounded-xl p-3.5 flex items-center gap-3">
+          <div key={m.id} className="bg-surface rounded-2xl p-3.5.5 flex items-center gap-3">
             <Avatar initials={m.avatarInitials} color={m.avatarColor} size={36} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-text truncate">{m.displayName}</p>
@@ -90,14 +90,14 @@ function MembersInner() {
         ))}
       </div>
 
-      <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">{t('groups.add_ghost_member')}</p>
+      <p className="text-[13px] font-medium text-text3 mb-2">{t('groups.add_ghost_member')}</p>
       <p className="text-xs text-text3 mb-3 leading-relaxed">{t('groups.ghost_hint')}</p>
       <Input label={t('groups.name_label')} placeholder={t('groups.add_member_name_ph')} value={name} onChange={setName} autoCapitalize="words" />
       <Button label={t('groups.add')} onClick={() => addMutation.mutate()} loading={addMutation.isPending} disabled={!name.trim()} />
 
       {/* ── Quitter le groupe ─────────────────────────────────────────── */}
       <div className="mt-10 pt-6 border-t border-white/5">
-        <p className="text-xs font-semibold text-text3 uppercase tracking-widest mb-2">{t('groups.leave_section')}</p>
+        <p className="text-[13px] font-medium text-text3 mb-2">{t('groups.leave_section')}</p>
         <p className="text-xs text-text3 mb-3 leading-relaxed">{t('groups.leave_hint')}</p>
         {error && <p className="text-red text-[13px] mb-2">{error}</p>}
         <Button label={t('groups.leave')} variant="danger" onClick={handleLeave} loading={leaving} disabled={!groupId} />

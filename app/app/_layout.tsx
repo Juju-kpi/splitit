@@ -9,7 +9,8 @@ import {
   GeistMono_400Regular, GeistMono_500Medium,
 } from '@expo-google-fonts/geist-mono';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -65,6 +66,19 @@ function AuthGuard() {
 }
 
 export default function RootLayout() {
+  // Android : la barre de navigation systeme mangeait le bas de l'ecran et
+  // jurait avec le fond. On la masque, elle revient d'un glissement vers le
+  // haut. Enveloppe : sur un appareil qui refuse, l'application continue.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    (async () => {
+      try {
+        await NavigationBar.setBehaviorAsync('overlay-swipe');
+        await NavigationBar.setVisibilityAsync('hidden');
+      } catch { /* barre non pilotable : on la laisse */ }
+    })();
+  }, []);
+
   // Geist pour le texte, Geist Mono pour les montants. On attend qu'elles
   // soient pretes : afficher un ecran en police systeme puis le voir sauter
   // est plus desagreable qu'un instant de fond noir. `error` est ignore

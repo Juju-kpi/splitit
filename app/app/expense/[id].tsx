@@ -127,7 +127,7 @@ export default function ExpenseDetailScreen() {
   const members = group?.members || [];
   const myMember = members.find((m: any) => m.userId === user?.id);
   const mySplit = expense.splits.find((s: any) => s.memberId === myMember?.id);
-  const headerPaddingTop = Math.max(insets.top, 16) + 6;
+  const headerPaddingTop = Math.max(insets.top, 20) + 8 + 6;
 
   // ── View mode ────────────────────────────────────────────────────────
   return (

@@ -265,7 +265,7 @@ export function ScreenHeader({ title, subtitle, rightContent, accentWord }: Scre
     after = title.slice(idx + accentWord.length);
   }
   return (
-    <View style={[headerStyles.wrap, { paddingTop: Math.max(insets.top, 20) }]}>
+    <View style={[headerStyles.wrap, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
       <View style={headerStyles.glowBlob} />
       <View style={headerStyles.inner}>
         <View style={headerStyles.left}>
@@ -322,12 +322,14 @@ const styles = StyleSheet.create({
   // attire l'oeil, plus une couleur saturee.
   btnPrimary: { backgroundColor: colors.primary },
   btnDanger: { backgroundColor: colors.redBg },
-  btnGhost: { backgroundColor: colors.surface2 },
+  // Un fond plus clair et un liseré fin : sans eux, le bouton secondaire
+  // se lisait comme une etiquette plutot que comme une cible.
+  btnGhost: { backgroundColor: colors.surface3, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   btnDisabled: { opacity: 0.42 },
   btnInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   btnIcon: { fontFamily: fonts.regular, fontSize: 16 },
   btnText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.onPrimary },
-  btnTextGhost: { color: colors.text2 },
+  btnTextGhost: { color: colors.text },
   btnTextDanger: { color: colors.red },
 
   // Input

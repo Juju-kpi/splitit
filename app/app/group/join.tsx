@@ -50,7 +50,7 @@ export default function JoinGroupScreen() {
 
   // Marges d'écran : jamais collé au bord (encoche / barre de gestes)
   const screenPad = {
-    paddingTop: Math.max(insets.top, 16),
+    paddingTop: Math.max(insets.top, 20) + 8,
     paddingBottom: Math.max(insets.bottom, 16) + 24,
   };
 

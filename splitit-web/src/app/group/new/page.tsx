@@ -40,7 +40,7 @@ export default function NewGroupPage() {
       <p className="text-sm text-text3 mb-7">{t('groups.new_sub')}</p>
 
       <form onSubmit={handleCreate}>
-        <label className="block text-xs font-semibold text-text3 uppercase tracking-widest mb-2">{t('groups.emoji_label')}</label>
+        <label className="block text-[13px] font-medium text-text3 mb-2">{t('groups.emoji_label')}</label>
         <div className="flex flex-wrap gap-2 mb-5">
           {EMOJIS.map(e => (
             <button key={e} type="button" onClick={() => setEmoji(e)}

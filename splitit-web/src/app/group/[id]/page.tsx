@@ -205,7 +205,7 @@ export default function GroupDetailPage() {
 
   return (
     <div className="min-h-screen pb-28">
-      <div className="px-5 pt-[max(env(safe-area-inset-top),20px)] pb-4 sticky top-0 z-20 glass">
+      <div className="px-5 pt-[max(env(safe-area-inset-top),28px)] pb-4 sticky top-0 z-20 glass">
         <div className="flex items-center justify-between">
           <button onClick={() => router.push('/groups')} aria-label="Retour aux groupes"
             className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-text2 hover:bg-surface3 transition-colors">
@@ -483,7 +483,7 @@ export default function GroupDetailPage() {
                   ou ce coin est le plus difficile a atteindre d'une main. */}
               <button
                 onClick={() => setShowLog(true)}
-                className="mt-4 w-full flex items-center justify-center gap-2 text-sm font-semibold text-accent2 bg-accent/10 border border-accent/25 min-h-[48px] rounded-xl"
+                className="mt-4 w-full flex items-center justify-center gap-2 text-sm font-semibold text-text bg-surface3 ring-1 ring-white/[0.08] hover:bg-surface2 transition-colors min-h-[48px] rounded-xl"
               >
                 <FileText size={16} strokeWidth={1.75} />
                 {t('settlements.history_title')}
