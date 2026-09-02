@@ -86,7 +86,7 @@ export default function LoginPage() {
         </div>
 
         <Link href="/auth/register">
-          <button type="button" className="w-full bg-surface2 border border-border rounded-xl py-[15px] text-[15px] font-semibold text-text2 min-h-[52px]">
+          <button type="button" className="w-full bg-surface2 rounded-xl py-[15px] text-[15px] font-semibold text-text hover:bg-surface3 transition-colors2 min-h-[52px]">
             {t('auth.register')}
           </button>
         </Link>

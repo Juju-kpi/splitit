@@ -32,7 +32,7 @@ function StepHeader({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <div className="px-5 pt-[max(env(safe-area-inset-top),16px)] pb-4 sticky top-0 z-20 glass border-b border-white/5 mb-1">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="bg-surface2 border border-border/50 px-3 py-1.5 rounded-full text-xs font-medium text-text2 shrink-0">
+        <button onClick={onBack} className="bg-surface2 px-3 py-1.5 rounded-full text-xs font-medium text-text2 shrink-0 hover:bg-surface3 transition-colors">
           ← Retour
         </button>
         <h1 className="text-base font-bold text-text truncate">{title}</h1>
@@ -546,7 +546,7 @@ function AddExpenseInner() {
             <>
               <Notice variant="amber" text={`${unassignedItems.length} article${unassignedItems.length > 1 ? 's' : ''} sans assignation.`} />
               {myMember && (
-                <button onClick={assignRemainingToMe} className="w-full mb-3 py-2.5 px-4 rounded-xl bg-accent/10 border border-accent/25 text-accent2 text-sm font-semibold">
+                <button onClick={assignRemainingToMe} className="w-full mb-3 py-2.5 px-4 rounded-xl bg-white/[0.06] text-accent2 text-sm hover:bg-white/[0.10] transition-colors font-semibold">
                   Assigner les {unassignedItems.length} articles non assignés à moi
                 </button>
               )}

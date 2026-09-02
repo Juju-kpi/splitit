@@ -228,7 +228,7 @@ export function ActionPill({ label, icon, primary, onClick }: { label: string; i
     <button
       onClick={onClick}
       className={`text-[13px] font-medium px-3.5 min-h-[40px] inline-flex items-center rounded-full transition-colors whitespace-nowrap
-        ${primary ? 'bg-primary text-onPrimary' : 'bg-surface2 text-text2'}`}
+        ${primary ? 'bg-primary text-onPrimary hover:bg-white' : 'bg-surface2 text-text2 hover:bg-surface3'}`}
     >
       {icon && <span className="mr-1">{icon}</span>}{label}
     </button>

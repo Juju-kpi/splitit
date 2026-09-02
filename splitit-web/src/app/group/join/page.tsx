@@ -92,7 +92,7 @@ function JoinGroupInner() {
 
   return (
     <div className="min-h-screen px-5 max-w-sm mx-auto pt-[max(env(safe-area-inset-top),24px)] pb-[max(env(safe-area-inset-bottom),24px)]">
-      <button onClick={goBack} className="bg-surface2 border border-border/50 px-4 py-2 rounded-full text-xs font-medium text-text2 mb-8 min-h-[36px]">
+      <button onClick={goBack} className="bg-surface2 px-4 py-2 rounded-full text-xs font-medium text-text2 mb-8 hover:bg-surface3 transition-colors min-h-[36px]">
         {t('common.back')}
       </button>
 
