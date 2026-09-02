@@ -32,8 +32,17 @@ import {
   PreferredCurrency,
 } from '../../src/types/preferences';
 
-const APP_VERSION = '1.2.1';
-const PRIVACY_URL = 'https://juju-kpi.github.io/splitit/privacy-policy.md';
+// Lue depuis app.json : ecrite a la main, elle derivait a chaque release.
+const APP_VERSION = Constants.expoConfig?.version ?? '—';
+// Page unique, dans les cinq langues. On lui passe la langue choisie dans
+// l'application : l'utilisateur ne doit pas retomber sur du francais.
+const PRIVACY_BASE = 'https://splitit-ashen-alpha.vercel.app/privacy';
+
+/** L'URL de la politique dans la langue courante de l'application. */
+function privacyUrl(): string {
+  const lang = useLangStore.getState().locale;
+  return `${PRIVACY_BASE}?lang=${lang}`;
+}
 
 const AVATAR_COLORS = [
   '#4F46E5', '#7C3AED', '#DB2777', '#DC2626', '#EA580C',
@@ -303,7 +312,7 @@ export default function SettingsScreen() {
 
   // ── Privacy policy ────────────────────────────────────────────────────
   function handlePrivacyPolicy() {
-    Linking.openURL(PRIVACY_URL).catch(() =>
+    Linking.openURL(privacyUrl()).catch(() =>
       Alert.alert(t('common.error'), t('settings.privacy_open_err'))
     );
   }
@@ -475,7 +484,7 @@ export default function SettingsScreen() {
                 <Switch
                   value={notifExpense}
                   onValueChange={v => handleNotifToggle('expense', v)}
-                  trackColor={{ false: colors.surface3, true: colors.accent }}
+                  trackColor={{ false: colors.surface3, true: colors.green }}
                   thumbColor={colors.white}
                   style={{ marginLeft: 'auto' }}
                 />
@@ -493,7 +502,7 @@ export default function SettingsScreen() {
                 <Switch
                   value={notifReminder}
                   onValueChange={v => handleNotifToggle('reminder', v)}
-                  trackColor={{ false: colors.surface3, true: colors.accent }}
+                  trackColor={{ false: colors.surface3, true: colors.green }}
                   thumbColor={colors.white}
                   style={{ marginLeft: 'auto' }}
                 />
@@ -521,7 +530,7 @@ export default function SettingsScreen() {
           <SettingRow
             icon="file-text"
             label={t('settings.terms')}
-            onPress={() => Linking.openURL('https://juju-kpi.github.io/splitit/privacy-policy.md')}
+            onPress={() => Linking.openURL(privacyUrl())}
           />
         </Card>
 

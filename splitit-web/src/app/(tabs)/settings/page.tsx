@@ -21,8 +21,11 @@ import { useLangStore, useT } from '@/store/langStore'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
-const APP_VERSION = '1.2.1'
-const PRIVACY_URL = 'https://juju-kpi.github.io/splitit/privacy-policy.md'
+// Lue depuis package.json : ecrite a la main, elle derivait.
+import pkg from '../../../../package.json'
+const APP_VERSION = pkg.version
+// Page unique, dans les cinq langues, avec la langue courante.
+const PRIVACY_BASE = 'https://splitit-ashen-alpha.vercel.app/privacy'
 
 const AVATAR_COLORS = ['#4F46E5','#7C3AED','#DB2777','#DC2626','#EA580C','#CA8A04','#16A34A','#0891B2','#2563EB','#475569']
 
@@ -87,7 +90,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
     <button
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
-      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-primary' : 'bg-surface3'} ${disabled ? 'opacity-40' : ''}`}
+      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-green' : 'bg-surface3'} ${disabled ? 'opacity-40' : ''}`}
       aria-checked={checked} role="switch"
     >
       <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-6' : ''}`} />
@@ -404,9 +407,9 @@ export default function SettingsPage() {
             try { await userApi.requestDataExport(); setExportSent(true) } catch {} finally { setExportLoading(false) }
           }} value={exportSent ? t('settings.export_sent') : exportLoading ? '…' : undefined} />
           <RowSep />
-          <SettingRow icon={Lock} label={t('settings.privacy_policy')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
+          <SettingRow icon={Lock} label={t('settings.privacy_policy')} onClick={() => window.open(`${PRIVACY_BASE}?lang=${useLangStore.getState().locale}`, '_blank')} />
           <RowSep />
-          <SettingRow icon={FileText} label={t('settings.terms')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
+          <SettingRow icon={FileText} label={t('settings.terms')} onClick={() => window.open(`${PRIVACY_BASE}?lang=${useLangStore.getState().locale}`, '_blank')} />
         </div>
 
         {/* À propos */}

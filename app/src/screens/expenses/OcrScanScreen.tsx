@@ -9,6 +9,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ocrApi } from '../../services/api';
+import Feather from '@expo/vector-icons/Feather';
 import { Button, Chip, Notice, Avatar, Divider } from '../../components/ui';
 import { colors, spacing, radius, fonts } from '../../theme';
 import { useFormatMoney } from '../../store/langStore';
@@ -171,18 +172,26 @@ export default function OcrScanScreen({ members, onComplete }: Props) {
   return (
     <ScrollView style={styles.reviewContainer} contentContainerStyle={{ paddingBottom: 40 }}>
       {/* Member selector */}
-      <Text style={styles.sectionLabel}>COCHER POUR</Text>
+      <Text style={styles.sectionLabel}>Cocher pour</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
         <View style={styles.chipRow}>
-          {members.map(m => (
-            <Chip
-              key={m.id}
-              label={m.displayName}
-              selected={activeMember === m.id}
-              onPress={() => setActiveMember(m.id)}
-              avatar={{ initials: m.avatarInitials, color: m.avatarColor }}
-            />
-          ))}
+          {members.map(m => {
+            // Ce que cette personne a deja pris : on suit l'avancement de
+            // chacun sans avoir a changer d'onglet.
+            const taken = items.reduce(
+              (sum, it) => sum + (it.assignedTo.includes(m.id) ? it.price / it.assignedTo.length : 0),
+              0,
+            );
+            return (
+              <Chip
+                key={m.id}
+                label={taken > 0 ? `${m.displayName} · ${fmt(taken)}` : m.displayName}
+                selected={activeMember === m.id}
+                onPress={() => setActiveMember(m.id)}
+                avatar={{ initials: m.avatarInitials, color: m.avatarColor }}
+              />
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -198,6 +207,7 @@ export default function OcrScanScreen({ members, onComplete }: Props) {
             <ItemRow
               item={item}
               activeMemberId={activeMember}
+              members={members}
               onRemove={() => removeItem(item.id)}
               onToggle={() => toggleAssign(item.id, activeMember)}
               onStartEdit={() => startEdit(item.id)}
@@ -222,9 +232,10 @@ export default function OcrScanScreen({ members, onComplete }: Props) {
 }
 
 // ── ItemRow component ──────────────────────────────────────────────────────
-function ItemRow({ item, activeMemberId, onToggle, onRemove, onStartEdit, onSaveEdit, onChangeName, onChangePrice }: {
+function ItemRow({ item, activeMemberId, members, onToggle, onRemove, onStartEdit, onSaveEdit, onChangeName, onChangePrice }: {
   item: LocalItem;
   activeMemberId: string;
+  members: any[];
   onToggle: () => void;
   onRemove: () => void;
   onStartEdit: () => void;
@@ -233,14 +244,20 @@ function ItemRow({ item, activeMemberId, onToggle, onRemove, onStartEdit, onSave
   onChangePrice: (v: string) => void;
 }) {
   const checked = item.assignedTo.includes(activeMemberId);
+  // Ce que les AUTRES ont deja coche. Sans ca, en passant de A a B on cochait
+  // a l'aveugle : la case ne parle que du membre courant.
+  const others = item.assignedTo
+    .filter(id => id !== activeMemberId)
+    .map(id => members.find(m => m.id === id))
+    .filter(Boolean);
 
   return (
-    <View style={styles.itemRow}>
+    <View style={[styles.itemRow, checked && styles.itemRowOn]}>
       <TouchableOpacity
         onPress={onToggle}
         style={[styles.checkbox, checked && styles.checkboxOn]}
       >
-        {checked && <Text style={styles.checkmark}>✓</Text>}
+        {checked && <Feather name="check" size={14} color={colors.onPrimary} />}
       </TouchableOpacity>
 
       <View style={styles.itemInfo}>
@@ -268,6 +285,20 @@ function ItemRow({ item, activeMemberId, onToggle, onRemove, onStartEdit, onSave
           <>
             <View style={styles.itemNameRow}>
               <Text style={styles.itemName}>{item.name}</Text>
+              {/* Qui d'autre a deja pris cet article. Sans ces avatars, en
+                  passant d'un membre au suivant on cochait a l'aveugle. */}
+              {others.length > 0 && (
+                <View style={styles.otherAvatars}>
+                  {others.slice(0, 4).map((m: any) => (
+                    <View key={m.id} style={styles.otherAvatar}>
+                      <Avatar initials={m.avatarInitials} color={m.avatarColor} size={18} />
+                    </View>
+                  ))}
+                  {others.length > 4 && (
+                    <Text style={styles.otherMore}>+{others.length - 4}</Text>
+                  )}
+                </View>
+              )}
               {item.corrected && (
                 <View style={styles.correctedBadge}>
                   <Text style={styles.correctedText}>corrigé ✓</Text>
@@ -339,6 +370,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  // Une ligne cochee se distingue par son fond, pas seulement par sa case.
+  itemRowOn: { backgroundColor: 'rgba(237,234,227,0.05)' },
+  otherAvatars: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 2 },
+  otherAvatar: { opacity: 0.85 },
+  otherMore: { fontFamily: fonts.medium, fontSize: 11, color: colors.text3, marginLeft: 2 },
   checkmark: { color: colors.white, fontFamily: fonts.semibold, fontSize: 13, fontWeight: '700' },
   itemInfo: { flex: 1 },
   itemNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
