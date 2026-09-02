@@ -243,7 +243,8 @@
     "ocr_training": "Training",
     "receipts": "Receipts",
     "next_run": "Next run",
-    "before_next_100": "{{n}} / 100 corrections before the next refinement"
+    "before_next_100": "{{n}} / 100 corrections before the next refinement",
+    "expenses_count": "{{n}} expenses"
   },
   "settings": {
     "title": "Settings",

@@ -243,7 +243,8 @@
     "ocr_training": "Training",
     "receipts": "Belege",
     "next_run": "Nächster Lauf",
-    "before_next_100": "{{n}} / 100 Korrekturen bis zur nächsten Verfeinerung"
+    "before_next_100": "{{n}} / 100 Korrekturen bis zur nächsten Verfeinerung",
+    "expenses_count": "{{n}} Ausgaben"
   },
   "settings": {
     "title": "Einstellungen",

@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { groupsApi, ocrApi } from '../../src/services/api';
 import { useAuthStore } from '../../src/store/authStore';
 import { Card, GlassCard, SectionLabel, ScreenHeader } from '../../src/components/ui';
-import { colors, spacing, radius, shadows } from '../../src/theme';
+import { colors, spacing, radius, fonts, money } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFormatMoney, useCurrency, useT } from '../../src/store/langStore';
 
@@ -87,7 +87,12 @@ export default function StatsScreen() {
     }, 0) ?? 0;
     const total = full.expenses?.reduce((s: number, exp: any) => s + exp.totalAmount, 0) ?? 0;
     const memberCount = full.members?.length || 0;
-    const myBalance = myPaid - myShare;
+    // Position reelle, calculee par le serveur : elle tient compte des
+    // remboursements. `myPaid - myShare` restait fige sur l'etat d'avant
+    // remboursement — d'ou un grand chiffre en desaccord avec les soldes
+    // affiches juste en dessous. Le repli ne sert qu'aux reponses d'un
+    // backend anterieur a ce champ.
+    const myBalance = full.netByMember?.[myMember?.id] ?? (myPaid - myShare);
     const incompleteExps = (full.expenses || []).filter(isExpenseIncomplete);
     const incomplete = incompleteExps.length;
     const expCount = full.expenses?.length || 0;
@@ -97,7 +102,9 @@ export default function StatsScreen() {
 
   const myTotalShare = groupStats.reduce((s, gs) => s + (gs.myShare || 0), 0);
   const myTotalPaid = groupStats.reduce((s, gs) => s + (gs.myPaid || 0), 0);
-  const netBalance = myTotalPaid - myTotalShare;
+  // Somme des positions reelles : ce qu'on te doit encore, moins ce que tu
+  // dois encore, une fois les remboursements deduits.
+  const netBalance = groupStats.reduce((s, gs) => s + (gs.myBalance || 0), 0);
 
   // ── Toutes les dépenses, chronologiques ──────────────────────────────
   const allExpenses = useMemo(() => {
@@ -173,18 +180,37 @@ export default function StatsScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.accent} />}
       >
-        {/* Hero balance card */}
-        {myTotalPaid > 0 && (
-          <GlassCard glow style={styles.heroCard}>
-            <Text style={styles.heroLabel}>{t('stats.net_balance')}</Text>
-            <Text style={[styles.heroAmount, { color: netBalance >= 0 ? colors.green : colors.red }]}>
-              {netBalance >= 0 ? '+' : ''}{netBalance.toFixed(2)}
-              <Text style={styles.heroCurrency}> {cur}</Text>
+        {/* Le chiffre qui compte, en premier */}
+        {(myTotalPaid > 0 || Math.abs(netBalance) > 0.01) && (
+          <View style={styles.heroCard}>
+            <Text style={styles.heroLabel}>
+              {Math.abs(netBalance) < 0.01
+                ? t('stats.net_balance')
+                : netBalance > 0 ? t('stats.owed_you_money') : t('stats.you_owe_money')}
             </Text>
-            <Text style={styles.heroSub}>
-              {netBalance >= 0 ? t('stats.owed_you_money') : t('stats.you_owe_money')}
+            <Text style={[styles.heroAmount, {
+              color: Math.abs(netBalance) < 0.01 ? colors.text
+                : netBalance > 0 ? colors.green : colors.amber,
+            }]}>
+              {netBalance > 0 ? '+' : ''}{fmt(netBalance)}
             </Text>
-          </GlassCard>
+            <View style={styles.heroSplit}>
+              <View style={styles.heroSplitItem}>
+                <Text style={styles.heroSplitLabel}>{t('stats.total_expenses')}</Text>
+                <Text style={styles.heroSplitValue}>{totalExpenses}</Text>
+              </View>
+              <View style={styles.heroSplitDivider} />
+              <View style={styles.heroSplitItem}>
+                <Text style={styles.heroSplitLabel}>{t('stats.my_share')}</Text>
+                <Text style={styles.heroSplitValue}>{fmt(myTotalShare)}</Text>
+              </View>
+              <View style={styles.heroSplitDivider} />
+              <View style={styles.heroSplitItem}>
+                <Text style={styles.heroSplitLabel}>{t('stats.total_groups')}</Text>
+                <Text style={styles.heroSplitValue}>{totalGroups}</Text>
+              </View>
+            </View>
+          </View>
         )}
 
         {/* Global summary */}
@@ -337,18 +363,26 @@ export default function StatsScreen() {
             {groupStats.map(({ group: g, myShare, myPaid, myBalance, total, memberCount, incomplete, completionRate }) => (
               <TouchableOpacity key={g.id} activeOpacity={0.78} onPress={() => router.push(`/group/${g.id}`)}>
                 <View style={styles.groupCard}>
-                  <View style={styles.groupAccentBar} />
                   <View style={styles.groupCardInner}>
+                    {/* Ta position dans ce groupe, en tete : c'est ce qu'on
+                        vient chercher en ouvrant l'ecran. */}
                     <View style={styles.groupHeader}>
-                      <Text style={styles.groupName}>{g.emoji} {g.name}</Text>
-                      <Text style={styles.groupMeta}>{t('stats.members_count', { n: memberCount })}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.groupName}>{g.emoji} {g.name}</Text>
+                        <Text style={styles.groupMeta}>
+                          {t('stats.members_count', { n: memberCount })} · {t('stats.expenses_count', { n: g.expenseCount })}
+                        </Text>
+                      </View>
+                      {myBalance !== null && myBalance !== undefined && (
+                        <Text style={[styles.groupNet, {
+                          color: Math.abs(myBalance) < 0.01 ? colors.text3
+                            : myBalance > 0 ? colors.green : colors.amber,
+                        }]}>
+                          {myBalance > 0 ? '+' : ''}{fmt(myBalance)}
+                        </Text>
+                      )}
                     </View>
                     <View style={styles.groupStatRow}>
-                      <View style={styles.groupStat}>
-                        <Text style={styles.groupStatNum}>{g.expenseCount}</Text>
-                        <Text style={styles.groupStatLabel}>{t('stats.expenses_lc')}</Text>
-                      </View>
-                      <View style={styles.groupStatDivider} />
                       <View style={styles.groupStat}>
                         <Text style={[styles.groupStatNum, { color: colors.text2 }]}>
                           {total !== null ? `${total.toFixed(0)}` : '—'}
@@ -389,16 +423,6 @@ export default function StatsScreen() {
                       </View>
                     )}
 
-                    {myBalance !== null && myBalance !== undefined && Math.abs(myBalance) > 0.01 && (
-                      <View style={[styles.balanceBadge, {
-                        backgroundColor: myBalance > 0 ? colors.greenBg : colors.redBg,
-                        borderColor: myBalance > 0 ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)',
-                      }]}>
-                        <Text style={[styles.balanceBadgeText, { color: myBalance > 0 ? colors.green : colors.red }]}>
-                          {myBalance > 0 ? t('stats.owed_amount', { amount: fmt(myBalance) }) : t('stats.owe_amount', { amount: fmt(Math.abs(myBalance)) })}
-                        </Text>
-                      </View>
-                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -445,11 +469,17 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: spacing.xl },
 
-  heroCard: { marginTop: 16 },
-  heroLabel: { fontSize: 11, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1.3, marginBottom: 8 },
-  heroAmount: { fontSize: 44, fontWeight: '200', fontFamily: 'monospace', letterSpacing: -1 },
-  heroCurrency: { fontSize: 18, color: colors.text3 },
-  heroSub: { fontSize: 12, color: colors.text3, marginTop: 6, fontWeight: '500' },
+  heroCard: {
+    marginTop: 16, marginBottom: 12,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xxl,
+  },
+  heroLabel: { fontFamily: fonts.medium, fontSize: 13, color: colors.text3 },
+  heroAmount: { ...money.hero, marginTop: 6 },
+  heroSplit: { flexDirection: 'row', alignItems: 'center', marginTop: 22, gap: 20 },
+  heroSplitItem: { flex: 1 },
+  heroSplitDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.06)' },
+  heroSplitLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3 },
+  heroSplitValue: { ...money.row, color: colors.text, marginTop: 4 },
 
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 8 },
   statBox: { alignItems: 'center', flex: 1 },
@@ -486,21 +516,20 @@ const styles = StyleSheet.create({
   activityAmt: { fontSize: 13, fontFamily: 'monospace', color: colors.text2 },
 
   groupCard: {
-    flexDirection: 'row', marginBottom: 10, borderRadius: radius.md, overflow: 'hidden',
-    backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.glassBorder, ...shadows.card,
+    flexDirection: 'row', marginBottom: 10, borderRadius: radius.lg, overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
-  groupAccentBar: { width: 3, backgroundColor: colors.accent, opacity: 0.6 },
-  groupCardInner: { flex: 1, padding: spacing.lg },
-  groupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  groupName: { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1 },
-  groupMeta: { fontSize: 11, color: colors.text3 },
+  groupCardInner: { flex: 1, padding: spacing.xl },
+  groupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
+  groupName: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text, letterSpacing: -0.2 },
+  groupMeta: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, marginTop: 3 },
+  groupNet: { ...money.large },
   groupStatRow: { flexDirection: 'row', alignItems: 'center' },
   groupStat: { flex: 1, alignItems: 'center' },
   groupStatNum: { fontSize: 16, fontWeight: '500', fontFamily: 'monospace', color: colors.text },
   groupStatLabel: { fontSize: 10, color: colors.text3, marginTop: 2, textAlign: 'center' },
   groupStatDivider: { width: 0.5, height: 32, backgroundColor: colors.glassBorder },
-  balanceBadge: { borderRadius: radius.sm, padding: 8, marginTop: 10, alignItems: 'center', borderWidth: 1 },
-  balanceBadgeText: { fontSize: 12, fontWeight: '700' },
+
 
   barTrack: { height: 4, backgroundColor: colors.surface2, borderRadius: 2, overflow: 'hidden', marginTop: 8 },
   barFill: { height: '100%', borderRadius: 2 },

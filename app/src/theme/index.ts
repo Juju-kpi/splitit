@@ -1,5 +1,6 @@
 // app/src/theme/index.ts
 import { StyleSheet, Platform } from 'react-native';
+import type { TextStyle } from 'react-native';
 
 // ── Nuit premium ──────────────────────────────────────────────────────────
 // Trois principes, et tout le reste en decoule :
@@ -96,15 +97,17 @@ export const typography = {
 } as const;
 
 // Chiffres alignes en colonne — indispensable des qu'on compare des montants.
-export const tabular = { fontVariant: ['tabular-nums'] as const };
+// Type explicite : `as const` produirait un tuple en lecture seule, que
+// TextStyle refuse, et StyleSheet.create partirait alors en union.
+export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
 /** Echelle des montants : le solde qui te concerne, une ligne, un detail. */
-export const money = {
+export const money: Record<'hero' | 'large' | 'row' | 'small', TextStyle> = {
   hero: { fontFamily: fonts.monoMedium, fontSize: 40, letterSpacing: -0.8, ...tabular },
   large: { fontFamily: fonts.monoMedium, fontSize: 20, letterSpacing: -0.2, ...tabular },
   row: { fontFamily: fonts.monoMedium, fontSize: 16, ...tabular },
   small: { fontFamily: fonts.mono, fontSize: 13, ...tabular },
-} as const;
+};
 
 export const shadows = {
   accent: {

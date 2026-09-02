@@ -243,7 +243,8 @@
     "ocr_training": "Addestramento",
     "receipts": "Scontrini",
     "next_run": "Prossima esecuzione",
-    "before_next_100": "{{n}} / 100 correzioni prima del prossimo affinamento"
+    "before_next_100": "{{n}} / 100 correzioni prima del prossimo affinamento",
+    "expenses_count": "{{n}} spese"
   },
   "settings": {
     "title": "Impostazioni",
