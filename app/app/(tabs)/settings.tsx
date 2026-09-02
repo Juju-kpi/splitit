@@ -20,6 +20,7 @@ import Constants from 'expo-constants';
 import { useAuthStore } from '../../src/store/authStore';
 import { ocrApi, authApi, userApi } from '../../src/services/api';
 import { Card, GlassCard, SectionLabel, Notice, ScreenHeader, Avatar } from '../../src/components/ui';
+import Feather from '@expo/vector-icons/Feather';
 import { colors, spacing, radius, fonts } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
@@ -102,7 +103,7 @@ async function registerForPushNotifications(): Promise<string | null> {
 function SettingRow({
   icon, label, value, onPress, destructive = false, rightElement, loading = false,
 }: {
-  icon: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
   label: string;
   value?: string;
   onPress?: () => void;
@@ -118,7 +119,7 @@ function SettingRow({
       disabled={(!onPress && !rightElement) || loading}
     >
       <View style={[styles.settingIconWrap, destructive && styles.settingIconWrapDanger]}>
-        <Text style={styles.settingIcon}>{icon}</Text>
+        <Feather name={icon} size={17} color={destructive ? colors.red : colors.text2} />
       </View>
       <Text style={[styles.settingLabel, destructive && { color: colors.red }]}>{label}</Text>
       {loading && <ActivityIndicator size="small" color={colors.accent} style={{ marginLeft: 'auto' }} />}
@@ -365,7 +366,7 @@ export default function SettingsScreen() {
                 ring
               />
               <View style={styles.editColorBadge}>
-                <Text style={styles.editColorBadgeText}>✏️</Text>
+                <Feather name="edit-2" size={11} color={colors.onPrimary} />
               </View>
             </TouchableOpacity>
             <View style={styles.profileInfo}>
@@ -382,7 +383,7 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.ocr_title')} />
         <Card>
           <View style={styles.ocrHeader}>
-            <Text style={styles.ocrTitle}>🧠 {t('settings.ocr_model')} · v1.4</Text>
+            <Text style={styles.ocrTitle}>{t('settings.ocr_model')} · v1.4</Text>
             <View style={[styles.ocrAccuracyBadge, {
               backgroundColor: accuracy >= 80 ? colors.greenBg : colors.amberBg,
             }]}>
@@ -424,13 +425,13 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.account')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="📅"
+            icon="calendar"
             label={t('settings.member_since')}
             value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="🎨"
+            icon="droplet"
             label={t('settings.profile_color')}
             onPress={() => setColorModalVisible(true)}
             rightElement={
@@ -443,14 +444,14 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.language_currency')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="🌍"
+            icon="globe"
             label={t('settings.language')}
             value={`${currentLang.flag} ${currentLang.label}`}
             onPress={() => setLangModalVisible(true)}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="💱"
+            icon="repeat"
             label={t('settings.currency')}
             value={`${currentCurrency.symbol} ${currentCurrency.code}`}
             onPress={() => setCurrencyModalVisible(true)}
@@ -465,7 +466,7 @@ export default function SettingsScreen() {
         )}
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="🔔"
+            icon="bell"
             label={t('settings.notif_expense')}
             rightElement={
               notifLoading ? (
@@ -483,7 +484,7 @@ export default function SettingsScreen() {
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="⏰"
+            icon="clock"
             label={t('settings.notif_reminder')}
             rightElement={
               notifLoading ? (
@@ -505,20 +506,20 @@ export default function SettingsScreen() {
         <SectionLabel label={t('settings.privacy')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <SettingRow
-            icon="📦"
+            icon="download"
             label={t('settings.export_data')}
             onPress={handleExportData}
             loading={exportLoading}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="🔒"
+            icon="lock"
             label={t('settings.privacy_policy')}
             onPress={handlePrivacyPolicy}
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="📋"
+            icon="file-text"
             label={t('settings.terms')}
             onPress={() => Linking.openURL('https://juju-kpi.github.io/splitit/privacy-policy.md')}
           />
@@ -527,10 +528,10 @@ export default function SettingsScreen() {
         {/* À propos */}
         <SectionLabel label={t('settings.about')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <SettingRow icon="📱" label={t('settings.version')} value={APP_VERSION} />
+          <SettingRow icon="smartphone" label={t('settings.version')} value={APP_VERSION} />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="⭐️"
+            icon="star"
             label={t('settings.rate')}
             onPress={() => Linking.openURL('market://details?id=com.julien.splitit').catch(() =>
               Linking.openURL('https://play.google.com/store/apps/details?id=com.julien.splitit')
@@ -538,7 +539,7 @@ export default function SettingsScreen() {
           />
           <View style={styles.rowSeparator} />
           <SettingRow
-            icon="💬"
+            icon="message-circle"
             label={t('settings.feedback')}
             onPress={() => Linking.openURL('mailto:ares88775@gmail.com?subject=Feedback SplitIt')}
           />
@@ -547,9 +548,9 @@ export default function SettingsScreen() {
         {/* Danger zone */}
         <SectionLabel label={t('settings.danger')} />
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <SettingRow icon="👋" label={t('settings.logout_row')} onPress={handleLogout} />
+          <SettingRow icon="log-out" label={t('settings.logout_row')} onPress={handleLogout} />
           <View style={styles.rowSeparator} />
-          <SettingRow icon="🗑" label={t('settings.delete_account')} destructive onPress={openDeleteModal} />
+          <SettingRow icon="trash-2" label={t('settings.delete_account')} destructive onPress={openDeleteModal} />
         </Card>
 
         <Text style={styles.footer}>SplitIt {APP_VERSION} · {t('settings.made_with')}</Text>
@@ -622,7 +623,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>🌍 {t('settings.language')}</Text>
+            <Text style={styles.modalTitle}>{t('settings.language')}</Text>
             <TouchableOpacity onPress={() => setLangModalVisible(false)} style={styles.modalClose}>
               <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
@@ -665,7 +666,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalScreen}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>💱 {t('settings.currency')}</Text>
+            <Text style={styles.modalTitle}>{t('settings.currency')}</Text>
             <TouchableOpacity onPress={() => setCurrencyModalVisible(false)} style={styles.modalClose}>
               <Text style={styles.modalCloseText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
@@ -721,7 +722,7 @@ export default function SettingsScreen() {
             {deleteStep === 'confirm' && (
               <>
                 <View style={styles.deleteWarning}>
-                  <Text style={styles.deleteWarningTitle}>⚠️ {t('settings.delete_warning')}</Text>
+                  <Text style={styles.deleteWarningTitle}>{t('settings.delete_warning')}</Text>
                   <Text style={styles.deleteWarningText}>{t('settings.delete_bullets')}</Text>
                 </View>
                 <Text style={styles.deleteConfirmLabel}>
@@ -751,7 +752,7 @@ export default function SettingsScreen() {
             {deleteStep === 'password' && (
               <>
                 <View style={styles.deleteWarning}>
-                  <Text style={styles.deleteWarningTitle}>🔑 {t('settings.delete_confirm_pw')}</Text>
+                  <Text style={styles.deleteWarningTitle}>{t('settings.delete_confirm_pw')}</Text>
                   <Text style={styles.deleteWarningText}>{t('settings.delete_confirm_pw_sub')}</Text>
                 </View>
                 <Text style={styles.deleteConfirmLabel}>{t('auth.password')}</Text>

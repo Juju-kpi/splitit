@@ -12,6 +12,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/authStore'
 import { userApi, authApi, ocrApi } from '@/lib/api'
 import { Avatar, GlassCard, SectionLabel, Button, Input, Notice } from '@/components/ui'
+import type { LucideIcon } from 'lucide-react'
+import {
+  Calendar, Droplet, Globe, Repeat, Bell, Clock, Download, Lock,
+  FileText, Monitor, Star, MessageCircle, LogOut, Trash2,
+} from 'lucide-react'
 import { useLangStore, useT } from '@/store/langStore'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -91,13 +96,13 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
 }
 
 // ── Setting row ───────────────────────────────────────────────────────────────
-function SettingRow({ icon, label, value, onClick, destructive, right }: {
-  icon: string; label: string; value?: string; onClick?: () => void; destructive?: boolean; right?: React.ReactNode
+function SettingRow({ icon: Icon, label, value, onClick, destructive, right }: {
+  icon: LucideIcon; label: string; value?: string; onClick?: () => void; destructive?: boolean; right?: React.ReactNode
 }) {
   return (
-    <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3.5 min-h-[52px] ${onClick ? 'cursor-pointer hover:bg-surface3/40 transition-colors' : ''}`}>
-      <div className={`w-8 h-8 rounded-[9px] flex items-center justify-center text-base shrink-0 ${destructive ? 'bg-red/10' : 'bg-surface3'}`}>
-        {icon}
+    <div onClick={onClick} className={`flex items-center gap-3 px-4 py-3.5 min-h-[52px] ${onClick ? 'cursor-pointer hover:bg-surface2 transition-colors' : ''}`}>
+      <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 ${destructive ? 'bg-red/10 text-red' : 'bg-surface2 text-text2'}`}>
+        <Icon size={17} strokeWidth={1.75} />
       </div>
       <span className={`flex-1 text-sm font-medium ${destructive ? 'text-red' : 'text-text'}`}>{label}</span>
       {value && <span className="text-xs text-text3">{value}</span>}
@@ -107,7 +112,7 @@ function SettingRow({ icon, label, value, onClick, destructive, right }: {
   )
 }
 
-function RowSep() { return <div className="h-px bg-white/5 ml-[68px]" /> }
+function RowSep() { return <div className="h-px bg-white/[0.06] ml-[68px]" /> }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function Modal({ visible, onClose, title, children }: { visible: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
@@ -354,9 +359,9 @@ export default function SettingsPage() {
         {/* Mon compte */}
         <SectionLabel label={t('settings.account')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-          <SettingRow icon="📅" label={t('settings.member_since')} value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'} />
+          <SettingRow icon={Calendar} label={t('settings.member_since')} value={user?.createdAt ? format(new Date(user.createdAt), 'MMM yyyy', { locale: fr }) : '—'} />
           <RowSep />
-          <SettingRow icon="🎨" label={t('settings.profile_color')} onClick={() => setColorModal(true)}
+          <SettingRow icon={Droplet} label={t('settings.profile_color')} onClick={() => setColorModal(true)}
             right={<div className="w-6 h-6 rounded-full border-2 border-border flex-shrink-0" style={{ backgroundColor: user?.avatarColor || '#7C6EFA' }} />}
           />
         </div>
@@ -364,9 +369,9 @@ export default function SettingsPage() {
         {/* Langue & Devise */}
         <SectionLabel label={t('settings.language_currency')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-1">
-          <SettingRow icon="🌍" label={t('settings.language')} value={`${currentLang.flag} ${currentLang.label}`} onClick={() => setLangModal(true)} />
+          <SettingRow icon={Globe} label={t('settings.language')} value={`${currentLang.flag} ${currentLang.label}`} onClick={() => setLangModal(true)} />
           <RowSep />
-          <SettingRow icon="💱" label={t('settings.currency')} value={`${currentCurrency.symbol} ${currentCurrency.code}`} onClick={() => setCurrencyModal(true)} />
+          <SettingRow icon={Repeat} label={t('settings.currency')} value={`${currentCurrency.symbol} ${currentCurrency.code}`} onClick={() => setCurrencyModal(true)} />
         </div>
         <Notice text={t('settings.currency_notice')} variant="amber" />
 
@@ -382,11 +387,11 @@ export default function SettingsPage() {
           <Notice variant="amber" text={t('settings.notif_unsupported_pref')} />
         )}
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-          <SettingRow icon="🔔" label={t('settings.notif_expense')}
+          <SettingRow icon={Bell} label={t('settings.notif_expense')}
             right={<Toggle checked={notifExpense} onChange={v => handleNotifToggle('expense', v)} disabled={notifLoading || (notifSupported && !swReady)} />}
           />
           <RowSep />
-          <SettingRow icon="⏰" label={t('settings.notif_reminder')}
+          <SettingRow icon={Clock} label={t('settings.notif_reminder')}
             right={<Toggle checked={notifReminder} onChange={v => handleNotifToggle('reminder', v)} disabled={notifLoading || (notifSupported && !swReady)} />}
           />
         </div>
@@ -394,34 +399,34 @@ export default function SettingsPage() {
         {/* Confidentialité */}
         <SectionLabel label={t('settings.privacy')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-          <SettingRow icon="📦" label={t('settings.export_data')} onClick={async () => {
+          <SettingRow icon={Download} label={t('settings.export_data')} onClick={async () => {
             setExportLoading(true)
             try { await userApi.requestDataExport(); setExportSent(true) } catch {} finally { setExportLoading(false) }
           }} value={exportSent ? t('settings.export_sent') : exportLoading ? '…' : undefined} />
           <RowSep />
-          <SettingRow icon="🔒" label={t('settings.privacy_policy')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
+          <SettingRow icon={Lock} label={t('settings.privacy_policy')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
           <RowSep />
-          <SettingRow icon="📋" label={t('settings.terms')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
+          <SettingRow icon={FileText} label={t('settings.terms')} onClick={() => window.open(PRIVACY_URL, '_blank')} />
         </div>
 
         {/* À propos */}
 <SectionLabel label={t('settings.about')} />
 <div className="glass-card rounded-2xl overflow-hidden p-0 mb-3">
-  <SettingRow icon="🌐" label={t('settings.web_version')} value={APP_VERSION} />
+  <SettingRow icon={Monitor} label={t('settings.web_version')} value={APP_VERSION} />
   <RowSep />
-  <SettingRow icon="⭐️" label={t('settings.download_mobile')} onClick={() => window.open('https://play.google.com/store/apps/details?id=com.julien.splitit', '_blank')} />
+  <SettingRow icon={Star} label={t('settings.download_mobile')} onClick={() => window.open('https://play.google.com/store/apps/details?id=com.julien.splitit', '_blank')} />
   <RowSep />
-  <SettingRow icon="💬" label={t('settings.feedback')} onClick={() => window.open('mailto:ares88775@gmail.com?subject=Feedback SplitIt', '_blank')} />
+  <SettingRow icon={MessageCircle} label={t('settings.feedback')} onClick={() => window.open('mailto:ares88775@gmail.com?subject=Feedback SplitIt', '_blank')} />
 </div>
 
         {/* Zone de danger */}
         <SectionLabel label={t('settings.danger')} />
         <div className="glass-card rounded-2xl overflow-hidden p-0">
-          <SettingRow icon="👋" label={t('settings.logout_row')} onClick={async () => {
+          <SettingRow icon={LogOut} label={t('settings.logout_row')} onClick={async () => {
             if (confirm(t('settings.logout_confirm_web'))) { await logout(); router.replace('/auth/login') }
           }} />
           <RowSep />
-          <SettingRow icon="🗑" label={t('settings.delete_account')} destructive onClick={() => {
+          <SettingRow icon={Trash2} label={t('settings.delete_account')} destructive onClick={() => {
             setDeleteModal(true); setDeleteStep('confirm'); setDeleteConfirm(''); setDeletePassword(''); setDeleteError('')
           }} />
         </div>
