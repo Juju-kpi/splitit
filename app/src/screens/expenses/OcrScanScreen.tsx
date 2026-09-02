@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ocrApi } from '../../services/api';
 import { Button, Chip, Notice, Avatar, Divider } from '../../components/ui';
-import { colors, spacing, radius } from '../../theme';
+import { colors, spacing, radius, fonts } from '../../theme';
 import { useFormatMoney } from '../../store/langStore';
 import { OcrItem, GroupMember } from '../../../../shared/types';
 
@@ -275,7 +275,7 @@ function ItemRow({ item, activeMemberId, onToggle, onRemove, onStartEdit, onSave
               )}
             </View>
             <Text style={styles.ocrRaw}>
-              OCR brut: <Text style={{ fontFamily: 'monospace' }}>{item.ocrRaw}</Text>
+              OCR brut: <Text style={{ fontFamily: fonts.mono }}>{item.ocrRaw}</Text>
               {'  '}{Math.round(item.confidence * 100)}%
             </Text>
           </>
@@ -313,13 +313,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  uploadIcon: { fontSize: 40, marginBottom: 10 },
-  uploadTitle: { fontSize: 15, fontWeight: '500', color: colors.text, marginBottom: 4 },
-  uploadSub: { fontSize: 12, color: colors.text3 },
+  uploadIcon: { fontFamily: fonts.regular, fontSize: 40, marginBottom: 10 },
+  uploadTitle: { fontFamily: fonts.medium, fontSize: 15, fontWeight: '500', color: colors.text, marginBottom: 4 },
+  uploadSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3 },
   scanningContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  scanStatus: { color: colors.text2, fontSize: 14, marginTop: 16, textAlign: 'center' },
+  scanStatus: { color: colors.text2, fontFamily: fonts.regular, fontSize: 14, marginTop: 16, textAlign: 'center' },
   reviewContainer: { flex: 1 },
-  sectionLabel: { fontSize: 11, fontWeight: '500', color: colors.text3, letterSpacing: 0.8, marginBottom: 8 },
+  sectionLabel: { fontFamily: fonts.medium, fontSize: 11, fontWeight: '500', color: colors.text3, letterSpacing: 0.8, marginBottom: 8 },
   chipRow: { flexDirection: 'row', paddingRight: spacing.xl },
   itemsCard: {
     backgroundColor: colors.surface,
@@ -330,8 +330,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   itemsHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  itemsTitle: { fontSize: 14, fontWeight: '500', color: colors.text },
-  itemsConf: { fontSize: 11, color: colors.text3 },
+  itemsTitle: { fontFamily: fonts.medium, fontSize: 14, fontWeight: '500', color: colors.text },
+  itemsConf: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3 },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   checkbox: {
     width: 22, height: 22, borderRadius: 6,
@@ -339,37 +339,37 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  checkmark: { color: colors.white, fontSize: 13, fontWeight: '700' },
+  checkmark: { color: colors.white, fontFamily: fonts.semibold, fontSize: 13, fontWeight: '700' },
   itemInfo: { flex: 1 },
   itemNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  itemName: { fontSize: 13, color: colors.text, fontWeight: '500' },
+  itemName: { fontFamily: fonts.medium, fontSize: 13, color: colors.text, fontWeight: '500' },
   correctedBadge: {
     backgroundColor: colors.greenBg, borderRadius: 4,
     paddingHorizontal: 5, paddingVertical: 1,
   },
-  correctedText: { fontSize: 9, color: colors.green, fontWeight: '500' },
-  ocrRaw: { fontSize: 10, color: colors.text3, marginTop: 2 },
+  correctedText: { fontFamily: fonts.medium, fontSize: 9, color: colors.green, fontWeight: '500' },
+  ocrRaw: { fontFamily: fonts.regular, fontSize: 10, color: colors.text3, marginTop: 2 },
   editRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   editInput: {
     backgroundColor: colors.surface2,
     borderWidth: 0.5, borderColor: colors.accent,
     borderRadius: 6, color: colors.text,
-    fontFamily: 'monospace', fontSize: 12,
+    fontFamily: fonts.mono, fontSize: 12,
     paddingHorizontal: 7, paddingVertical: 4,
   },
   saveBtn: {
     backgroundColor: colors.accent, borderRadius: 6,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  saveBtnText: { color: colors.white, fontSize: 12, fontWeight: '600' },
+  saveBtnText: { color: colors.white, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' },
   editBtn: { padding: 4 },
-  editBtnText: { fontSize: 14 },
-  itemPrice: { fontSize: 13, fontWeight: '500', fontFamily: 'monospace', color: colors.text2, minWidth: 54, textAlign: 'right' },
+  editBtnText: { fontFamily: fonts.regular, fontSize: 14 },
+  itemPrice: { fontSize: 13, fontWeight: '500', fontFamily: fonts.mono, color: colors.text2, minWidth: 54, textAlign: 'right' },
   totalRow: {
     flexDirection: 'row', justifyContent: 'space-between',
     backgroundColor: colors.surface2, borderRadius: radius.sm,
     padding: spacing.md, marginTop: 4,
   },
-  totalLabel: { fontSize: 13, color: colors.text3 },
-  totalAmt: { fontSize: 13, fontFamily: 'monospace', color: colors.text, fontWeight: '500' },
+  totalLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
+  totalAmt: { fontSize: 13, fontFamily: fonts.mono, color: colors.text, fontWeight: '500' },
 });

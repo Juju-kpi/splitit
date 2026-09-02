@@ -18,7 +18,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { groupsApi } from '../../src/services/api';
 import { Button, Input, Avatar, Card } from '../../src/components/ui';
-import { colors, spacing, radius } from '../../src/theme';
+import { colors, spacing, radius, fonts } from '../../src/theme';
 import { useT } from '../../src/store/langStore';
 
 type GuestMember = {
@@ -270,18 +270,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6,
     borderRadius: 20, marginBottom: 24,
   },
-  backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
+  backText: { color: colors.text2, fontFamily: fonts.medium, fontSize: 12, fontWeight: '500' },
   groupBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.accentBg,
     borderWidth: 1, borderColor: 'rgba(124,110,250,0.2)',
     borderRadius: radius.md, padding: 12, marginBottom: 20,
   },
-  groupBadgeEmoji: { fontSize: 24 },
-  groupBadgeName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  groupBadgeEmoji: { fontFamily: fonts.regular, fontSize: 24 },
+  groupBadgeName: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '600', color: colors.text },
   titleBlock: { marginBottom: 24 },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  sub: { fontSize: 13, color: colors.text3, lineHeight: 19 },
+  title: { fontFamily: fonts.semibold, fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 8 },
+  sub: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, lineHeight: 19 },
   memberList: { gap: 8, marginTop: 16, marginBottom: 8 },
   memberRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     backgroundColor: colors.accentBg,
   },
-  memberName: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.text },
+  memberName: { flex: 1, fontFamily: fonts.medium, fontSize: 15, fontWeight: '500', color: colors.text },
   radio: {
     width: 22, height: 22, borderRadius: 11,
     borderWidth: 2, borderColor: colors.border2,
@@ -306,13 +306,13 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(52,211,153,0.2)',
     borderRadius: radius.sm, padding: 12, marginTop: 12,
   },
-  claimNoticeText: { fontSize: 12, color: colors.green, lineHeight: 18 },
+  claimNoticeText: { fontFamily: fonts.regular, fontSize: 12, color: colors.green, lineHeight: 18 },
   skipBtn: { alignItems: 'center', paddingVertical: 16 },
-  skipText: { fontSize: 13, color: colors.accent2, fontWeight: '500', textAlign: 'center' },
+  skipText: { fontFamily: fonts.medium, fontSize: 13, color: colors.accent2, fontWeight: '500', textAlign: 'center' },
   notice: {
     backgroundColor: colors.accentBg,
     borderWidth: 0.5, borderColor: 'rgba(124,110,250,0.2)',
     borderRadius: 10, padding: 12, marginVertical: 8,
   },
-  noticeText: { fontSize: 12, color: colors.accent2, lineHeight: 18 },
+  noticeText: { fontFamily: fonts.regular, fontSize: 12, color: colors.accent2, lineHeight: 18 },
 });

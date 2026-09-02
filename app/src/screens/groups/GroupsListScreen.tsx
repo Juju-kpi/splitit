@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { groupsApi } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { AvatarRow, Pill, SectionLabel, Card, ScreenHeader, ActionPill } from '../../components/ui';
-import { colors, spacing, radius, shadows } from '../../theme';
+import { colors, spacing, radius, shadows, fonts } from '../../theme';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Group } from '../../../../shared/types';
@@ -119,10 +119,10 @@ const styles = StyleSheet.create({
   },
   groupCardInner: { flex: 1, padding: spacing.lg },
   groupCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  groupName: { fontSize: 16, fontWeight: '600', color: colors.text, flex: 1, marginRight: 8 },
+  groupName: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '600', color: colors.text, flex: 1, marginRight: 8 },
   groupCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
-  groupDate: { fontSize: 11, color: colors.text3 },
-  groupArrow: { fontSize: 20, color: colors.text3, fontWeight: '200' },
+  groupDate: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3 },
+  groupArrow: { fontFamily: fonts.regular, fontSize: 20, color: colors.text3, fontWeight: '200' },
 
   // Empty state
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 20 },
@@ -133,18 +133,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 20,
   },
-  emptyEmoji: { fontSize: 36 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 8, letterSpacing: -0.3 },
-  emptySubtitle: { fontSize: 13, color: colors.text3, textAlign: 'center', lineHeight: 19, marginBottom: 32 },
+  emptyEmoji: { fontFamily: fonts.regular, fontSize: 36 },
+  emptyTitle: { fontFamily: fonts.semibold, fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 8, letterSpacing: -0.3 },
+  emptySubtitle: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, textAlign: 'center', lineHeight: 19, marginBottom: 32 },
   emptyActions: { gap: 10, width: '100%' },
   emptyBtn: {
     backgroundColor: colors.accent, paddingVertical: 15,
     borderRadius: radius.md, alignItems: 'center', minHeight: 52, ...shadows.accent,
   },
-  emptyBtnText: { color: colors.white, fontSize: 15, fontWeight: '700', letterSpacing: 0.2 },
+  emptyBtnText: { color: colors.white, fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', letterSpacing: 0.2 },
   emptyBtnGhost: {
     backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.glassBorder,
     paddingVertical: 15, borderRadius: radius.md, alignItems: 'center', minHeight: 52,
   },
-  emptyBtnGhostText: { color: colors.text2, fontSize: 15, fontWeight: '600' },
+  emptyBtnGhostText: { color: colors.text2, fontFamily: fonts.semibold, fontSize: 15, fontWeight: '600' },
 });

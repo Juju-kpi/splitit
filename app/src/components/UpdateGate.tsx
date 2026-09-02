@@ -19,7 +19,7 @@ import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { appApi } from '../services/api';
 import { useT } from '../store/langStore';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, fonts } from '../theme';
 
 type Verdict = 'ok' | 'update-available' | 'update-required';
 type Info = {
@@ -146,15 +146,15 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(124,110,250,0.3)',
     borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 14,
   },
-  badgeText: { fontSize: 11, color: colors.accent2, fontWeight: '700' },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
-  body: { fontSize: 14, color: colors.text2, lineHeight: 20, marginTop: 10 },
-  notes: { fontSize: 13, color: colors.text3, lineHeight: 19, marginTop: 10 },
+  badgeText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.accent2, fontWeight: '700' },
+  title: { fontFamily: fonts.semibold, fontSize: 20, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
+  body: { fontFamily: fonts.regular, fontSize: 14, color: colors.text2, lineHeight: 20, marginTop: 10 },
+  notes: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, lineHeight: 19, marginTop: 10 },
   primary: {
     marginTop: 22, minHeight: 48, borderRadius: radius.md,
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
-  primaryText: { fontSize: 15, color: colors.white, fontWeight: '600' },
+  primaryText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.white, fontWeight: '600' },
   ghost: { marginTop: 10, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  ghostText: { fontSize: 14, color: colors.text3, fontWeight: '500' },
+  ghostText: { fontFamily: fonts.medium, fontSize: 14, color: colors.text3, fontWeight: '500' },
 });

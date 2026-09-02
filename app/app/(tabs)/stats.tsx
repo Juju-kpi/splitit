@@ -341,7 +341,7 @@ export default function StatsScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.activityIcon}>
-                    <Text style={{ fontSize: 16 }}>
+                    <Text style={{ fontFamily: fonts.regular, fontSize: 16 }}>
                       {isExpenseIncomplete(exp) ? '⏳' : exp.receiptImageUrl ? '🧾' : '✏️'}
                     </Text>
                   </View>
@@ -483,37 +483,37 @@ const styles = StyleSheet.create({
 
   statRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 8 },
   statBox: { alignItems: 'center', flex: 1 },
-  statValue: { fontSize: 26, fontWeight: '300', fontFamily: 'monospace' },
-  statSub: { fontSize: 10, color: colors.text3, marginTop: -2 },
-  statLabel: { fontSize: 10, color: colors.text3, marginTop: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center' },
+  statValue: { fontSize: 26, fontWeight: '300', fontFamily: fonts.mono },
+  statSub: { fontFamily: fonts.regular, fontSize: 10, color: colors.text3, marginTop: -2 },
+  statLabel: { fontFamily: fonts.semibold, fontSize: 10, color: colors.text3, marginTop: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center' },
   statDivider: { width: 0.5, height: 44, backgroundColor: colors.glassBorder },
   globalSeparator: { height: 0.5, backgroundColor: colors.glassBorder, marginVertical: 8 },
 
   // Incomplete alert
   incompleteAlert: { marginTop: 12, backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: radius.sm, padding: 10, borderWidth: 1, borderColor: 'rgba(251,191,36,0.2)' },
-  incompleteAlertText: { fontSize: 12, color: colors.amber, fontWeight: '600', textAlign: 'center' },
+  incompleteAlertText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.amber, fontWeight: '600', textAlign: 'center' },
 
   // Debts
-  debtHeader: { fontSize: 12, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+  debtHeader: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
   debtRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: colors.glassBorder },
-  debtName: { fontSize: 14, color: colors.text },
-  debtAmt: { fontSize: 14, fontFamily: 'monospace', fontWeight: '600' },
+  debtName: { fontFamily: fonts.regular, fontSize: 14, color: colors.text },
+  debtAmt: { fontSize: 14, fontFamily: fonts.mono, fontWeight: '600' },
   debtSeparator: { height: 0.5, backgroundColor: colors.glassBorder, marginVertical: 12 },
 
   // Top payers
   topPayerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: colors.glassBorder },
-  topPayerRank: { fontSize: 20 },
-  topPayerName: { flex: 1, fontSize: 14, color: colors.text, fontWeight: '500' },
-  topPayerAmt: { fontSize: 14, fontFamily: 'monospace', color: colors.amber, fontWeight: '500' },
+  topPayerRank: { fontFamily: fonts.regular, fontSize: 20 },
+  topPayerName: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.text, fontWeight: '500' },
+  topPayerAmt: { fontSize: 14, fontFamily: fonts.mono, color: colors.amber, fontWeight: '500' },
 
   // Activity feed
   activityRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
   activityRowBorder: { borderTopWidth: 0.5, borderTopColor: colors.glassBorder },
   activityIcon: { width: 34, height: 34, borderRadius: 8, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
   activityInfo: { flex: 1 },
-  activityDesc: { fontSize: 13, fontWeight: '500', color: colors.text },
-  activityGroup: { fontSize: 11, color: colors.text3, marginTop: 2 },
-  activityAmt: { fontSize: 13, fontFamily: 'monospace', color: colors.text2 },
+  activityDesc: { fontFamily: fonts.medium, fontSize: 13, fontWeight: '500', color: colors.text },
+  activityGroup: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, marginTop: 2 },
+  activityAmt: { fontSize: 13, fontFamily: fonts.mono, color: colors.text2 },
 
   groupCard: {
     flexDirection: 'row', marginBottom: 10, borderRadius: radius.lg, overflow: 'hidden',
@@ -526,21 +526,21 @@ const styles = StyleSheet.create({
   groupNet: { ...money.large },
   groupStatRow: { flexDirection: 'row', alignItems: 'center' },
   groupStat: { flex: 1, alignItems: 'center' },
-  groupStatNum: { fontSize: 16, fontWeight: '500', fontFamily: 'monospace', color: colors.text },
-  groupStatLabel: { fontSize: 10, color: colors.text3, marginTop: 2, textAlign: 'center' },
+  groupStatNum: { fontSize: 16, fontWeight: '500', fontFamily: fonts.mono, color: colors.text },
+  groupStatLabel: { fontFamily: fonts.regular, fontSize: 10, color: colors.text3, marginTop: 2, textAlign: 'center' },
   groupStatDivider: { width: 0.5, height: 32, backgroundColor: colors.glassBorder },
 
 
   barTrack: { height: 4, backgroundColor: colors.surface2, borderRadius: 2, overflow: 'hidden', marginTop: 8 },
   barFill: { height: '100%', borderRadius: 2 },
-  barLabel: { fontSize: 10, color: colors.text3, marginTop: 5 },
+  barLabel: { fontFamily: fonts.regular, fontSize: 10, color: colors.text3, marginTop: 5 },
 
   ocrHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  ocrTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
-  ocrVersion: { fontSize: 12, color: colors.accent2, fontFamily: 'monospace' },
+  ocrTitle: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '600', color: colors.text },
+  ocrVersion: { fontSize: 12, color: colors.accent2, fontFamily: fonts.mono },
 
   empty: { alignItems: 'center', paddingTop: 80 },
-  emptyEmoji: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  emptyText: { fontSize: 13, color: colors.text3, textAlign: 'center', maxWidth: 260, lineHeight: 20 },
+  emptyEmoji: { fontFamily: fonts.regular, fontSize: 48, marginBottom: 16 },
+  emptyTitle: { fontFamily: fonts.semibold, fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 8 },
+  emptyText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, textAlign: 'center', maxWidth: 260, lineHeight: 20 },
 });

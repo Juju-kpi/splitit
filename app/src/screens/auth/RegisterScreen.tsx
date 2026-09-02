@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import { useT } from '../../store/langStore';
 import { Button, Input } from '../../components/ui';
-import { colors, spacing, radius, shadows } from '../../theme';
+import { colors, spacing, radius, shadows, fonts } from '../../theme';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -111,22 +111,22 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 14, ...shadows.accent,
   },
-  logoMarkText: { fontSize: 28, fontWeight: '800', color: colors.accent },
-  logo: { fontSize: 34, fontWeight: '800', letterSpacing: -1.2, color: colors.text },
-  tagline: { fontSize: 13, color: colors.text3, marginTop: 6, fontWeight: '500' },
+  logoMarkText: { fontFamily: fonts.semibold, fontSize: 28, fontWeight: '800', color: colors.accent },
+  logo: { fontFamily: fonts.semibold, fontSize: 34, fontWeight: '800', letterSpacing: -1.2, color: colors.text },
+  tagline: { fontFamily: fonts.medium, fontSize: 13, color: colors.text3, marginTop: 6, fontWeight: '500' },
   formCard: {
     backgroundColor: colors.glass,
     borderWidth: 1, borderColor: colors.glassBorder,
     borderRadius: radius.lg, padding: spacing.xl, marginBottom: 20,
   },
-  formTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 20, letterSpacing: -0.3 },
+  formTitle: { fontFamily: fonts.semibold, fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 20, letterSpacing: -0.3 },
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.redBg, borderWidth: 1, borderColor: 'rgba(248,113,113,0.2)',
     borderRadius: radius.sm, padding: 12, marginBottom: 12,
   },
-  errorDot: { fontSize: 14, color: colors.red },
-  errorText: { fontSize: 13, color: colors.red, flex: 1 },
+  errorDot: { fontFamily: fonts.regular, fontSize: 14, color: colors.red },
+  errorText: { fontFamily: fonts.regular, fontSize: 13, color: colors.red, flex: 1 },
   backBtn: { alignItems: 'center', paddingVertical: 16, minHeight: 52, justifyContent: 'center' },
-  backBtnText: { fontSize: 14, color: colors.text3, fontWeight: '500' },
+  backBtnText: { fontFamily: fonts.medium, fontSize: 14, color: colors.text3, fontWeight: '500' },
 });

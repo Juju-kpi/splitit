@@ -11,7 +11,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '../src/store/langStore';
 import { Button, Input, Notice } from '../src/components/ui';
-import { colors, spacing, radius } from '../src/theme';
+import { colors, spacing, radius, fonts } from '../src/theme';
 import { authApi } from '../src/services/api';
 
 export default function ForgotPasswordScreen() {
@@ -142,9 +142,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface2, borderWidth: 0.5, borderColor: colors.border,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full, marginBottom: 32,
   },
-  backText: { color: colors.text2, fontSize: 12, fontWeight: '500' },
+  backText: { color: colors.text2, fontFamily: fonts.medium, fontSize: 12, fontWeight: '500' },
   titleBlock: { marginBottom: 28 },
-  title: { fontSize: 26, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  sub: { fontSize: 14, color: colors.text3, lineHeight: 20 },
-  error: { color: colors.red, fontSize: 13, marginBottom: 8 },
+  title: { fontFamily: fonts.semibold, fontSize: 26, fontWeight: '700', color: colors.text, marginBottom: 8 },
+  sub: { fontFamily: fonts.regular, fontSize: 14, color: colors.text3, lineHeight: 20 },
+  error: { color: colors.red, fontFamily: fonts.regular, fontSize: 13, marginBottom: 8 },
 });

@@ -20,7 +20,7 @@ import Constants from 'expo-constants';
 import { useAuthStore } from '../../src/store/authStore';
 import { ocrApi, authApi, userApi } from '../../src/services/api';
 import { Card, GlassCard, SectionLabel, Notice, ScreenHeader, Avatar } from '../../src/components/ui';
-import { colors, spacing, radius } from '../../src/theme';
+import { colors, spacing, radius, fonts } from '../../src/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -793,34 +793,34 @@ const styles = StyleSheet.create({
   profileCard: { marginTop: 16 },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   profileInfo: { flex: 1 },
-  profileName: { fontSize: 18, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
-  profileEmail: { fontSize: 12, color: colors.text3, marginTop: 3 },
+  profileName: { fontFamily: fonts.semibold, fontSize: 18, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
+  profileEmail: { fontFamily: fonts.regular, fontSize: 12, color: colors.text3, marginTop: 3 },
   profileBadge: {
     marginTop: 8, alignSelf: 'flex-start',
     backgroundColor: colors.accentBg, borderWidth: 1, borderColor: 'rgba(124,110,250,0.25)',
     paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.full,
   },
-  profileBadgeText: { fontSize: 11, color: colors.accent2, fontWeight: '700' },
+  profileBadgeText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.accent2, fontWeight: '700' },
   editColorBadge: {
     position: 'absolute', bottom: -2, right: -2,
     width: 22, height: 22, borderRadius: 11,
     backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  editColorBadgeText: { fontSize: 11 },
+  editColorBadgeText: { fontFamily: fonts.regular, fontSize: 11 },
 
   ocrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  ocrTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  ocrTitle: { fontFamily: fonts.semibold, fontSize: 14, fontWeight: '700', color: colors.text },
   ocrAccuracyBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full },
-  ocrAccuracyText: { fontSize: 12, fontWeight: '700' },
+  ocrAccuracyText: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '700' },
   ocrStatsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginBottom: 16 },
   ocrStat: { flex: 1, alignItems: 'center' },
-  ocrStatNum: { fontSize: 26, fontWeight: '300', fontFamily: 'monospace' },
-  ocrStatLabel: { fontSize: 10, color: colors.text3, marginTop: 3, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
+  ocrStatNum: { fontSize: 26, fontWeight: '300', fontFamily: fonts.mono },
+  ocrStatLabel: { fontFamily: fonts.semibold, fontSize: 10, color: colors.text3, marginTop: 3, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
   ocrStatDivider: { width: 0.5, height: 40, backgroundColor: colors.glassBorder },
   progBarTrack: { height: 4, backgroundColor: colors.surface2, borderRadius: 2, overflow: 'hidden', marginBottom: 8 },
   progBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.accent },
-  progLabel: { fontSize: 11, color: colors.text3, lineHeight: 16 },
+  progLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16 },
 
   settingRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -831,27 +831,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface3, alignItems: 'center', justifyContent: 'center',
   },
   settingIconWrapDanger: { backgroundColor: 'rgba(248,113,113,0.12)' },
-  settingIcon: { fontSize: 15 },
-  settingLabel: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.text },
-  settingValue: { fontSize: 12, color: colors.text3, fontWeight: '500' },
-  settingArrow: { fontSize: 18, color: colors.text3, fontWeight: '300' },
+  settingIcon: { fontFamily: fonts.regular, fontSize: 15 },
+  settingLabel: { flex: 1, fontFamily: fonts.medium, fontSize: 14, fontWeight: '500', color: colors.text },
+  settingValue: { fontFamily: fonts.medium, fontSize: 12, color: colors.text3, fontWeight: '500' },
+  settingArrow: { fontFamily: fonts.regular, fontSize: 18, color: colors.text3, fontWeight: '300' },
   rowSeparator: { height: 0.5, backgroundColor: colors.glassBorder, marginLeft: spacing.lg + 32 + 12 },
   colorDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.border },
 
-  footer: { fontSize: 11, color: colors.text3, textAlign: 'center', marginTop: 24, marginBottom: 8 },
+  footer: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, textAlign: 'center', marginTop: 24, marginBottom: 8 },
 
   modalScreen: { flex: 1, backgroundColor: colors.bg },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: spacing.xl, borderBottomWidth: 0.5, borderBottomColor: colors.border,
   },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  modalTitle: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '700', color: colors.text },
   modalClose: { paddingHorizontal: 14, paddingVertical: 7, backgroundColor: colors.surface2, borderRadius: radius.full },
-  modalCloseText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
+  modalCloseText: { fontFamily: fonts.medium, fontSize: 13, color: colors.text2, fontWeight: '500' },
   modalContent: { padding: spacing.xl, paddingBottom: 60 },
 
   colorPickerContent: { padding: spacing.xl, alignItems: 'center' },
-  colorPickerSub: { fontSize: 14, color: colors.text3, marginBottom: 24, alignSelf: 'flex-start' },
+  colorPickerSub: { fontFamily: fonts.regular, fontSize: 14, color: colors.text3, marginBottom: 24, alignSelf: 'flex-start' },
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center', marginBottom: 32 },
   colorSwatch: {
     width: 54, height: 54, borderRadius: 27,
@@ -859,14 +859,14 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
   },
   colorSwatchSelected: { borderWidth: 3, borderColor: colors.white, shadowOpacity: 0.4, shadowRadius: 8 },
-  colorSwatchCheck: { fontSize: 20, color: colors.white, fontWeight: '800' },
+  colorSwatchCheck: { fontFamily: fonts.semibold, fontSize: 20, color: colors.white, fontWeight: '800' },
   colorPreview: { alignItems: 'center', marginBottom: 32, gap: 12 },
-  colorPreviewName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  colorPreviewName: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '600', color: colors.text },
   colorSaveBtn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
     paddingVertical: 14, paddingHorizontal: 48, alignItems: 'center', width: '100%',
   },
-  colorSaveBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  colorSaveBtnText: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.white },
 
   // Langue & Devise picker
   pickerContent: { padding: spacing.xl, paddingBottom: 60 },
@@ -876,26 +876,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, marginBottom: 4,
   },
   pickerRowSelected: { backgroundColor: colors.accentBg },
-  pickerFlag: { fontSize: 24 },
-  pickerSymbol: { fontSize: 20, width: 32, textAlign: 'center', color: colors.text, fontWeight: '600' },
-  pickerLabel: { flex: 1, fontSize: 15, color: colors.text },
-  pickerCheck: { fontSize: 16, color: colors.accent2, fontWeight: '700' },
+  pickerFlag: { fontFamily: fonts.regular, fontSize: 24 },
+  pickerSymbol: { fontFamily: fonts.semibold, fontSize: 20, width: 32, textAlign: 'center', color: colors.text, fontWeight: '600' },
+  pickerLabel: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text },
+  pickerCheck: { fontFamily: fonts.semibold, fontSize: 16, color: colors.accent2, fontWeight: '700' },
 
   deleteWarning: {
     backgroundColor: 'rgba(248,113,113,0.06)', borderWidth: 1,
     borderColor: 'rgba(248,113,113,0.2)', borderRadius: radius.md, padding: 16, marginBottom: 24,
   },
-  deleteWarningTitle: { fontSize: 15, fontWeight: '700', color: colors.red, marginBottom: 10 },
-  deleteWarningText: { fontSize: 13, color: colors.text2, lineHeight: 20 },
-  deleteConfirmLabel: { fontSize: 13, color: colors.text2, marginBottom: 10 },
+  deleteWarningTitle: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.red, marginBottom: 10 },
+  deleteWarningText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2, lineHeight: 20 },
+  deleteConfirmLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.text2, marginBottom: 10 },
   deleteConfirmInput: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: 'rgba(248,113,113,0.4)',
     borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 12,
-    color: colors.text, fontSize: 15, marginBottom: 20,
+    color: colors.text, fontFamily: fonts.regular, fontSize: 15, marginBottom: 20,
   },
   deleteBtn: { backgroundColor: colors.red, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center' },
   deleteBtnDisabled: { opacity: 0.35 },
-  deleteBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  deleteBtnText: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.white },
   deleteCancelBtn: { marginTop: 14, alignItems: 'center', paddingVertical: 10 },
-  deleteCancelText: { fontSize: 13, color: colors.text3 },
+  deleteCancelText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
 });
