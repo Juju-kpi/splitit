@@ -58,7 +58,8 @@
           "photosPermission": "Pour importer une photo de ticket"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

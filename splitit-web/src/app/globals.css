@@ -4,30 +4,30 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  body { background: #0B0C0F; color: #F4F5F7; }
+  body { background: #08090C; color: #FFFFFF; -webkit-font-smoothing: antialiased; }
   /* Chiffres alignes en colonne — lisibilite des montants */
-  .font-mono { font-variant-numeric: tabular-nums; }
+  .font-mono { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #141519; }
-  ::-webkit-scrollbar-thumb { background: #2B2E36; border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: #0F1116; }
+  ::-webkit-scrollbar-thumb { background: #232833; border-radius: 2px; }
 }
 
 @layer utilities {
   /* Surfaces pleines : la barre collante doit masquer le contenu qui defile.
-     .glass sert aussi de carte (ecrans d'authentification), d'ou la bordure
-     complete — sur un en-tete pleine largeur, les cotes sortent de l'ecran. */
+     La profondeur vient desormais du remplissage — plus de bordure autour
+     des cartes, seule l'en-tete garde un filet bas pour se detacher du
+     contenu qui passe dessous. */
   .glass {
-    background: #141519;
-    border: 1px solid #2B2E36;
+    background: #0F1116;
+    border-bottom: 1px solid #171B22;
   }
   .glass-card {
-    background: #141519;
-    border: 1px solid #2B2E36;
+    background: #0F1116;
   }
   .glow-accent {
-    border-color: rgba(124,110,250,0.35);
+    box-shadow: inset 0 0 0 1px rgba(237,234,227,0.18);
   }
-  .mono { font-family: 'JetBrains Mono', monospace; }
+  .mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 }
 
 html, body { height: 100%; }
