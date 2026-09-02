@@ -87,7 +87,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
     <button
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
-      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-accent' : 'bg-surface3'} ${disabled ? 'opacity-40' : ''}`}
+      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${checked ? 'bg-primary' : 'bg-surface3'} ${disabled ? 'opacity-40' : ''}`}
       aria-checked={checked} role="switch"
     >
       <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-6' : ''}`} />
@@ -350,7 +350,7 @@ export default function SettingsPage() {
             ))}
           </div>
           <div className="h-1 bg-surface3 rounded-full overflow-hidden mb-1.5">
-            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${Math.min(accuracy, 100)}%` }} />
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(accuracy, 100)}%` }} />
           </div>
           <p className="text-[11px] text-text3">{untrained > 0 ? t('settings.ocr_before_next', { n: untrained }) : t('settings.ocr_uptodate')}</p>
         </div>

@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   accentBar: {
     width: 3,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
     opacity: 0.7,
   },
   groupCardInner: { flex: 1, padding: spacing.lg },
@@ -138,10 +138,10 @@ const styles = StyleSheet.create({
   emptySubtitle: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, textAlign: 'center', lineHeight: 19, marginBottom: 32 },
   emptyActions: { gap: 10, width: '100%' },
   emptyBtn: {
-    backgroundColor: colors.accent, paddingVertical: 15,
+    backgroundColor: colors.primary, paddingVertical: 15,
     borderRadius: radius.md, alignItems: 'center', minHeight: 52, ...shadows.accent,
   },
-  emptyBtnText: { color: colors.white, fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', letterSpacing: 0.2 },
+  emptyBtnText: { color: colors.onPrimary, fontFamily: fonts.semibold, fontSize: 15, letterSpacing: 0.2 },
   emptyBtnGhost: {
     backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.glassBorder,
     paddingVertical: 15, borderRadius: radius.md, alignItems: 'center', minHeight: 52,

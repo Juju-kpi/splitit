@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border2,
     alignItems: 'center', justifyContent: 'center',
   },
-  checkboxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   checkmark: { color: colors.white, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '800' },
   rememberText: { fontFamily: fonts.medium, fontSize: 13, color: colors.text2, fontWeight: '500' },
   forgotText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.accent2, fontWeight: '600', minHeight: 44, textAlignVertical: 'center', lineHeight: 44 },

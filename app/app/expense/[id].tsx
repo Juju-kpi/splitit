@@ -349,8 +349,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full,
   },
   editBtnText: { color: colors.accent2, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' },
-  saveBtn: { backgroundColor: colors.accent, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.full },
-  saveBtnText: { color: colors.white, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' },
+  saveBtn: { backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.full },
+  saveBtnText: { color: colors.onPrimary, fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: 80 },
   photoBlock: { marginBottom: 12 },
   photoBtn: {
@@ -370,8 +370,8 @@ const styles = StyleSheet.create({
   noteActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },
   noteCancelBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full, borderWidth: 0.5, borderColor: colors.border },
   noteCancelText: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3 },
-  noteSaveBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.accent },
-  noteSaveText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.white, fontWeight: '600' },
+  noteSaveBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.primary },
+  noteSaveText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.onPrimary },
   noteText: { fontFamily: fonts.regular, fontSize: 14, color: colors.text, lineHeight: 20 },
   notePlaceholder: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, fontStyle: 'italic' },
   // Items

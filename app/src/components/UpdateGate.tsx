@@ -152,9 +152,9 @@ const styles = StyleSheet.create({
   notes: { fontFamily: fonts.regular, fontSize: 13, color: colors.text3, lineHeight: 19, marginTop: 10 },
   primary: {
     marginTop: 22, minHeight: 48, borderRadius: radius.md,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
-  primaryText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.white, fontWeight: '600' },
+  primaryText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.onPrimary },
   ghost: { marginTop: 10, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   ghostText: { fontFamily: fonts.medium, fontSize: 14, color: colors.text3, fontWeight: '500' },
 });

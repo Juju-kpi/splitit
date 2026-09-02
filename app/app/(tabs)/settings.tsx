@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
   ocrStatLabel: { fontFamily: fonts.semibold, fontSize: 10, color: colors.text3, marginTop: 3, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
   ocrStatDivider: { width: 0.5, height: 40, backgroundColor: colors.glassBorder },
   progBarTrack: { height: 4, backgroundColor: colors.surface2, borderRadius: 2, overflow: 'hidden', marginBottom: 8 },
-  progBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.accent },
+  progBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.primary },
   progLabel: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16 },
 
   settingRow: {
@@ -864,10 +864,10 @@ const styles = StyleSheet.create({
   colorPreview: { alignItems: 'center', marginBottom: 32, gap: 12 },
   colorPreviewName: { fontFamily: fonts.semibold, fontSize: 16, fontWeight: '600', color: colors.text },
   colorSaveBtn: {
-    backgroundColor: colors.accent, borderRadius: radius.md,
+    backgroundColor: colors.primary, borderRadius: radius.md,
     paddingVertical: 14, paddingHorizontal: 48, alignItems: 'center', width: '100%',
   },
-  colorSaveBtnText: { fontFamily: fonts.semibold, fontSize: 15, fontWeight: '700', color: colors.white },
+  colorSaveBtnText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.onPrimary },
 
   // Langue & Devise picker
   pickerContent: { padding: spacing.xl, paddingBottom: 60 },

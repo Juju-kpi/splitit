@@ -146,7 +146,7 @@ function JoinGroupInner() {
                     {m.displayName}
                   </span>
                   <span className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center ${selected ? 'border-accent' : 'border-border2'}`}>
-                    {selected && <span className="w-2.5 h-2.5 rounded-full bg-accent" />}
+                    {selected && <span className="w-2.5 h-2.5 rounded-full bg-primary" />}
                   </span>
                 </button>
               )

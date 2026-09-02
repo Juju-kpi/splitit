@@ -59,7 +59,7 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-between mt-1 mb-4">
             <button type="button" onClick={() => setRememberMe(r => !r)} className="flex items-center gap-2 min-h-[44px]">
-              <div className={`w-[22px] h-[22px] rounded-md border-[1.5px] flex items-center justify-center ${rememberMe ? 'bg-accent border-accent' : 'border-border2'}`}>
+              <div className={`w-[22px] h-[22px] rounded-md border-[1.5px] flex items-center justify-center ${rememberMe ? 'bg-primary border-primary' : 'border-border2'}`}>
                 {rememberMe && <span className="text-white text-xs font-extrabold">✓</span>}
               </div>
               <span className="text-[13px] text-text2 font-medium">{t('auth.remember_me')}</span>

@@ -975,10 +975,10 @@ const styles = StyleSheet.create({
   detailLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   detailDesc: { fontFamily: fonts.regular, fontSize: 12, color: colors.text2, flex: 1 },
   detailAmt: { fontSize: 12, fontFamily: fonts.mono, color: colors.amber, marginLeft: 8 },
-  settleBtn: { marginTop: 8, backgroundColor: colors.accent, borderRadius: radius.sm, padding: 10, alignItems: 'center' },
+  settleBtn: { marginTop: 8, backgroundColor: colors.primary, borderRadius: radius.sm, padding: 10, alignItems: 'center' },
   settleBtnDone: { backgroundColor: colors.surface3, borderColor: colors.border },
   settleHint: { fontFamily: fonts.regular, fontSize: 11, color: colors.text3, lineHeight: 16, marginTop: 8 },
-  settleBtnText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.white, fontWeight: '600', textAlign: 'center' },
+  settleBtnText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.onPrimary, textAlign: 'center' },
 
   // ── Remboursements ─────────────────────────────────────────────────────
   pendingBadge: {
@@ -1060,10 +1060,10 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: fonts.medium, fontSize: 12, color: colors.text2, fontWeight: '500' },
   chipTextActive: { color: colors.accent2, fontWeight: '600' },
   submitBtn: {
-    marginTop: 24, backgroundColor: colors.accent, borderRadius: radius.md,
+    marginTop: 24, backgroundColor: colors.primary, borderRadius: radius.md,
     minHeight: 52, alignItems: 'center', justifyContent: 'center',
   },
-  submitBtnText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.white, fontWeight: '600' },
+  submitBtnText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.onPrimary },
 
   // Expense items
   expenseItem: {

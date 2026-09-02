@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   radioSelected: { borderColor: colors.accent },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
   claimNotice: {
     backgroundColor: 'rgba(52,211,153,0.08)',
     borderWidth: 1, borderColor: 'rgba(52,211,153,0.2)',
