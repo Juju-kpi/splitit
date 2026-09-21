@@ -10,6 +10,12 @@ import { runTrainingPipeline, rollbackToPreviousVersion } from '../services/trai
 import { promoteModel } from '../services/modelGovernance';
 
 const router = Router();
+
+// Routes d'administration, appelees par la CI de reentrainement : elles
+// portent leur propre garde `x-admin-key` et n'ont pas de jeton utilisateur.
+// Montees a part dans index.ts, AVANT `authenticate` — derriere, le
+// middleware JWT les rejetait en 401 avant que requireAdmin ne s'execute.
+export const adminRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Admin guard for training operations. Set ADMIN_API_KEY in the backend env,
@@ -105,7 +111,7 @@ router.get('/stats', async (_req: AuthRequest, res: Response) => {
 });
 
 // POST /api/ocr/train — trigger the pipeline on demand (admin only)
-router.post('/train', async (req: AuthRequest, res: Response) => {
+adminRouter.post('/train', async (req: AuthRequest, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const force = req.query.force === 'true' || req.body?.force === true;
   try {
@@ -118,7 +124,7 @@ router.post('/train', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/ocr/rollback — activate the previous promoted version (admin only)
-router.post('/rollback', async (req: AuthRequest, res: Response) => {
+adminRouter.post('/rollback', async (req: AuthRequest, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const result = await rollbackToPreviousVersion();
   if (!result.ok) return res.status(409).json({ error: 'No previous version to roll back to' });
@@ -126,7 +132,7 @@ router.post('/rollback', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/ocr/export — JSONL of all corrections for the offline trainer (admin only)
-router.get('/export', async (req: AuthRequest, res: Response) => {
+adminRouter.get('/export', async (req: AuthRequest, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const rows = await prisma.ocrCorrection.findMany({
     orderBy: { createdAt: 'asc' },
@@ -139,7 +145,7 @@ router.get('/export', async (req: AuthRequest, res: Response) => {
 // POST /api/ocr/promote-model — CI hook: register a fine-tuned model and
 // activate it iff it does not regress name accuracy (admin only).
 // Body: { modelRepo, modelRevision, precisionName, precisionPrice?, correctionCount?, metrics? }
-router.post('/promote-model', async (req: AuthRequest, res: Response) => {
+adminRouter.post('/promote-model', async (req: AuthRequest, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const { modelRepo, modelRevision, precisionName } = req.body ?? {};
   if (!modelRepo || !modelRevision || typeof precisionName !== 'number') {

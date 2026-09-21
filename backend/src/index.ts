@@ -11,7 +11,7 @@ import cron from 'node-cron';
 import authRouter from './routes/auth';
 import groupsRouter from './routes/groups';
 import expensesRouter from './routes/expenses';
-import ocrRouter from './routes/ocr';
+import ocrRouter, { adminRouter as ocrAdminRouter } from './routes/ocr';
 import usersRouter from './routes/users';
 import settlementsRouter from './routes/settlements';
 import { authenticate } from './middleware/auth';
@@ -57,6 +57,9 @@ app.get('/api/app-version', (req, res) => {
 // Protected routes
 app.use('/api/groups', authenticate, groupsRouter);
 app.use('/api/expenses', authenticate, expensesRouter);
+// Avant `authenticate` : ces routes s'authentifient par x-admin-key et
+// sont appelees par la CI, qui n'a pas de jeton utilisateur.
+app.use('/api/ocr', ocrAdminRouter);
 app.use('/api/ocr', authenticate, ocrRouter);
 app.use('/api/users', authenticate, usersRouter); // NOUVEAU
 app.use('/api/settlements', authenticate, settlementsRouter);
