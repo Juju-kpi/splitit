@@ -186,13 +186,40 @@ def render(rows: list, holdout_ratio: float, min_corrections: int) -> str:
             + '</body></html>')
 
 
+DEFAULT_API_BASE = "https://splitit-9x32.onrender.com"
+
+
+def ask_hidden(prompt: str) -> str:
+    """Saisie masquee de la cle.
+
+    On la demande plutot que de la lire dans l'environnement : sous PowerShell,
+    `$env:ADMIN_API_KEY = "..."` atterrit dans ConsoleHost_history.txt, en clair
+    sur le disque. Et une cle d'administration n'ouvre pas que l'export : elle
+    autorise promote-model, donc a pointer l'application vers un modele
+    arbitraire servi aux utilisateurs.
+    """
+    try:
+        import getpass
+        return getpass.getpass(prompt).strip()
+    except Exception:
+        # Terminal incapable de masquer : on demande quand meme.
+        return input(prompt).strip()
+
+
 def main() -> None:
-    api_base = os.environ.get("API_BASE", "").rstrip("/")
+    api_base = (os.environ.get("API_BASE") or DEFAULT_API_BASE).rstrip("/")
     admin_key = os.environ.get("ADMIN_API_KEY", "")
-    if not api_base or not admin_key:
-        print("\nIl manque API_BASE et ADMIN_API_KEY.\n", file=sys.stderr)
-        print('  API_BASE=https://splitit-9x32.onrender.com \\', file=sys.stderr)
-        print('  ADMIN_API_KEY=... python inspect_corrections.py\n', file=sys.stderr)
+
+    if not admin_key:
+        if not sys.stdin.isatty():
+            print("\nIl manque ADMIN_API_KEY et le terminal n'est pas interactif.\n",
+                  file=sys.stderr)
+            sys.exit(2)
+        print(f"\nServeur : {api_base}")
+        admin_key = ask_hidden("Cle d'administration : ")
+
+    if not admin_key:
+        print("\nCle vide, on s'arrete la.\n", file=sys.stderr)
         sys.exit(2)
 
     holdout_ratio = float(os.environ.get("HOLDOUT_RATIO", str(DEFAULT_HOLDOUT_RATIO)))
