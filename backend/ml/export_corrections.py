@@ -35,7 +35,30 @@ def bucket(_id: str) -> int:
 def main() -> None:
     r = requests.get(f"{API_BASE}/api/ocr/export",
                      headers={"x-admin-key": ADMIN_KEY}, timeout=60)
-    r.raise_for_status()
+
+    # `raise_for_status()` seul n'affiche que « 403 Client Error », ce qui
+    # n'indique pas de quel cote chercher. On remonte le message du serveur,
+    # qui distingue une cle absente (503) d'une cle qui ne correspond pas (403).
+    if not r.ok:
+        try:
+            detail = r.json().get("error", r.text[:200])
+        except ValueError:
+            detail = r.text[:200]
+        print(f"HTTP {r.status_code} sur {API_BASE}/api/ocr/export", file=sys.stderr)
+        print(f"  {detail}", file=sys.stderr)
+        if r.status_code == 403:
+            print("  -> Le secret GitHub ADMIN_API_KEY differe de celui du serveur.",
+                  file=sys.stderr)
+            print("     Attention aux espaces et au retour a la ligne colles avec la valeur.",
+                  file=sys.stderr)
+        elif r.status_code == 503:
+            print("  -> ADMIN_API_KEY n'est pas renseignee sur ce service.", file=sys.stderr)
+            print(f"     Verifie qu'API_BASE pointe le bon service : {API_BASE}", file=sys.stderr)
+        elif r.status_code == 401:
+            print("  -> La route est derriere l'authentification utilisateur ;",
+                  file=sys.stderr)
+            print("     le backend deploye est anterieur au correctif.", file=sys.stderr)
+        sys.exit(1)
     rows = [json.loads(l) for l in r.text.splitlines() if l.strip()]
     if not rows:
         print("No corrections returned; nothing to train.", file=sys.stderr)

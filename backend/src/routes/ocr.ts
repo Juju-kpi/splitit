@@ -18,12 +18,24 @@ const router = Router();
 export const adminRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Admin guard for training operations. Set ADMIN_API_KEY in the backend env,
-// then send it as `x-admin-key`. If unset, admin routes are disabled (403).
+// Garde des operations d'entrainement : renseigner ADMIN_API_KEY cote serveur,
+// puis l'envoyer en `x-admin-key`.
+//
+// Les deux refus sont distingues a dessein. Un seul code pour « cle absente du
+// serveur » et « cle qui ne correspond pas » obligeait a deviner de quel cote
+// chercher — la CI voyait 403 dans les deux cas. Desormais le journal le dit.
 function requireAdmin(req: AuthRequest, res: Response): boolean {
   const key = process.env.ADMIN_API_KEY;
-  if (!key || req.headers['x-admin-key'] !== key) {
-    res.status(403).json({ error: 'Forbidden' });
+  if (!key) {
+    res.status(503).json({
+      error: 'Admin routes disabled: ADMIN_API_KEY is not set on this server',
+    });
+    return false;
+  }
+  if (req.headers['x-admin-key'] !== key) {
+    res.status(403).json({
+      error: 'Invalid admin key: the x-admin-key header does not match ADMIN_API_KEY',
+    });
     return false;
   }
   return true;
