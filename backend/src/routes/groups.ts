@@ -19,6 +19,14 @@ function initials(name: string) {
 }
 
 // GET /api/groups
+//
+// Trie par derniere activite, pas par date d'adhesion : un groupe ou l'on
+// vient d'ajouter une depense doit remonter en tete.
+//
+// `group.updatedAt` ne conviendrait pas — Prisma ne le touche que lorsque la
+// ligne du groupe est modifiee, or ajouter une depense n'y touche pas. On
+// prend donc la date la plus recente entre la derniere depense, le dernier
+// remboursement et la creation du groupe.
 router.get('/', async (req: AuthRequest, res: Response) => {
   const memberships = await prisma.groupMember.findMany({
     where: { userId: req.userId },
@@ -27,17 +35,29 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         include: {
           members: true,
           _count: { select: { expenses: true } },
+          expenses: { select: { createdAt: true }, orderBy: { createdAt: 'desc' }, take: 1 },
+          settlements: { select: { createdAt: true }, orderBy: { createdAt: 'desc' }, take: 1 },
         },
       },
     },
-    orderBy: { joinedAt: 'desc' },
   });
 
-  const groups = memberships.map(m => ({
-    ...m.group,
-    expenseCount: m.group._count.expenses,
-    myMemberId: m.id,
-  }));
+  const groups = memberships
+    .map(m => {
+      const { expenses, settlements, ...group } = m.group;
+      const dates = [
+        group.createdAt,
+        expenses[0]?.createdAt,
+        settlements[0]?.createdAt,
+      ].filter(Boolean) as Date[];
+      return {
+        ...group,
+        expenseCount: m.group._count.expenses,
+        myMemberId: m.id,
+        lastActivityAt: new Date(Math.max(...dates.map(d => d.getTime()))),
+      };
+    })
+    .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
 
   res.json({ data: groups });
 });

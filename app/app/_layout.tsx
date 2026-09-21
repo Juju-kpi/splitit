@@ -104,6 +104,7 @@ export default function RootLayout() {
           <Stack.Screen name="group/new" options={{ presentation: 'modal' }} />
           <Stack.Screen name="group/join" options={{ presentation: 'modal' }} />
           <Stack.Screen name="group/members" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="group/settlements" options={{ presentation: 'card' }} />
           <Stack.Screen name="forgot-password" options={{ presentation: 'modal' }} />
           <Stack.Screen name="expense/add" options={{ presentation: 'modal' }} />
           <Stack.Screen name="expense/[id]" options={{ presentation: 'card' }} />

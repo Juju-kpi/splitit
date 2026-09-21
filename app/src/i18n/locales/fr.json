@@ -397,7 +397,8 @@
     "calc_total": "Somme des positions",
     "calc_total_ok": "✓ les + et les − s'annulent exactement — rien ne s'est perdu",
     "calc_total_bad": "⚠ écart de {{amount}} — signale-le, ce ne devrait jamais arriver",
-    "calc_explain": "Chaque position est ensuite appariée : le plus endetté verse au plus créditeur, puis au suivant, jusqu'à ce que tout soit à zéro. C'est ce qui donne les virements ci-dessus, en un minimum d'opérations."
+    "calc_explain": "Chaque position est ensuite appariée : le plus endetté verse au plus créditeur, puis au suivant, jusqu'à ce que tout soit à zéro. C'est ce qui donne les virements ci-dessus, en un minimum d'opérations.",
+    "to_settle": "{{n}} remboursement(s) à régler"
   },
   "home": {
     "greeting": "Bonjour, {{name}} 👋"

@@ -397,7 +397,8 @@
     "calc_total": "Sum of positions",
     "calc_total_ok": "✓ the + and − cancel out exactly — nothing went missing",
     "calc_total_bad": "⚠ off by {{amount}} — please report it, this should never happen",
-    "calc_explain": "Each position is then matched up: whoever owes most pays whoever is owed most, then the next, until everything is at zero. That is what produces the transfers above, in as few moves as possible."
+    "calc_explain": "Each position is then matched up: whoever owes most pays whoever is owed most, then the next, until everything is at zero. That is what produces the transfers above, in as few moves as possible.",
+    "to_settle": "{{n}} reimbursement(s) to settle"
   },
   "home": {
     "greeting": "Hi, {{name}} 👋"

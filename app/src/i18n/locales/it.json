@@ -397,7 +397,8 @@
     "calc_total": "Somma delle posizioni",
     "calc_total_ok": "✓ i + e i − si annullano esattamente — non si è perso nulla",
     "calc_total_bad": "⚠ scarto di {{amount}} — segnalalo, non dovrebbe mai succedere",
-    "calc_explain": "Ogni posizione viene poi abbinata: chi deve di più paga chi è più in credito, poi il successivo, finché tutto è a zero. È ciò che produce i bonifici qui sopra, nel minor numero di operazioni."
+    "calc_explain": "Ogni posizione viene poi abbinata: chi deve di più paga chi è più in credito, poi il successivo, finché tutto è a zero. È ciò che produce i bonifici qui sopra, nel minor numero di operazioni.",
+    "to_settle": "{{n}} rimborso/i da saldare"
   },
   "home": {
     "greeting": "Ciao, {{name}} 👋"

@@ -397,7 +397,8 @@
     "calc_total": "Summe der Positionen",
     "calc_total_ok": "✓ Plus und Minus heben sich exakt auf — nichts ist verloren gegangen",
     "calc_total_bad": "⚠ Abweichung von {{amount}} — bitte melden, das sollte nie passieren",
-    "calc_explain": "Jede Position wird anschließend zugeordnet: wer am meisten schuldet, zahlt an den mit dem größten Guthaben, dann an den nächsten, bis alles auf null steht. Daraus entstehen die Überweisungen oben, mit möglichst wenigen Schritten."
+    "calc_explain": "Jede Position wird anschließend zugeordnet: wer am meisten schuldet, zahlt an den mit dem größten Guthaben, dann an den nächsten, bis alles auf null steht. Daraus entstehen die Überweisungen oben, mit möglichst wenigen Schritten.",
+    "to_settle": "{{n}} Rückzahlung(en) offen"
   },
   "home": {
     "greeting": "Hallo, {{name}} 👋"
