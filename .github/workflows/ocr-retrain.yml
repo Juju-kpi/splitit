@@ -45,10 +45,14 @@ jobs:
         continue-on-error: true
         run: python export_corrections.py
 
-      - name: Stop if no data
+      # L'export sort en 78 quand il n'y a rien a apprendre : aucune
+      # correction, ou moins que MIN_CORRECTIONS. Ce n'est pas un echec, le
+      # moteur de regles continue de servir.
+      - name: Stop if not enough data
         if: steps.export.outcome != 'success'
         run: |
-          echo "No corrections to train on yet — skipping."
+          echo "Pas assez de corrections pour entrainer — tour passe."
+          echo "Voir le journal de l'etape Export ci-dessus pour le detail."
           exit 0
 
       - name: Fine-tune
